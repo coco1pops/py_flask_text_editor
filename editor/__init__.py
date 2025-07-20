@@ -1,11 +1,12 @@
 from flask import Flask
 
-from editor import pages
+from editor import pages, posts
 
 def create_app():
     app = Flask(__name__)
 
     app.register_blueprint(pages.bp)
+    app.register_blueprint(posts.bp)
     return app
 """
 from flask import Flask, render_template, request, jsonify
