@@ -1,33 +1,20 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask
 
-from editor import pages, posts
+from editor import pages, database, stories, auth
+
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)
+    app.config.from_prefixed_env()
+
+    database.init_app(app)
 
     app.register_blueprint(pages.bp)
-    app.register_blueprint(posts.bp)
+    app.register_blueprint(stories.bp)
+
+    print(f"Current Environment: {os.getenv('ENVIRONMENT')}")
+    print(f"Using Database: {app.config.get('DATABASE')}")
     return app
-"""
-from flask import Flask, render_template, request, jsonify
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/process', methods=['POST'])
-def process():
-    data = request.get_json() # retrieve the data sent from JavaScript
-    # process the data using Python code
-    result = data['value'] * 2
-    return jsonify(result=result) # return the result to JavaScript
-
-@app.route('/story_list')
-def story_list():
-    return render_template('story_list.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-"""

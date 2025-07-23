@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>{% block title %}Update Story{% endblock title %}</h2>
+  <script>  
+    const urlParams = new URLSearchParams(window.location.search);
+    const st_id = urlParams.get('story_id');
+  </script>
+
+  {% endblock header %}
+
+{% block content %}
+
+<div id="top">
+    <h2> Story id: {{story['story_id']}}</h2>
+    <h2> Author {{story['author']}}</h2>
+    <p> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
+
+</div>
+
+<div id="controls">
+    <label for="title"> Title: </label>
+    <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
+    <label for="note"> Note: </label>
+    <input type="textarea" id="note" value="{{story['note']}}" onchange="handleInput(event)">
+    <label for="systemInstruction"> System Instruction: </label>
+    <input type="textarea" id="systemInstruction" value="{{story['systemInstruction']}}" onchange="handleInput(event)">
+</div>
+
+<p id="output"></p>
+
+<div id="posts">
+    <table id='postsTable'>
+        <thead>
+            <th>id</th>
+            <th>Created</th>
+            <th>Message</th>
+        </thead>
+
+        <tbody>
+
+            {% for post in posts %}
+                <tr id="row_{{post['post_id']}}">
+                    <td>{{post["post_id"]}}</td>
+                    <td>{{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
+                    <td><div>{{post["message"]| safe }}</div></td>
+                    <td><button class='deletebutton' type="button" id="{{story['story_id']}}">OK</button></td>
+                </tr>
+    
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+    <!--
+    If last record in posts isdirty then need to display the text in the newpost box
+    If not then need to create a new post
+    -->
+
+    <div>
+        <input type="textarea" rows="4" cols="50" id="newprompt">
+    </div>
+
+    <div>
+        <button class='postbutton' type="button" id="post" onclick="post()">Post</button>
+    </div>
+</div>
+
+<script>
+
+function handleInput(event) {
+    var target = event.target.id;
+    var new_value = event.target.value;
+    
+    $.ajax({
+     url: "/update_story",
+      type: "post",
+      data: {'story_id': st_id, 'field' : target , 'new value' : new_value },
+      dataType: 'json',
+     success: function(response) {
+       console.log(response);
+       },
+     error: function(error) {
+       console.log(error);
+       }
+     })
+};
+
+function post() {
+    const prompt = document.getElementById("newprompt").value;
+    $.ajax({
+        url: "/generate",
+        type: "post",
+        data: {'story_id': st_id, 'prompt' : prompt },
+        dataType: 'json',
+        success: function(response) {
+            console.log(response);
+        },
+        error: function(error) {
+        console.log(error);
+        }
+    })
+};
+
+  </script>
+{% endblock content %}

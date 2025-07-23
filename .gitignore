@@ -6,3 +6,17 @@
 
 # Ignore .env file
 env
+
+# Ignore database
+*.sqlite
+
+# Ignore VSCode files
+*.code-workspace
+
+# Ignore pyc files
+*.pyc
+__pycache__/*
+
+#Ignore key file
+
+big-pact*.json

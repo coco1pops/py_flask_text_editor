@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>{% block title %}Stories{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %}
+<table id='storyTable'>
+  <thead>
+    <th>id</th>
+    <th>Author</th>
+    <th>Title</th>
+    <th>Note</th>
+    <th>Created</th>
+    <th>Delete?</th>
+    <th>Update</th>
+  </thead>
+
+  <tbody>
+
+    {% for story in stories %}
+      <tr id="row_{{story['story_id']}}">
+        <td>{{story["story_id"]}}</td>
+        <td>{{story["author"]}}</td>
+        <td>{{story["title"]}}</td>
+        <td>{{story["note"]}}</td>
+        <td>{{story["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
+        <td><button class='deletebutton' type="button" id="{{story['story_id']}}">OK</button></td>
+        <td>
+          <form method="post">
+            <button type="submit" name="action" id="{{story['story_id']}}" value="{{story['story_id']}}" class="btn">OK</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+
+  </tbody>
+
+  <script>
+    document.querySelectorAll('.deletebutton').forEach(each => {
+      //add an event listener
+      each.onclick = () => {
+        var id = each.id;
+      
+        $.ajax({
+          url: "/delete_story",
+          type: "post",
+          data: {'id': id},
+          dataType: 'json',
+          success: function(response) {
+            alert("Deleted Story " + id) 
+            console.log(response);
+            var rowid = "row_" + id;
+            var r = document.getElementById(rowid);
+            var i = r.rowIndex;
+            document.getElementById("storyTable").deleteRow(i);
+          },
+          error: function(error) {
+            console.log(error);
+          }
+          
+        }) 
+        
+        }
+      })
+  </script>
+
+
+</table> 
+{% endblock content %}
