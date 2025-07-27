@@ -33,7 +33,6 @@ main {
   margin: 0 auto;
 }
 
-article,
 form {
   text-align: left;
   min-width: 200px;
@@ -41,14 +40,6 @@ form {
   margin-bottom: 20px;
   box-shadow: 0px 0px 10px #ccc;
   vertical-align: top;
-}
-
-aside {
-  color: #ccc;
-  text-align: right;
-}
-
-form {
   display: flex;
   flex-direction: column;
   margin-top: 20px;
@@ -65,7 +56,7 @@ form {
   font-size: 1em;
 }
 
-.submit-btn {
+.submit-btn, .deletebutton, .editbutton {
   background-color: #007bff;
   color: #fff;
   border: none;
@@ -75,8 +66,12 @@ form {
   font-size: 1em;
 }
 
-.submit-btn:hover {
+.submit-btn:hover, .deletebutton:hover, .editbutton:hover {
   background-color: #0056b3;
+}
+
+.editbutton:disabled {
+  background-color: cadetblue;
 }
 
 .story {
@@ -87,9 +82,11 @@ form {
 }
 
 table {
-  width: 50%;
+  width: 75%;
   border-collapse: collapse;
-  margin: 20px 0;
+  margin-left: auto;
+  margin-right: auto;
+
  }
 
  th, td {
@@ -100,4 +97,34 @@ table {
 
 th {
   background-color: #f4f4f4;
+}
+
+.entry-textarea {
+  width: 50%;
+  height: 200px;
+  resize: vertical;
+}
+
+.hide {
+  display: none;
+}
+
+.created {
+  color:darkgray;   
+   display: flex; 
+  justify-content: flex-end;
+
+}
+
+.model {
+  color:black;
+}
+
+.user {
+  color:blue;
+  font-style :italic;
+}
+
+.highlighted {
+  background-color: #ffff99; /* soft yellow */
 }

@@ -1,13 +1,156 @@
 {% extends 'base.html' %}
 
+<!--
+
+    newprompt is used for making any changes
+    This can either be for a user prompt or the last model prompt
+
+    All user entries can be edited. This should:
+    - highlight the row
+    - move the row to the prompt box
+    - enable a submit and cancel button  
+    
+    Submit should:
+    - unhighlight the row
+    - delete the row and any posts/chat history after the row
+    - resubmit the chat with the revised prompt
+    - clear the prompt box and underlying database
+    - on completion, redisplay the form
+
+    Cancel should:
+    - unhighlight the row
+    - clear the prompt box
+
+    If the last entry is a model-entry, it can be edited. This should
+    - highlight the row
+    - move the row to the prompt box
+    - enable submit and cancel
+
+    Submit should:
+    - update the row
+    - update the chat history
+
+    Cancel should:
+    - unhighlight the row
+    - clear the prompt box
+-->
+
 {% block header %}
   <h2>{% block title %}Update Story{% endblock title %}</h2>
   <script>  
+    // Function to update the number of characters in the prompt
+    // TODO:Could be changed to calculate tokens
+    //
+    function updateCount() {
+        const text = document.getElementById("newprompt").value;
+        document.getElementById("charCount").textContent = text.length;
+    };
+    // Function to update a field on the stories table
+    // TODO: Error and success console logging might be improved
+    //
+    function handleInput(event) {
+        var target = event.target.id;
+        var new_value = event.target.value;
+    
+        $.ajax({
+            url: "/update_story",
+            type: "post",
+            data: {'story_id': st_id, 'field' : target , 'new value' : new_value },
+            dataType: 'json',
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(error) {
+                console.log(error);
+            }
+        })
+    };
+    // Function to reset the prompt field
+    // Resets the story newprompt value to "", the prompt to "" and the screen mode to New
+    //
+    function cancelUpdate(){
+        document.getElementById("newprompt").value = "";
+        const row_id="row_" + AppState.editRow;
+        console.log("Row "+row_id)
+        document.getElementById(row_id).classList.remove("highlighted");
+
+        $.ajax({
+            url: "/update_story",
+            type: "post",
+            data: {'story_id': st_id, 'field' : 'newprompt' , 'new value' : '' },
+            dataType: 'json',
+            success: function(response) {
+                console.log(response);
+                setFormMode("New", -1);
+            },
+            error: function(error) {
+                console.log(error);
+            }
+        })
+    };
+    // Generic function to post prompts to the back-end
+    // TODO: Error and success console logging might be improved
+    //  
+    function post() {
+        const prompt = document.getElementById("newprompt").value;
+        $.ajax({
+            url: "/generate",
+            type: "post",
+            data: {'story_id': st_id, 'prompt' : prompt, "mode" : AppState.formMode, 'row_id' : AppState.editRow },
+            dataType: 'json',
+            success: function(response) {
+                console.log(response);
+                window.location.reload();
+
+            },
+            error: function(error) {
+                console.log(error);
+
+            }
+        })
+
+    };
+  
+    function selectRow(btn, mode){
+        const row = btn.closest("tr");
+        // Highlight the selected row
+        row.classList.add("highlighted");
+        // Assign prompt to row contents
+        const row_id = ("message" + row.cells[0].textContent )
+        document.getElementById("newprompt").value = document.getElementById(row_id).textContent;
+
+        setFormMode(mode, row.cells[0].textContent)
+
+    }
+
+    function setFormMode(mode, row_id){
+        AppState.formMode = mode;
+        AppState.editRow = row_id;
+        document.getElementById("mode").textContent = mode + " Mode";
+    };
+    
     const urlParams = new URLSearchParams(window.location.search);
     const st_id = urlParams.get('story_id');
-  </script>
 
-  {% endblock header %}
+    const AppState = {
+        formMode: "New",
+        editRow: -1, 
+    };
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        updateCount();
+        setFormMode("New",-1);
+    });
+
+    window.addEventListener("load", function () {
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+
+</script>
+
+{% endblock header %}
 
 {% block content %}
 
@@ -32,75 +175,43 @@
 <div id="posts">
     <table id='postsTable'>
         <thead>
-            <th>id</th>
-            <th>Created</th>
+            <th class="hide">id</th>
             <th>Message</th>
-        </thead>
+         </thead>
 
         <tbody>
 
             {% for post in posts %}
                 <tr id="row_{{post['post_id']}}">
-                    <td>{{post["post_id"]}}</td>
-                    <td>{{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
-                    <td><div>{{post["message"]| safe }}</div></td>
-                    <td><button class='deletebutton' type="button" id="{{story['story_id']}}">OK</button></td>
+                    <td class="hide">{{post["post_id"]}}</td>
+                    <td><div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
+                    
+                    <br>
+                    {% if post['creator'] == "user" %}
+                        <button class='usereditbutton' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
+                    {% endif %}  
+                    {% if loop.last and post['creator'] == "model" %}
+                        <button class='modeleditbutton' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button> 
+                    {% endif %}
+                    <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span></td>
+
                 </tr>
-    
+
             {% endfor %}
 
         </tbody>
     </table>
 
-    <!--
-    If last record in posts isdirty then need to display the text in the newpost box
-    If not then need to create a new post
-    -->
-
     <div>
-        <input type="textarea" rows="4" cols="50" id="newprompt">
-    </div>
+        <div id="mode"></div>
+        <textarea id="newprompt" class="entry-textarea" oninput="updateCount()" onchange="handleInput(event)">{{story['newpost']}}</textarea>
+        <br>
+        <button onclick="cancelUpdate()">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+        <button onclick="post()">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+        In editPost it removes the chat history from that post onwards and resubmits the chat-->
+        <p>Character count: <span id="charCount">0</span></p>
 
-    <div>
-        <button class='postbutton' type="button" id="post" onclick="post()">Post</button>
     </div>
 </div>
 
-<script>
-
-function handleInput(event) {
-    var target = event.target.id;
-    var new_value = event.target.value;
-    
-    $.ajax({
-     url: "/update_story",
-      type: "post",
-      data: {'story_id': st_id, 'field' : target , 'new value' : new_value },
-      dataType: 'json',
-     success: function(response) {
-       console.log(response);
-       },
-     error: function(error) {
-       console.log(error);
-       }
-     })
-};
-
-function post() {
-    const prompt = document.getElementById("newprompt").value;
-    $.ajax({
-        url: "/generate",
-        type: "post",
-        data: {'story_id': st_id, 'prompt' : prompt },
-        dataType: 'json',
-        success: function(response) {
-            console.log(response);
-        },
-        error: function(error) {
-        console.log(error);
-        }
-    })
-};
-
-  </script>
 {% endblock content %}

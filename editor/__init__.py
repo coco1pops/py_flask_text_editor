@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 
-from editor import pages, database, stories, auth
+from editor import pages, database, stories, chat_service
 
 load_dotenv()
 
@@ -11,7 +11,8 @@ def create_app():
     app.config.from_prefixed_env()
 
     database.init_app(app)
-
+    chat_service.initialize_global_chat_service();
+    
     app.register_blueprint(pages.bp)
     app.register_blueprint(stories.bp)
 

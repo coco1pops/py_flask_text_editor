@@ -8,19 +8,19 @@ CREATE TABLE stories (
     title TEXT NOT NULL,
     note TEXT,
     systemInstruction TEXT,
-    author TEXT NOT NULL
+    author TEXT NOT NULL,
+    newprompt
 );
 
-DROP TABLE IF EXISTS post;
+DROP TABLE IF EXISTS posts;
 
 CREATE TABLE posts (
     post_id INTEGER PRIMARY KEY AUTOINCREMENT,
     story_id INTEGER NOT NULL,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    prompt TEXT NOT NULL,
+    creator TEXT NOT NULL,
     isdirty BOOLEAN DEFAULT false,
     message TEXT NOT NULL,
     FOREIGN KEY (story_id) REFERENCES stories(story_id)
         ON DELETE CASCADE
-        ON UPDATE CASCADE
 );
