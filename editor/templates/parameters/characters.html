@@ -1,16 +1,15 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}Stories{% endblock title %}</h2>
+  <h2>{% block title %}Characters{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
-<table id='storyTable'>
+<table id='charTable'>
   <thead>
     <th class="hide">id</th>
-    <th>Title</th>
-    <th>Note</th>
-    <th>Author</th>
+    <th>Name</th>
+    <th>Description</th>
     <th>Created</th>
     <th class="button_col">Update</th>
     <th class="button_col">Delete</th>
@@ -18,20 +17,19 @@
 
   <tbody>
 
-    {% for story in stories %}
-      <tr id="row_{{story['story_id']}}">
-        <td class="hide">{{story["story_id"]}}</td>
-        <td>{{story["title"]}}</td>
-        <td>{{story["note"]}}</td>
-        <td>{{story["author"]}}</td>
-        <td>{{story["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
+    {% for char in chars %}
+      <tr id="row_{{char['char_id']}}">
+        <td class="hide">{{char["char_id"]}}</td>
+        <td>{{char["name"]}}</td>
+        <td>{{char["description"]}}</td>
+        <td>{{char["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
         <td class="button_col">
           <form method="post">
-            <button type="submit" name="action" id="{{story['story_id']}}" value="{{story['story_id']}}" class="btn btn-secondary btn-sm">OK</button>
+            <button type="submit" name="action" id="{{char['char_id']}}" value="{{char['char_id']}}" class="btn btn-secondary btn-sm">OK</button>
           </form>
         </td>
         <td class="button_col">
-          <button class='btn btn-secondary btn-sm deletebutton' type="button" id="{{story['story_id']}}">OK</button>
+          <button class='btn btn-secondary btn-sm deletebutton' type="button" id="{{char['char_id']}}">OK</button>
         </td>
 
       </tr>
@@ -85,8 +83,8 @@
     function deleteClicked(id){
       showBootstrapConfirm((confirmed) => {
         if (confirmed) {
-          console.log("Confirmed delete row "+ id + "!");
-          deleteStory(id);
+          console.log("Confirmed delete character "+ id + "!");
+          deleteChar(id);
         }
         else {console.log ("Delete Cancelled.");
 
@@ -95,18 +93,18 @@
     );
     };
 
-    function deleteStory(id) {
+    function deleteChar(id) {
       $.ajax({
-      url: "/delete_story",
+      url: "/delete_char",
       type: "post",
-      data: {'story_id': id},
+      data: {'char_id': id},
       dataType: 'json',
       success: function(response) {
         console.log(response);
         var rowid = "row_" + id;
         var r = document.getElementById(rowid);
         var i = r.rowIndex;
-        document.getElementById("storyTable").deleteRow(i);
+        document.getElementById("charTable").deleteRow(i);
        },
       error: function(error) {
         console.log(error);

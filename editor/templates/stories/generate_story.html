@@ -115,11 +115,22 @@
         const row = btn.closest("tr");
         // Highlight the selected row
         row.classList.add("highlighted");
-        // Assign prompt to row contents
-        const row_id = ("message" + row.cells[0].textContent )
-        document.getElementById("newprompt").value = document.getElementById(row_id).textContent;
+        // retrieve prompt and assign to row contents
+       $.ajax({
+            url: "/get_message",
+            type: "get",
+            data: {'post_id': row.cells[0].textContent},
+            dataType: 'json',
+            success: function(response) {
+                console.log(response);
+                document.getElementById("newprompt").value = response['message'];
+                setFormMode(mode, row.cells[0].textContent)
+            },
+            error: function(error) {
+                console.log(error);
 
-        setFormMode(mode, row.cells[0].textContent)
+            }
+        })
 
     }
 
@@ -155,9 +166,8 @@
 {% block content %}
 
 <div id="top">
-    <h2> Story id: {{story['story_id']}}</h2>
-    <h2> Author {{story['author']}}</h2>
-    <p> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
+    <h2> Story id: {{story['story_id']}} Author {{story['author']}}</h2>
+    <p style="text-align: right;"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
 
 </div>
 
@@ -165,9 +175,9 @@
     <label for="title"> Title: </label>
     <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
     <label for="note"> Note: </label>
-    <input type="textarea" id="note" value="{{story['note']}}" onchange="handleInput(event)">
+    <input class="edit-text" type="textarea" id="note" value="{{story['note']}}" onchange="handleInput(event)">
     <label for="systemInstruction"> System Instruction: </label>
-    <input type="textarea" id="systemInstruction" value="{{story['systemInstruction']}}" onchange="handleInput(event)">
+    <input class="edit-text" type="textarea" id="systemInstruction" value="{{story['systemInstruction']}}" onchange="handleInput(event)">
 </div>
 
 <p id="output"></p>
@@ -185,16 +195,17 @@
                 <tr id="row_{{post['post_id']}}">
                     <td class="hide">{{post["post_id"]}}</td>
                     <td><div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
-                    
-                    <br>
-                    {% if post['creator'] == "user" %}
-                        <button class='usereditbutton' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
-                    {% endif %}  
-                    {% if loop.last and post['creator'] == "model" %}
-                        <button class='modeleditbutton' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button> 
-                    {% endif %}
-                    <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span></td>
-
+                    <div class="button_bar">
+                        {% if post['creator'] == "user" %}
+                            <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
+                        {% endif %}  
+                        {% if loop.last and post['creator'] == "model" %}
+                            <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
+                        {% else %}
+                            <div></div>     
+                        {% endif %}
+                        <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span></td>
+                    </div>
                 </tr>
 
             {% endfor %}
@@ -202,15 +213,18 @@
         </tbody>
     </table>
 
-    <div>
-        <div id="mode"></div>
+    <div class="controls-bar">
+        <h2 id="mode"></h2>
         <textarea id="newprompt" class="entry-textarea" oninput="updateCount()" onchange="handleInput(event)">{{story['newpost']}}</textarea>
         <br>
-        <button onclick="cancelUpdate()">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
-        <button onclick="post()">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
-        In editPost it removes the chat history from that post onwards and resubmits the chat-->
-        <p>Character count: <span id="charCount">0</span></p>
-
+        <div class="button_bar">
+            <button onclick="cancelUpdate()" class="btn btn-primary btn-lg">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+            <button onclick="post()" class="btn btn-primary btn-lg">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+            In editPost it removes the chat history from that post onwards and resubmits the chat-->
+            <div>
+                Character count: <span id="charCount">0</span>
+            </div>
+        </div>
     </div>
 </div>
 

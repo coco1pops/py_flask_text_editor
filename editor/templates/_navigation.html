@@ -1,8 +1,17 @@
-<nav>
-  <ul>
-    <li><a href="{{ url_for('pages.home') }}">Home</a></li>
-    <li><a href="{{ url_for('pages.about') }}">About</a></li>
-    <li><a href="{{ url_for('stories.stories') }}">All Stories</a></li>
-    <li><a href="{{ url_for('stories.create') }}">Add Story</a></li>
-  </ul>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a>
+        <img src="{{ url_for('static', filename='book.png')}}"  width="30" height="30" class="d-inline-block align-top" alt="">
+      </a>
+      <a class="navbar-brand" href=#>Story Writer</a>
+    </div>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item nav-link"><a href="{{ url_for('pages.home') }}">Home</a></li>
+        <li class="nav-item nav-link"><a href="{{ url_for('stories.stories') }}">All Stories</a></li>
+        <li class="nav-item nav-link"><a href="{{ url_for('stories.create') }}">Add Story</a></li>
+        <li class="nav-item nav-link"><a href="{{ url_for('pages.about') }}">About</a></li>
+      </ul>
+    </div>
 </nav>

@@ -8,8 +8,9 @@ from google import genai
 import markdown
 
 bp = Blueprint("stories", __name__)
-
-# Creates a new story
+#
+# Creates a new story and adds a system instruction record
+#
 @bp.route("/create", methods=["GET", "POST"])
 def create():
     if request.method == "POST":
@@ -20,12 +21,13 @@ def create():
 
         if story:
             db = get_db()
-            db.execute(
+            story_id = db.execute(
                 "INSERT INTO stories (author, title, note, systemInstruction) VALUES (?, ?, ? ,?)",
                 (author, story, note, systemInstruction),
-            )
+            ).lastrowid
             db.commit()
-            return redirect(url_for("stories.stories"))
+
+            return redirect(url_for("stories.generate_story", story_id=story_id))
         
     return render_template("stories/create.html")
 
@@ -42,11 +44,13 @@ def stories():
     ).fetchall()
     
     return render_template("stories/stories.html", stories=stories)
-
-# Deletes a story. The posts should be deleted automatically
+#
+# Deletes a story and related posts
+#
 @bp.route("/delete_story", methods=["POST"])
 def delete_story():
-    story_id=request.values.get("id")
+    story_id=request.values.get("story_id")
+    print(f"Requested delete of row {story_id}")
     if story_id:
         db = get_db()
         db.execute(
@@ -58,8 +62,31 @@ def delete_story():
         db.commit()
         return jsonify({'success': 'Record deleted'}), 200
     return jsonify({'error': 'Database delete failed'}), 406
+#
+# Updates an individual story
+#
+@bp.route("/update_story", methods=["POST"])
+def update_story():
+    story_id = request.values.get("story_id")
+    field = request.values.get("field")
+    value = request.values.get("new value")
 
+    print (f"Updating {story_id} {field} {value}")
+    if story_id:
+        db = get_db()
+        db.execute(
+            f"UPDATE stories SET {field} = (?) WHERE story_id = (?)", ( value, story_id)
+            )
+        if field == 'systemInstruction':
+            db.execute(
+                "UPDATE posts SET message = (?) WHERE story_id = (?) and creator = (?)", (value, story_id, "system",)
+                )
+        db.commit()
+        return jsonify({'success': 'Record udpdated'}), 200
+    return jsonify({'error': 'Database update failed'}), 406
+#
 # Used to display an individual story and the chat. Behind the scenes it also populates the chat with previous messages
+#
 @bp.route("/generate_story")
 def generate_story():
     story_id=request.values.get("story_id")
@@ -74,29 +101,24 @@ def generate_story():
     for row, post in enumerate(posts):
         format_posts.append({'post_id' : post['post_id'], 'created' : post['created'], 'creator' : post['creator'], 'message' : markdown.markdown(post['message'])})
 
-    chat = get_chat_service()
-    chat.reset_chat()
-    # Need to build history here
-
     return render_template("stories/generate_story.html",story=story, posts=format_posts)
 
-# Updates an individual story
-@bp.route("/update_story", methods=["POST"])
-def update_story():
-    story_id = request.values.get("story_id")
-    field = request.values.get("field")
-    value = request.values.get("new value")
+@bp.route("/get_message", methods=["GET"])
+def get_message():
+    post_id = request.values.get("post_id")
 
-    print (f"Updating {story_id} {field} {value}")
-    if story_id:
+    print (f"Retrieving {post_id}")
+    if post_id:
         db = get_db()
-        db.execute(
-            f"UPDATE stories SET {field} = (?) WHERE story_id = (?)", ( value, story_id))
-        db.commit()
-        return jsonify({'success': 'Record udpdated'}), 200
+        row=db.execute(
+            "SELECT message from posts WHERE post_id = (?)", ( post_id,)).fetchone()
+        return jsonify({"message": row['message']}), 200
     return jsonify({'error': 'Database update failed'}), 406
 
-#Generates a chat line from a prompt and inserts the response into the database
+
+#
+# Generates a chat line from a prompt and inserts the response into the database
+#
 @bp.route("/generate", methods=["POST"])
 def generate_text():
     story_id = request.values.get("story_id")
@@ -147,8 +169,6 @@ def generate_text():
                 "INSERT INTO posts (story_id, creator, message) VALUES (?, ?, ?)", (story_id, "user", prompt)
             ).lastrowid
             db.commit()
-
-
         except:
             return jsonify({'error': 'Prompt delete failed'}), 406   
     else:
@@ -157,7 +177,9 @@ def generate_text():
     # Next build the history
     #
     chat = get_chat_service()
-    chat.reset_chat()
+    db=get_db()
+    story=db.execute("SELECT systemInstruction from stories where story_id=(?)", (story_id,)).fetchone()
+    chat.reset_chat(story['systemInstruction'])
 
     try:
         db=get_db()

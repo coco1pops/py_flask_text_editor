@@ -37,6 +37,10 @@ class ChatService:
     def __init__(self):
         self.chat_model = None
         self.chat_session = None
+        self.generation_config = None
+        self.safety_settings =  [
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},]
         self._initialize()
 
     def _load_credentials(self):
@@ -88,17 +92,14 @@ class ChatService:
                 print("GenAI configured successfully with service account credentials.")
 
                 # --- Model Initialization ---
-                generation_config = GenerationConfig(
+                self.generation_config = GenerationConfig(
                     temperature=1.0,
-                    top_p=0.95,
-                    top_k=40,
-                    max_output_tokens=16384,
                     stop_sequences=[])
-            
+                
                 # This call requires the library to be configured (either here or elsewhere)
                 self.chat_model = genai.GenerativeModel(
                     model_name='gemini-2.5-flash-lite',
-                    generation_config=generation_config
+                    generation_config=self.generation_config
                 )
 
                 # Start a new chat session.
@@ -149,11 +150,17 @@ class ChatService:
             return []
         return self.chat_session.history
 
-    def reset_chat(self):
+    def reset_chat(self, systemInstruction):
         """
         Clears the current chat session and starts a new one.
         """
         print("Resetting chat session...")
+        self.chat_model = genai.GenerativeModel(
+                model_name='gemini-2.5-flash-lite',
+                generation_config=self.generation_config,
+                system_instruction=systemInstruction,
+                safety_settings=self.safety_settings
+                )
         self.chat_session = self.chat_model.start_chat(history=[])
         print("Chat session reset.")
     
