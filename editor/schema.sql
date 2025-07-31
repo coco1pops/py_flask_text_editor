@@ -24,3 +24,16 @@ CREATE TABLE posts (
     FOREIGN KEY (story_id) REFERENCES stories(story_id)
         ON DELETE CASCADE
 );
+
+DROP TABLE IF EXISTS chars;
+
+CREATE TABLE chars (
+    char_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name TEXT NOT NULL,
+    description TEXT,
+    personality TEXT, 
+    motivation TEXT,
+    image_data BLOB, 
+    image_mime_type TEXT
+);
