@@ -1,11 +1,12 @@
+import json
+
 from flask import (Blueprint, redirect, render_template, request, url_for, jsonify)
 
-from editor.database import get_db
 from editor.chat_service import get_chat_service
 
 from google import genai
 
-import markdown
+import editor.db
 
 bp = Blueprint("stories", __name__)
 #
@@ -20,13 +21,7 @@ def create():
         systemInstruction = request.form["systemInstruction"] or ""
 
         if story:
-            db = get_db()
-            story_id = db.execute(
-                "INSERT INTO stories (author, title, note, systemInstruction) VALUES (?, ?, ? ,?)",
-                (author, story, note, systemInstruction),
-            ).lastrowid
-            db.commit()
-
+            story_id = editor.db.insert_story(author, story, note, systemInstruction)
             return redirect(url_for("stories.generate_story", story_id=story_id))
         
     return render_template("stories/create.html")
@@ -38,10 +33,7 @@ def stories():
         story_id = request.form.get("action")
         return redirect(url_for("stories.generate_story", story_id=story_id))
 
-    db = get_db()
-    stories = db.execute(
-        "SELECT story_id, author, title, note, created FROM stories ORDER BY created DESC"
-    ).fetchall()
+    stories = editor.db.get_stories()
     
     return render_template("stories/stories.html", stories=stories)
 #
@@ -52,14 +44,7 @@ def delete_story():
     story_id=request.values.get("story_id")
     print(f"Requested delete of row {story_id}")
     if story_id:
-        db = get_db()
-        db.execute(
-            "DELETE FROM posts WHERE story_id=(?)", (story_id,)
-        )
-        db.commit()
-        db.execute(
-            "DELETE FROM stories WHERE story_id=(?)",(story_id,))
-        db.commit()
+        editor.db.delete_story(story_id)
         return jsonify({'success': 'Record deleted'}), 200
     return jsonify({'error': 'Database delete failed'}), 406
 #
@@ -73,15 +58,7 @@ def update_story():
 
     print (f"Updating {story_id} {field} {value}")
     if story_id:
-        db = get_db()
-        db.execute(
-            f"UPDATE stories SET {field} = (?) WHERE story_id = (?)", ( value, story_id)
-            )
-        if field == 'systemInstruction':
-            db.execute(
-                "UPDATE posts SET message = (?) WHERE story_id = (?) and creator = (?)", (value, story_id, "system",)
-                )
-        db.commit()
+        editor.db.update_story(story_id, field, value)
         return jsonify({'success': 'Record udpdated'}), 200
     return jsonify({'error': 'Database update failed'}), 406
 #
@@ -90,18 +67,12 @@ def update_story():
 @bp.route("/generate_story")
 def generate_story():
     story_id=request.values.get("story_id")
-        
-    db = get_db()
-    story=db.execute(
-        "SELECT story_id, author, title, note, systemInstruction, created FROM stories WHERE story_id = (?)", (story_id,)).fetchone()
-    posts = db.execute(
-        "SELECT post_id, created, creator, message FROM posts where story_id = (?) ORDER BY created ASC", (story_id,)).fetchall()
-    
-    format_posts = []
-    for row, post in enumerate(posts):
-        format_posts.append({'post_id' : post['post_id'], 'created' : post['created'], 'creator' : post['creator'], 'message' : markdown.markdown(post['message'])})
 
-    return render_template("stories/generate_story.html",story=story, posts=format_posts)
+    story=editor.db.get_story(story_id)
+    posts=editor.db.get_all_posts(story_id)
+    chars=editor.db.get_characters()
+
+    return render_template("stories/generate_story.html",story=story, posts=posts, chars=chars)
 
 @bp.route("/get_message", methods=["GET"])
 def get_message():
@@ -109,12 +80,17 @@ def get_message():
 
     print (f"Retrieving {post_id}")
     if post_id:
-        db = get_db()
-        row=db.execute(
-            "SELECT message from posts WHERE post_id = (?)", ( post_id,)).fetchone()
-        return jsonify({"message": row['message']}), 200
-    return jsonify({'error': 'Database update failed'}), 406
-
+        message = editor.db.get_message(post_id)
+        return jsonify({"message": message}), 200
+    return jsonify({'error': 'Database read failed'}), 406
+#
+# Assigns a character to a story
+#
+@bp.route('/assignChar', methods=['POST'])
+def assignChar():
+    char_id = request.form['char_id']
+    resp = editor.db.build_char(char_id)
+    return jsonify(resp), 200
 
 #
 # Generates a chat line from a prompt and inserts the response into the database
@@ -125,85 +101,46 @@ def generate_text():
     prompt = request.values.get("prompt")
     mode = request.values.get("mode")
     row_id = request.values.get("row_id")
+    chars=json.loads(request.values.get("chars", []))
 
     if not prompt:
         return jsonify({"error": "Invalid input. Please provide a JSON object with a 'prompt' key."}), 400
     
-    print(f"Received prompt: '{prompt}', Mode '{mode}' Row '{row_id}'")
+    print(f"Received prompt: {prompt}, Mode {mode} Row {row_id} {chars} ")
     #
-    # First amend the database to reflect the changes
+    # If Edit then all you need to do is update the database
     #
-    inserted_id=-1
-    if mode == "New":
-        try:
-            db=get_db()
-            inserted_id=db.execute (
-                "INSERT INTO posts (story_id, creator, message) VALUES (?, ?, ?)", (story_id, "user", prompt)
-            ).lastrowid
-            db.commit()
-            print (f"Last Row {inserted_id}")
-
-        except Exception as e:
-            print (f"Insert Exception {e}")
-            return jsonify({'error': 'Prompt insert failed'}), 406
-
-    elif mode == "Edit Response":
-        try:
-            db=get_db()
-            db.execute (
-                "UPDATE posts SET (message) = (?) WHERE post_id = (?)", (prompt, row_id)           
-            )
-            db.commit()
-        except:
-            return jsonify({'error': 'Prompt update failed'}), 406
-
-    elif mode == "Edit Prompt":
-        try:
-            db=get_db()
-            db.execute (
-                "DELETE FROM posts WHERE story_id = (?) and post_id >= (?)", (story_id, row_id,)           
-            )
-            db.commit()
-
-            inserted_id=db.execute (
-                "INSERT INTO posts (story_id, creator, message) VALUES (?, ?, ?)", (story_id, "user", prompt)
-            ).lastrowid
-            db.commit()
-        except:
-            return jsonify({'error': 'Prompt delete failed'}), 406   
-    else:
-        return jsonify({'error': 'Invalid mode'}), 406
-    #
-    # Next build the history
-    #
-    chat = get_chat_service()
-    db=get_db()
-    story=db.execute("SELECT systemInstruction from stories where story_id=(?)", (story_id,)).fetchone()
-    chat.reset_chat(story['systemInstruction'])
-
-    try:
-        db=get_db()
-        posts = db.execute (
-                "SELECT post_id, creator, message FROM posts WHERE story_id = (?) ORDER BY post_id ASC", (story_id,)           
-            ).fetchall()
-    except:
-        return jsonify({'error': 'Retrieving Posts'}), 406 
-
-    print ("Retrieved Posts")
-    for post in posts:
-        if post['post_id'] != inserted_id or mode == "Edit Response": # Don't include latest post
-            chat.add_history(post['creator'], post['message'])
-
     if mode == "Edit Response":
-        return jsonify({'success': 'Prompt Updated'}), 200
+        success = editor.db.update_message(row_id, prompt)
+        if success:
+            return jsonify({'success': 'Prompt update succeeded'}), 200
+        else:
+            return jsonify({'error': 'Prompt update failed'}), 406
     
-    print ("Trying to send prompt")
     #
-    # Need to generate new content
+    # If editing prompt need to delete everything after the prompt
+    #
+    if mode=="Edit Prompt":
+            editor.db.delete_posts_from(story_id, row_id)
+
+    # Try to generate more chat
+    # Build the chat service
+    chat = get_chat_service()
+    story = editor.db.get_story(story_id)
+    chat.reset_chat(story['systemInstruction'])
+    buildHistory(chat, story_id)
+    #
+    # Generating new content
     #    
     try:
+        if len(chars) == 0:
+            parsed_prompt = prompt
+        else:
+            parsed_prompt = buildPrompt(prompt, chars)
+        print (f"Trying to send prompt {parsed_prompt}")
         # Generate content
-        message = chat.send_message(prompt)
+        # prompt here could be just a message or a multimodal structure
+        message = chat.send_message(parsed_prompt)
     
     except Exception as e:
         print(f"Error generating content: {e}")
@@ -211,18 +148,94 @@ def generate_text():
         print("Exception Message:", str(e))
 
         return jsonify({"error": str(e)}), 500
-    
-    if message:
-        try:
-            db=get_db()
-            db.execute(
-                "INSERT INTO posts (story_id, creator, message) VALUES (?, ?, ?)", (story_id, "model", message)
-            )
-            db.commit()
-        except Exception as e:
-            print(f"Error adding prompt")
-            return jsonify({"error": str(e)}), 500
+    #
+    # Storing prompt and responses
+    #
+    try:
+        #
+        # This will remove all the parts of the prompt
+        #
+        if mode=="Edit Prompt":
+            editor.db.delete_posts_from(story_id, row_id)
+        #
+        # Reinsert updated prompt 
+        #
+        if len(chars) > 0:
+            multi=True
+        else:
+            multi=False
+
+        post = editor.db.insert_post(story_id, "user", prompt, multi)
+        for ix in chars:
+            part = editor.db.get_character_raw(ix)
+            text_part = buildChar(part['name'], part['description'], part['personality'], part['motivation'])
+            editor.db.insert_post_text_part(story_id, post, text_part)
+            if part['image_mime_type'] != "":
+                editor.db.insert_post_image_part(story_id, post, part['image_data'], part['image_mime_type'])
+        #
+        # Insert new message
+        #
+        editor.db.insert_post(story_id, "model", message, False)
 
         return jsonify({'success': 'New Response Added'}), 200
+    except: 
+        print(f"Error storing content: {e}")
+        print("Exception Type:", type(e).__name__)
+        print("Exception Message:", str(e))
 
-'''//       return jsonify({"response": response_text})'''
+        return jsonify({"error": str(e)}), 500
+
+def buildHistory(chat, story_id):
+    multimodal=False
+    multimessage=[]
+    posts = editor.db.get_all_posts_raw(story_id)
+    for post in posts:
+        # Tidy up outstanding messages if building multi-modal message
+        if post['source']=='post' and multimodal:
+            chat.add_history("user", post['content'])
+            multimodal=False
+            multimessage=[]
+        # For parts simply add to multimessage
+        if post['source']=='part':
+            if post['part_type']=='text':
+                multimessage.append({"text": post['part_text']})
+            elif post['part_type']=='image':
+                multimessage.append({"inline_data" : {"mime_type": post['part_image_mime_type'], "data" : post['part_image_data']}})
+        else: # Getting here we have a post 
+            if post['multi_modal']: # Create a new multimessage
+                multimodal=True
+                multimessage=[]
+                multimessage.append({"text" : post['content']})
+            else:
+                chat.add_history(post['creator'], post['content']) # Normal post
+
+    if multimodal:
+        chat.add_history("user", multimessage)
+
+
+def buildPrompt(content, chars):
+    multi_modal_content=[]
+    multi_modal_content.append({"text" : content})
+    for ix in chars:
+        char = editor.db.get_character_raw(ix)
+        txtprompt = buildChar(char['name'], char['description'], char['personality'], char['motivation'])
+
+        multi_modal_content.append({"text": txtprompt})
+        if char["image_mime_type"] != "":
+            multi_modal_content.append({"inline_data": {"mime_type": char["image_mime_type"], "data": char["image_data"]}})
+
+    return multi_modal_content
+    
+def buildChar(name, description, personality, motivation):
+    resp = f"This picture shows **{name}**\n\n"
+
+    if description != "":
+        resp = f"{resp}**Description:** {description}\n\n"
+
+    if personality != "":
+        resp = f"{resp}**Personality:** {personality}\n\n"
+
+    if motivation != "":
+        resp = f"{resp}**Motivation:** {motivation}\n\n"
+
+    return resp

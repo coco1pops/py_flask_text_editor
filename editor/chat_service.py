@@ -134,7 +134,7 @@ class ChatService:
 
         try:
             print(f"User: {message}")
-            response = self.chat_session.send_message(message)
+            response = self.chat_session.send_message({"role": "user", "parts": message})
             response_text = response.text
             print(f"Model: {response_text}")
             return response_text

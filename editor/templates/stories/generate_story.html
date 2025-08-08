@@ -1,43 +1,131 @@
 {% extends 'base.html' %}
 
-<!--
-
-    newprompt is used for making any changes
-    This can either be for a user prompt or the last model prompt
-
-    All user entries can be edited. This should:
-    - highlight the row
-    - move the row to the prompt box
-    - enable a submit and cancel button  
-    
-    Submit should:
-    - unhighlight the row
-    - delete the row and any posts/chat history after the row
-    - resubmit the chat with the revised prompt
-    - clear the prompt box and underlying database
-    - on completion, redisplay the form
-
-    Cancel should:
-    - unhighlight the row
-    - clear the prompt box
-
-    If the last entry is a model-entry, it can be edited. This should
-    - highlight the row
-    - move the row to the prompt box
-    - enable submit and cancel
-
-    Submit should:
-    - update the row
-    - update the chat history
-
-    Cancel should:
-    - unhighlight the row
-    - clear the prompt box
--->
-
 {% block header %}
   <h2>{% block title %}Update Story{% endblock title %}</h2>
+
+
+{% endblock header %}
+
+{% block content %}
+
+<div id="top">
+    <h2> Story id: {{story['story_id']}} Author {{story['author']}}</h2>
+    <p style="text-align: right;"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
+
+</div>
+
+<div id="controls">
+    <label for="title"> Title: </label>
+    <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
+    <div class="button_bar">
+        <div class="edit-text">
+            <label for="note"> Note: </label>
+            <textarea class="form-control" rows="6" id="note" onchange="handleInput(event)">{{story['note']}}</textarea>
+        </div>
+        <div class="edit-text">
+            <label for="systemInstruction"> System Instruction: </label>
+            <textarea class="form-control" rows="6" id="systemInstruction" onchange="handleInput(event)">{{story['systemInstruction']}}</textarea> 
+        </div>
+    </div>
+</div>
+
+<p id="output"></p>
+
+<div id="posts">
+    <table id='postsTable'>
+        <thead>
+            <th class="hide">id</th>
+            <th>Message</th>
+         </thead>
+
+        <tbody>
+
+            {% for post in posts %}
+                <tr id="row_{{post['post_id']}}">
+                    <td class="hide">{% if post.part_type == "text" %}None{% else %}{{post["post_id"]}}{% endif %}</td>
+                    <td>
+                        {% if post.part_type=="text" %}
+                            <div class="row border p-3 mb-3 align-items-start">
+ 
+                                {%if post.image_mime_type != ""%}
+                                    <div class="col-auto">
+                                        <img src="{{post['image_data']}}" class="img-fluid" style="max-width:300px; vertical-align: middle;" />
+                                    </div>
+                                {% endif %}
+                                <div class="col d-flex flex-column h-100 justify-content-between">
+                                    <p>{{post["message"]| safe }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
+                            <div class="button_bar">
+                                {% if post['creator'] == "user" %}
+                                    <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
+                                {% endif %}  
+                                {% if loop.last and post['creator'] == "model" %}
+                                    <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
+                                {% else %}
+                                    <div></div>     
+                                {% endif %}
+
+                        {% endif %}
+                        <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span>
+                    </td>
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+    <div class="controls-bar">
+        <h2 id="mode"></h2>
+        <textarea id="newprompt" class="entry-textarea" oninput="updateCount()" onchange="handleInput(event)">{{story['newpost']}}</textarea>
+        <br>
+        <div class="button_bar">
+            <button onclick="cancelUpdate()" class="btn btn-primary btn-lg">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+            <button onclick="post()" class="btn btn-primary btn-lg">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+            In editPost it removes the chat history from that post onwards and resubmits the chat-->
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add Character</button>
+            <div>
+                Character count: <span id="charCount">0</span>
+            </div>
+        </div>
+        <div id="placeholder" style="margin-top: 30px"></div>
+    </div>
+
+    <!-- Modal Add Character -->
+    <div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <form id="assignCharForm">
+                <div class="modal-header">
+                <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                <div class="mb-3">
+                    <label for="charSelect" class="form-label">Choose a Character</label>
+                    <select class="form-select" id="charSelect" name="char_id" required>
+                    {% for char in chars %}
+                        <option value="{{ char.char_id }}">
+                        {{ char.name }}
+                        </option>
+                    {% endfor %}
+                    </select>
+                </div>
+                </div>
+                <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Add</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
   <script>  
+    //
     // Function to update the number of characters in the prompt
     // TODO:Could be changed to calculate tokens
     //
@@ -45,6 +133,7 @@
         const text = document.getElementById("newprompt").value;
         document.getElementById("charCount").textContent = text.length;
     };
+    //
     // Function to update a field on the stories table
     // TODO: Error and success console logging might be improved
     //
@@ -88,7 +177,9 @@
             }
         })
     };
+    //
     // Generic function to post prompts to the back-end
+    // Reload at the end populates the screen again.
     // TODO: Error and success console logging might be improved
     //  
     function post() {
@@ -96,21 +187,25 @@
         $.ajax({
             url: "/generate",
             type: "post",
-            data: {'story_id': st_id, 'prompt' : prompt, "mode" : AppState.formMode, 'row_id' : AppState.editRow },
+            data: {'story_id': st_id, 
+                'prompt' : prompt, 
+                "mode" : AppState.formMode, 
+                'row_id' : AppState.editRow, 
+                'chars' : JSON.stringify(AppState.chars)},
             dataType: 'json',
             success: function(response) {
                 console.log(response);
                 window.location.reload();
-
             },
             error: function(error) {
                 console.log(error);
 
             }
         })
-
     };
-  
+    //
+    // Used to retrieve a row. Only works for posts, not parts
+    //
     function selectRow(btn, mode){
         const row = btn.closest("tr");
         // Highlight the selected row
@@ -124,30 +219,90 @@
             success: function(response) {
                 console.log(response);
                 document.getElementById("newprompt").value = response['message'];
+                window.scrollTo(0, document.body.scrollHeight);
                 setFormMode(mode, row.cells[0].textContent)
             },
             error: function(error) {
                 console.log(error);
-
             }
         })
-
     }
+    //
+    // Used to create and display a container with a character and the associated text
+    //
+    function buildchar(id, mime_type, img, text){
+        // 1. Create the container
+        const container = document.createElement('div');
+        container.id = 'Container_'+id;
+        container.className = 'row border p-3 mb-3 align-items-start characters';
 
+        // 2. Create the image
+        if (mime_type != ""){
+            imgContainer = document.createElement('div');
+            imgContainer.className = 'col-auto';
+            const imgout = document.createElement('img');
+            imgout.src = img; //  base64 string
+            imgout.alt = 'Preview';
+            imgout.style = "width: 200px;"
+            imgout.className = 'img-fluid';
+            imgContainer.appendChild(imgout);
+            container.appendChild(imgContainer);
+        }
+        // 3. Create the text
+        const tbox1 = document.createElement('div');
+        tbox1.className="col";
+        const tbox2 = document.createElement('div');
+        tbox2.classname="d-flex flex-column h-100 justify-content-between"
+        const textout = document.createElement('p');
+        textout.innerHTML = text;
+        textout.className = 'mt-2 text-muted';
+        const tbutton = document.createElement('div');
+        tbutton.className="text-end";
+        const clearbutton = document.createElement('button');
+        clearbutton.className="btn btn-secondary";
+        clearbutton.textContent="Clear";
+        clearbutton.type="button";
+        clearbutton.id="clear_" + id;
+        tbutton.appendChild(clearbutton);
+        tbox2.appendChild(textout);
+        tbox2.appendChild(tbutton);
+        tbox1.appendChild(tbox2);
+        container.appendChild(tbox1);
+
+        // 4. Append the container to the page
+        const main = document.getElementById("placeholder");
+        main.appendChild(container);
+        // 5. Enable the clear button to delete the html component
+        document.getElementById("clear_" + id).onclick = function(event) {
+            var target = event.target.id;
+            const number = target.split("_")[1];
+            const contdel = "Container_" + number;
+            document.getElementById(contdel).remove();
+            const ix = AppState.chars.indexOf(number); 
+            AppState.chars.splice(ix, 1);
+        }
+        return true;
+    }
+    // 
+    // Used to determine if form is in add or edit mode and to blank list of characters
+    //
     function setFormMode(mode, row_id){
         AppState.formMode = mode;
         AppState.editRow = row_id;
         document.getElementById("mode").textContent = mode + " Mode";
+        AppState.chars =[]
     };
-    
+    //
+    // Add components to form
+    //
     const urlParams = new URLSearchParams(window.location.search);
     const st_id = urlParams.get('story_id');
 
     const AppState = {
         formMode: "New",
-        editRow: -1, 
+        editRow: -1,
+        chars: [] 
     };
-
 
     document.addEventListener("DOMContentLoaded", function () {
         updateCount();
@@ -158,74 +313,30 @@
         window.scrollTo(0, document.body.scrollHeight);
     });
 
+    document.getElementById('assignCharForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById("charSelect").value
+        $.ajax({
+            url: "/assignChar",
+            type: "post",
+            data: {'char_id': id},
+            dataType: "json",
+            success: function(response) {
+                AppState.chars.push(id);
+                buildchar(id, response['image_mime_type'], response['img'], response['text'])
+                const modal = bootstrap.Modal.getInstance(document.getElementById('assignCharModal'));
+                modal.hide();
+
+            },
+            error: function(error) {
+                console.log(error);
+
+            }
+    
+        });
+    }
+    )
 
 </script>
-
-{% endblock header %}
-
-{% block content %}
-
-<div id="top">
-    <h2> Story id: {{story['story_id']}} Author {{story['author']}}</h2>
-    <p style="text-align: right;"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
-
-</div>
-
-<div id="controls">
-    <label for="title"> Title: </label>
-    <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
-    <label for="note"> Note: </label>
-    <input class="edit-text" type="textarea" id="note" value="{{story['note']}}" onchange="handleInput(event)">
-    <label for="systemInstruction"> System Instruction: </label>
-    <input class="edit-text" type="textarea" id="systemInstruction" value="{{story['systemInstruction']}}" onchange="handleInput(event)">
-</div>
-
-<p id="output"></p>
-
-<div id="posts">
-    <table id='postsTable'>
-        <thead>
-            <th class="hide">id</th>
-            <th>Message</th>
-         </thead>
-
-        <tbody>
-
-            {% for post in posts %}
-                <tr id="row_{{post['post_id']}}">
-                    <td class="hide">{{post["post_id"]}}</td>
-                    <td><div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
-                    <div class="button_bar">
-                        {% if post['creator'] == "user" %}
-                            <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
-                        {% endif %}  
-                        {% if loop.last and post['creator'] == "model" %}
-                            <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
-                        {% else %}
-                            <div></div>     
-                        {% endif %}
-                        <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span></td>
-                    </div>
-                </tr>
-
-            {% endfor %}
-
-        </tbody>
-    </table>
-
-    <div class="controls-bar">
-        <h2 id="mode"></h2>
-        <textarea id="newprompt" class="entry-textarea" oninput="updateCount()" onchange="handleInput(event)">{{story['newpost']}}</textarea>
-        <br>
-        <div class="button_bar">
-            <button onclick="cancelUpdate()" class="btn btn-primary btn-lg">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
-            <button onclick="post()" class="btn btn-primary btn-lg">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
-            In editPost it removes the chat history from that post onwards and resubmits the chat-->
-            <div>
-                Character count: <span id="charCount">0</span>
-            </div>
-        </div>
-    </div>
-</div>
 
 {% endblock content %}
