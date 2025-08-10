@@ -5,5 +5,12 @@
 {% endblock header %}
 
 {% block content %}
-  <p>This is a message board for friendly messages.</p>
+  <h2>Instructions</h2>
+
+  <ol type="1">
+    <li><b>Prepare Characters:</b> Existing characters are available from <a href="{{ url_for('parameters.chars') }}">All Characters</a>. If none are suitable, use <a href="{{ url_for('parameters.createchar') }}">Add Character</a> to add the new ones you need. Characters have a name, description, personalityy and motivation and can have an associated picture</li>
+    <li><b>Add Story:</b> Use the <a href="{{ url_for('stories.create') }}">Add Story</a> option. Each story needs a header comprising an author, a title, a note and system instructions. The note is just for reference and displayed in the the <a href="{{ url_for('stories.stories') }}">All Stories</a> option. System instructions guide the AI and can be changed </li> 
+    <li><b>Build the Story:</b> If you add a post, the AI will respond. You can add characters to posts to give the AI a good background. You can edit the last response from the AI and previous prompts. Editing a prior prompt will delete subsequent prompts and AI responses</li>
+    <li><b>Maintain Story:</b> Use <a href="{{ url_for('stories.stories') }}">All Stories</a> to select a story and modify it. You can also use this form to delete a story</li>
+  </ol>
 {% endblock content %}

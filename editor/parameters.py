@@ -1,6 +1,8 @@
 from flask import (Flask, Blueprint, render_template, request, redirect, url_for, jsonify, current_app)
 
 import os
+import logging
+import base64
 
 import editor.db
 
@@ -12,10 +14,9 @@ bp = Blueprint("parameters", __name__)
 @bp.route("/createchar/<int:char_id>", methods=["GET", "POST"])
 @bp.route("/createchar", methods=["GET", "POST"])
 def createchar(char_id=None):
-    print (f"{request.method} char id {char_id}")
     if char_id:
         char=editor.db.get_character(char_id)
-        print (f"Character {char['char_id']}")
+        logging.debug (f"Updating character {char['char_id']}")
     else:
         char=None
         
@@ -29,16 +30,15 @@ def createchar(char_id=None):
             image_bytes = image_file.read()
             mimeType = image_file.mimetype
 
-        print(f"After POST char id {char_id}")
         if char_id == None:
-            print ("Insert")
+            logging.debug("Inserting new character")
             char_id = editor.db.insert_character(name, description, personality, motivation)
-            print (f"Inserted row {char_id}")
+            logging.debug(f"Inserted character {char_id}")
             if image_file:
                 editor.db.update_character_image(char_id,image_bytes, mimeType)
             char = editor.db.get_character(char_id)
         else:
-            print ("Update")
+            logging.debug(f"Updated character {char_id}")
             editor.db.update_all_character(char_id, name, description, personality, motivation)
             if image_file:
                 editor.db.update_character_image(char_id,image_bytes, mimeType)
@@ -60,7 +60,7 @@ def getchar():
 @bp.route("/deletechar",methods=["POST"])
 def delchar():
     char_id=request.values.get("char_id")
-    print (f"char id {char_id}")
+    logging.debug(f"Deleting character {char_id}")
     editor.db.delete_character(char_id)
     return jsonify({"response" : "Success"}), 200
 
@@ -76,7 +76,7 @@ def chars():
 @bp.route("/checkimage", methods=["POST"])
 def checkimage():
     f = request.files["file"]
-    print (f"filename {f.filename}")
+    logging.debug(f"Checking image filename {f.filename}")
 
     ext = os.path.splitext(f.filename)[1]
     ext = ext.lower()

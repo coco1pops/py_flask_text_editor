@@ -1,6 +1,7 @@
 from editor.database import get_db
 import base64
 import markdown
+import logging
 #
 # Character database functions
 #
@@ -14,7 +15,7 @@ def get_characters():
         return False
 
 def get_character(char_id):
-    db = get_db()
+    
     try:         
         row = get_character_raw(char_id)
         
@@ -127,7 +128,18 @@ def get_story(story_id):
     except Exception as e:
         print_except("get_story",e)
         return False
-
+    
+def get_latest_story():
+    try:
+        db = get_db()
+        story = db.execute (
+            "SELECT story_id, author, title, note FROM stories WHERE created = (SELECT MAX(created) from stories)"
+        ).fetchone()
+        return story
+    except Exception as e:
+        print_except("get_latest_story", e)
+        return False
+    
 def insert_story(author, title, note, systemInstruction):
     try:
         db = get_db()
@@ -243,9 +255,9 @@ def get_all_posts(story_id):
 def get_all_posts_raw(story_id):
     try:
         db = get_db()
-        posts = db.execute(
-            "SELECT post_id, created, creator, multi_modal, content, source, part_type, part_text, part_image_data, part_image_mime_type from unified_post_timeline WHERE story_id=(?) ORDER BY post_id, created ASC",
-                (story_id,)).fetchall()
+        select_string = "SELECT post_id, created, creator, multi_modal, content, source, part_type, part_text, part_image_data, part_image_mime_type"
+        select_string = f"{select_string} from unified_post_timeline WHERE story_id=(?) ORDER BY post_id, created ASC"
+        posts = db.execute(select_string,(story_id,)).fetchall()
     
         return posts
 
@@ -308,6 +320,6 @@ def insert_post_image_part(story_id, post_id, part_image_data, part_image_mime_t
         return False
 
 def print_except(func, e):
-        print(f"{func} Database error: {e}")
-        print("Exception Type:", type(e).__name__)
-        print("Exception Message:", str(e))
+        logging.exception(f"{func} Database error: {e}")
+        logging.exception("Exception Type:", type(e).__name__)
+        logging.exception("Exception Message:", str(e))

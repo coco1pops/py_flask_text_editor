@@ -1,10 +1,9 @@
 import json
+import logging
 
 from flask import (Blueprint, redirect, render_template, request, url_for, jsonify)
 
 from editor.chat_service import get_chat_service
-
-from google import genai
 
 import editor.db
 
@@ -15,6 +14,7 @@ bp = Blueprint("stories", __name__)
 @bp.route("/create", methods=["GET", "POST"])
 def create():
     if request.method == "POST":
+        logging.debug("Creating story ")
         author = request.form["author"] or "Anonymous"
         story = request.form["title"]
         note = request.form["note"] or ""
@@ -42,7 +42,7 @@ def stories():
 @bp.route("/delete_story", methods=["POST"])
 def delete_story():
     story_id=request.values.get("story_id")
-    print(f"Requested delete of row {story_id}")
+    logging.debug(f"Requested delete of row {story_id}")
     if story_id:
         editor.db.delete_story(story_id)
         return jsonify({'success': 'Record deleted'}), 200
@@ -56,7 +56,7 @@ def update_story():
     field = request.values.get("field")
     value = request.values.get("new value")
 
-    print (f"Updating {story_id} {field} {value}")
+    logging.debug(f"Updating {story_id} {field} {value}")
     if story_id:
         editor.db.update_story(story_id, field, value)
         return jsonify({'success': 'Record udpdated'}), 200
@@ -78,7 +78,7 @@ def generate_story():
 def get_message():
     post_id = request.values.get("post_id")
 
-    print (f"Retrieving {post_id}")
+    logging.debug(f"Retrieving message for {post_id}")
     if post_id:
         message = editor.db.get_message(post_id)
         return jsonify({"message": message}), 200
@@ -106,7 +106,7 @@ def generate_text():
     if not prompt:
         return jsonify({"error": "Invalid input. Please provide a JSON object with a 'prompt' key."}), 400
     
-    print(f"Received prompt: {prompt}, Mode {mode} Row {row_id} {chars} ")
+    logging.debug(f"Received prompt: {prompt[:30]}, Mode {mode} Row {row_id} {chars} ")
     #
     # If Edit then all you need to do is update the database
     #
@@ -121,6 +121,7 @@ def generate_text():
     # If editing prompt need to delete everything after the prompt
     #
     if mode=="Edit Prompt":
+            logging.debug(f"Deleting older posts from {row_id}")
             editor.db.delete_posts_from(story_id, row_id)
 
     # Try to generate more chat
@@ -135,17 +136,18 @@ def generate_text():
     try:
         if len(chars) == 0:
             parsed_prompt = prompt
+            logging.debug (f"Trying to send prompt {prompt[:30]}")
         else:
             parsed_prompt = buildPrompt(prompt, chars)
-        print (f"Trying to send prompt {parsed_prompt}")
+            logging.debug ("Trying to send multiprompt")
         # Generate content
         # prompt here could be just a message or a multimodal structure
         message = chat.send_message(parsed_prompt)
     
     except Exception as e:
-        print(f"Error generating content: {e}")
-        print("Exception Type:", type(e).__name__)
-        print("Exception Message:", str(e))
+        logging.error(f"Error generating content: {e}")
+        logging.error("Exception Type:", type(e).__name__)
+        logging.error("Exception Message:", str(e))
 
         return jsonify({"error": str(e)}), 500
     #
@@ -153,17 +155,14 @@ def generate_text():
     #
     try:
         #
-        # This will remove all the parts of the prompt
-        #
-        if mode=="Edit Prompt":
-            editor.db.delete_posts_from(story_id, row_id)
-        #
-        # Reinsert updated prompt 
+        # Insert new prompt 
         #
         if len(chars) > 0:
             multi=True
         else:
             multi=False
+
+        logging.debug("Inserting new prompt into database")
 
         post = editor.db.insert_post(story_id, "user", prompt, multi)
         for ix in chars:
@@ -179,9 +178,9 @@ def generate_text():
 
         return jsonify({'success': 'New Response Added'}), 200
     except: 
-        print(f"Error storing content: {e}")
-        print("Exception Type:", type(e).__name__)
-        print("Exception Message:", str(e))
+        logging.error(f"Error storing content: {e}")
+        logging.error("Exception Type:", type(e).__name__)
+        logging.error("Exception Message:", str(e))
 
         return jsonify({"error": str(e)}), 500
 

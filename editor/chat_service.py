@@ -3,6 +3,9 @@ import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from google.auth.exceptions import DefaultCredentialsError
 
+import logging
+import os
+
 # --- Global instance of the ChatService ---
 chat_service_instance = None # Initialize to None
 
@@ -12,9 +15,9 @@ def initialize_global_chat_service():
     global chat_service_instance
     try:
         chat_service_instance = ChatService()
-        print(f"Global ChatService instance created.")
+        logging.debug(f"Global ChatService instance created.")
     except (ValueError, RuntimeError) as e:
-        print(f"CRITICAL ERROR: Failed to initialize ChatService module: {e}")
+        logging.exception(f"CRITICAL ERROR: Failed to initialize ChatService module: {e}")
         chat_service_instance = None # Ensure it's None if initialization fails
 
 # --- Helper function to get the instance ---
@@ -47,25 +50,29 @@ class ChatService:
         # --- Load Credentials ---
         credentials = None
         try:
-            # Attempt to load credentials from the specified service account file
-            credentials, project_id = google.auth.load_credentials_from_file(SERVICE_ACCOUNT_FILE_PATH)
-            print(f"Successfully loaded credentials from '{SERVICE_ACCOUNT_FILE_PATH}'")
+            if os.getenv('ENVIRONMENT') == 'Production':
+                credentials, project_id = google.auth.default()
+                logging.debug("Successfully loaded default credentials")
+            else:
+                # Attempt to load credentials from the specified service account file
+                credentials, project_id = google.auth.load_credentials_from_file(SERVICE_ACCOUNT_FILE_PATH)
+                logging.debug(f"Successfully loaded credentials from '{SERVICE_ACCOUNT_FILE_PATH}'")
 
-            # If you are running this on Google Cloud infrastructure (e.g., GCE, Cloud Run),
-            # google.auth.load_credentials_from_file() might not be needed if ADC are automatically available.
-            # In that case, you could simply rely on:
-            # credentials, project_id = google.auth.default()
+                # If you are running this on Google Cloud infrastructure (e.g., GCE, Cloud Run),
+                # google.auth.load_credentials_from_file() might not be needed if ADC are automatically available.
+                # In that case, you could simply rely on:
+                # credentials, project_id = google.auth.default()
 
         except FileNotFoundError:
-            print(f"Error: Service account file '{SERVICE_ACCOUNT_FILE_PATH}' not found.")
+            logging.exception(f"Error: Service account file '{SERVICE_ACCOUNT_FILE_PATH}' not found.")
             credentials = None
         except DefaultCredentialsError:
-            print("Error: Could not automatically find default credentials.")
-            print("Ensure GOOGLE_APPLICATION_CREDENTIALS environment variable is set,")
-            print("or the service account file is correctly specified.")
+            logging.exception("Error: Could not automatically find default credentials.")
+            logging.exception("Ensure GOOGLE_APPLICATION_CREDENTIALS environment variable is set,")
+            logging.exception("or the service account file is correctly specified.")
             credentials = None
         except Exception as e:
-            print(f"An error occurred loading credentials: {e}")
+            logging.exception(f"An error occurred loading credentials: {e}")
             credentials = None
         return credentials
     
@@ -89,7 +96,7 @@ class ChatService:
                 # You might need to know the project ID associated with the service account
                 # if the GenAI SDK requires it for certain operations.
 
-                print("GenAI configured successfully with service account credentials.")
+                logging.debug("GenAI configured successfully with service account credentials.")
 
                 # --- Model Initialization ---
                 self.generation_config = GenerationConfig(
@@ -106,7 +113,7 @@ class ChatService:
                 # Note: If the library was configured via credentials, it will use those.
                 self.chat_session = self.chat_model.start_chat(history=[])
 
-                print("ChatService initialized successfully.")
+                logging.debug("ChatService initialized successfully.")
 
             except Exception as e:
                 # This exception will catch errors if the library wasn't configured
@@ -133,13 +140,13 @@ class ChatService:
             return "Please provide a message."
 
         try:
-            print(f"User: {message}")
+            logging.debug(f"Sending user prompt...")
             response = self.chat_session.send_message({"role": "user", "parts": message})
             response_text = response.text
-            print(f"Model: {response_text}")
+            logging.debug(f"Received model response: {response_text[:30]}")
             return response_text
         except Exception as e:
-            print(f"Error sending message: {e}")
+            logging.error(f"Error sending message: {e}")
             raise
 
     def get_chat_history(self):
@@ -154,7 +161,7 @@ class ChatService:
         """
         Clears the current chat session and starts a new one.
         """
-        print("Resetting chat session...")
+        logging.debug("Resetting chat session...")
         self.chat_model = genai.GenerativeModel(
                 model_name='gemini-2.5-flash-lite',
                 generation_config=self.generation_config,
@@ -162,7 +169,7 @@ class ChatService:
                 safety_settings=self.safety_settings
                 )
         self.chat_session = self.chat_model.start_chat(history=[])
-        print("Chat session reset.")
+        logging.debug("Chat session reset.")
     
     def add_history(self, creator, message):
         """
@@ -170,8 +177,8 @@ class ChatService:
         """
         content=[]
         content.append(message)
-        print("Adding message to history")
+        logging.debug("Adding message to history")
         try:
             self.chat_session.history.append ({'role': creator, 'parts' : content})
         except Exception as e:
-            print (f"Failed to append to chat history {e}")
+            logging.error (f"Failed to append to chat history {e}")

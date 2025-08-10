@@ -6,6 +6,20 @@
 
 {% block content %}
   <p>
-    Learn more about this project by visiting the <a href="{{ url_for('pages.about') }}">About page</a>.
+    To find instructions visit the <a href="{{ url_for('pages.about') }}">About page</a>.
   </p>
+  {% if story is defined %}
+    <h4>Latest Story</h4>
+    <p>Author: {{story['author']}}</p>
+    <p>Title: {{story['title']}}</p>
+    <p>Note: {{story['note']}}</p>
+
+    <form method="post">
+      <div class="form-group">
+        <button type="submit" name="action" value="{{story['story_id']}}" class="btn btn-primary">GoTo</button>
+      </div>
+    </form>
+  {% endif %}
+  
+
 {% endblock content %}
