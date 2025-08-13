@@ -3,8 +3,8 @@ import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from google.auth.exceptions import DefaultCredentialsError
 
-import logging
 import os
+import logging
 
 # --- Global instance of the ChatService ---
 chat_service_instance = None # Initialize to None
@@ -50,11 +50,14 @@ class ChatService:
         # --- Load Credentials ---
         credentials = None
         try:
-            if os.getenv('ENVIRONMENT') == 'Production':
+            env_value = os.getenv("ENVIRONMENT")
+            if env_value and env_value.strip() == "PROD":
+                logging.info("Chat - Loading Production credentials")
                 credentials, project_id = google.auth.default()
                 logging.debug("Successfully loaded default credentials")
             else:
                 # Attempt to load credentials from the specified service account file
+                logging.info("Chat - Loading Development credentials")
                 credentials, project_id = google.auth.load_credentials_from_file(SERVICE_ACCOUNT_FILE_PATH)
                 logging.debug(f"Successfully loaded credentials from '{SERVICE_ACCOUNT_FILE_PATH}'")
 

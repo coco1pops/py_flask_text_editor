@@ -60,10 +60,10 @@
                             <div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
                             <div class="button_bar">
                                 {% if post['creator'] == "user" %}
-                                    <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
+                                    <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
                                 {% endif %}  
                                 {% if loop.last and post['creator'] == "model" %}
-                                    <button class='btn btn-secondary btn-sm' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
+                                    <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
                                 {% else %}
                                     <div></div>     
                                 {% endif %}
@@ -82,15 +82,31 @@
         <h2 id="mode"></h2>
         <textarea id="newprompt" class="entry-textarea" oninput="updateCount()" onchange="handleInput(event)">{{story['newpost']}}</textarea>
         <br>
-        <div class="button_bar">
-            <button onclick="cancelUpdate()" class="btn btn-primary btn-lg">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
-            <button onclick="post()" class="btn btn-primary btn-lg">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
-            In editPost it removes the chat history from that post onwards and resubmits the chat-->
-            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add Character</button>
-            <div>
-                Character count: <span id="charCount">0</span>
+
+        <div class="row" align-items-center>
+            <div class="col-6 d-flex justify-content-between">
+                <button onclick="cancelUpdate()" class="btn btn-primary btn-lg">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+                <button onclick="post()" class="btn btn-primary btn-lg">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+                In editPost it removes the chat history from that post onwards and resubmits the chat-->
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add Character</button>
+            </div>
+
+            <div class="col-2 dflex"> </div>
+
+            <div class="col-4 d-flex justify-content-end align-items-center gap-2">
+
+                <!-- Spinner (initially hidden) -->
+                <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div>
+                    Character count: <span id="charCount" class="text-end">0</span>
+                </div>
             </div>
         </div>
+
+
+
         <div id="placeholder" style="margin-top: 30px"></div>
     </div>
 
@@ -124,6 +140,23 @@
         </div>
     </div>
 
+
+    <!--Modal Error Message-->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="errorModalBody">
+                <!-- Error message will be injected here -->
+            </div>
+            </div>
+        </div>
+        </div>
+
+
   <script>  
     //
     // Function to update the number of characters in the prompt
@@ -145,14 +178,13 @@
             url: "/update_story",
             type: "post",
             data: {'story_id': st_id, 'field' : target , 'new value' : new_value },
-            dataType: 'json',
-            success: function(response) {
+            dataType: 'json'
+        }).done(function(response) {
                 console.log(response);
-            },
-            error: function(error) {
-                console.log(error);
-            }
-        })
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("AJAX Error", textStatus, errorThrown);
+                showErrorModal("Something went wrong: " + errorThrown);
+                })
     };
     // Function to reset the prompt field
     // Resets the story newprompt value to "", the prompt to "" and the screen mode to New
@@ -162,20 +194,23 @@
         const row_id="row_" + AppState.editRow;
         console.log("Row "+row_id)
         document.getElementById(row_id).classList.remove("highlighted");
+        document.querySelectorAll('.edit-row').forEach(btn => {
+            btn.disabled = false;
+        });
+
 
         $.ajax({
             url: "/update_story",
             type: "post",
             data: {'story_id': st_id, 'field' : 'newprompt' , 'new value' : '' },
-            dataType: 'json',
-            success: function(response) {
+            dataType: 'json'
+        }).done(function(response) {
                 console.log(response);
                 setFormMode("New", -1);
-            },
-            error: function(error) {
-                console.log(error);
-            }
-        })
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("AJAX Error", textStatus, errorThrown);
+                showErrorModal("Something went wrong: " + errorThrown);
+            })
     };
     //
     // Generic function to post prompts to the back-end
@@ -184,6 +219,9 @@
     //  
     function post() {
         const prompt = document.getElementById("newprompt").value;
+        const spinner = document.getElementById('loadingSpinner');
+        spinner.style.display = 'inline-block'; // Show spinner
+
         $.ajax({
             url: "/generate",
             type: "post",
@@ -192,15 +230,16 @@
                 "mode" : AppState.formMode, 
                 'row_id' : AppState.editRow, 
                 'chars' : JSON.stringify(AppState.chars)},
-            dataType: 'json',
-            success: function(response) {
+            dataType: 'json'
+        }).done(function(response) {
                 console.log(response);
                 window.location.reload();
-            },
-            error: function(error) {
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("AJAX Error", textStatus, errorThrown);
+                showErrorModal("Something went wrong: " + errorThrown);
                 console.log(error);
-
-            }
+        }).always(function(){
+                spinner.style.display = 'none'; 
         })
     };
     //
@@ -215,18 +254,22 @@
             url: "/get_message",
             type: "get",
             data: {'post_id': row.cells[0].textContent},
-            dataType: 'json',
-            success: function(response) {
+            dataType: 'json'
+        }).done(function(response) {
                 console.log(response);
                 document.getElementById("newprompt").value = response['message'];
                 window.scrollTo(0, document.body.scrollHeight);
-                setFormMode(mode, row.cells[0].textContent)
-            },
-            error: function(error) {
-                console.log(error);
-            }
-        })
+                setFormMode(mode, row.cells[0].textContent);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("AJAX Error", textStatus, errorThrown);
+                showErrorModal("Something went wrong: " + errorThrown);
+            })
+        
+        document.querySelectorAll('.edit-row').forEach(btn => {
+            btn.disabled = true; 
+        });
     }
+
     //
     // Used to create and display a container with a character and the associated text
     //
@@ -292,6 +335,15 @@
         document.getElementById("mode").textContent = mode + " Mode";
         AppState.chars =[]
     };
+
+    function showErrorModal(message) {
+        const modalBody = document.getElementById('errorModalBody');
+        modalBody.textContent = message;
+
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+    }
+
     //
     // Add components to form
     //
@@ -320,22 +372,18 @@
             url: "/assignChar",
             type: "post",
             data: {'char_id': id},
-            dataType: "json",
-            success: function(response) {
+            dataType: "json"
+        }).done(function(response) {
                 AppState.chars.push(id);
                 buildchar(id, response['image_mime_type'], response['img'], response['text'])
                 const modal = bootstrap.Modal.getInstance(document.getElementById('assignCharModal'));
                 modal.hide();
-
-            },
-            error: function(error) {
-                console.log(error);
-
-            }
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("AJAX Error", textStatus, errorThrown);
+                showErrorModal("Something went wrong: " + errorThrown);
+        })
     
-        });
-    }
-    )
+    });
 
 </script>
 

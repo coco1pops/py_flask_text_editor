@@ -1,8 +1,8 @@
 import sqlite3
 import click
-import os
 import psycopg2
 import logging
+import os
 
 from flask import current_app, g
 
@@ -22,7 +22,10 @@ def init_db_command():
 def get_db():
     if "db" not in g:
         try:
-            if os.getenv("ENVIRONMENT") == "Production":
+            env_value = os.getenv("ENVIRONMENT")
+
+            if env_value and env_value.strip() == "PROD":
+                logging.debug("DB - Loading Postgres database")
 
                 g.db = psycopg2.connect(
                     dbname=current_app.config["DB_NAME"],
@@ -32,7 +35,8 @@ def get_db():
                     port=current_app.config.get("DB_PORT", 5432)
                 )
 
-            else:    
+            else:
+                logging.debug(("DB - Loading SQLite database"))
                 g.db = sqlite3.connect(
                     current_app.config["DATABASE"],
                     detect_types=sqlite3.PARSE_DECLTYPES,

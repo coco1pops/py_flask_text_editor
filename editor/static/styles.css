@@ -142,13 +142,6 @@ th {
   text-align: center;
 }
 
-.button_bar {
-  display:flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-}
-
 .edit-text {
   display:inline-block;
   width:45%;
