@@ -5,5 +5,5 @@ protobuf
 python-dotenv==1.1.1
 google.generativeai
 google.auth
-psycopg2==2.9.10
+psycopg2
 gunicorn
