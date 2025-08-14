@@ -1,5 +1,7 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'europe-west4-docker.pkg.dev/big-pact-460610-j7/cloud-run-source-deploy/editorapp:${PTAG}', '.']
+  args: ['build', '-t', 'europe-west4-docker.pkg.dev/big-pact-460610-j7/cloud-run-source-deploy/editorapp:${_PTAG}', '.']
 images:
-- 'europe-west4-docker.pkg.dev/big-pact-460610-j7/cloud-run-source-deploy/editorapp:${PTAG}'
+- 'europe-west4-docker.pkg.dev/big-pact-460610-j7/cloud-run-source-deploy/editorapp:${_PTAG}'
+substitutions: 
+_PTAG: "00001"
