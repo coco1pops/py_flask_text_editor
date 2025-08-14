@@ -40,7 +40,7 @@ BUILD_ARGS="${BUILD_ARGS} --set-env-vars CLOUD_SQL_CONNECTION_NAME=${CLOUD_SQL_C
 echo "Starting deployment with build arguments:"
 echo $BUILD_ARGS
 
-gcloud run deploy editor \
+gcloud run deploy editorapp \
   --image europe-west4-docker.pkg.dev/big-pact-460610-j7/cloud-run-source-deploy/editorapp:$PTAG \
   --platform managed \
   --region europe-west4 \
