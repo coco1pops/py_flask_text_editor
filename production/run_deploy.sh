@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -f ~/tag.sh ]; then
-  source tag.sh
+  source ~/tag.sh
 else
   TAG=1
 fi
