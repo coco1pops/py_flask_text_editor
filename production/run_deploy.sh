@@ -41,12 +41,11 @@ echo "Starting deployment with build arguments:"
 echo $BUILD_ARGS
 
 gcloud run deploy editorapp \
-  --image europe-west4-docker.pkg.dev/big-pact-460610-j7/cloud-run-source-deploy/editorapp:$PTAG \
+  --image europe-west4-docker.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:$PTAG \
   --platform managed \
   --region europe-west4 \
   --allow-unauthenticated \
-  --add-cloudsql-instances big-pact-460610-j7:europe-west4:editordb \
-  --service-account cloud-sql@big-pact-460610-j7.iam.gserviceaccount.com \
+  --add-cloudsql-instances story-writer-469107:europe-west4:editordb \
   $BUILD_ARGS
 
 echo "Updating TAG"

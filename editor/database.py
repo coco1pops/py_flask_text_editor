@@ -28,11 +28,11 @@ def get_db():
                 logging.debug("DB - Loading Postgres database")
 
                 g.db = psycopg2.connect(
-                    dbname=current_app.config["DB_NAME"],
-                    user=current_app.config["DB_USER"],
-                    password=current_app.config["DB_PASSWORD"],
-                    host=current_app.config["DB_HOST"],
-                    port=current_app.config.get("DB_PORT", 5432)
+                    dbname=current_app.config['DB_NAME'],
+                    user=current_app.config['DB_USER'],
+                    password=current_app.config['DB_PASSWORD'],
+                    host=current_app.config['DB_HOST'],
+                    port=current_app.config.get('DB_POST',5432)
                 )
 
             else:
