@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 from dotenv import load_dotenv
 from flask import Flask
@@ -26,8 +25,7 @@ def create_app():
         logging.info (f"Startup-More DB Credentials: Host {app.config['DB_HOST']} Port {db_port}")
     else:
         logging.info (f"Startup-DB Credentials {app.config['DATABASE']}")
-    logging.info("Waiting")
-    time.sleep(10)
+
     logging.info("Startup-Initialising database")
     database.init_app(app)
     logging.info("Startup-Initialising chat")

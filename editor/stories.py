@@ -1,11 +1,12 @@
 import json
 import logging
 
-from flask import (Blueprint, redirect, render_template, request, url_for, jsonify)
+from flask import (Blueprint, redirect, render_template, request, url_for, jsonify, send_file)
 
 from editor.chat_service import get_chat_service
 
 import editor.db
+import editor.docwriter
 
 bp = Blueprint("stories", __name__)
 #
@@ -61,6 +62,28 @@ def update_story():
         editor.db.update_story(story_id, field, value)
         return jsonify({'success': 'Record udpdated'}), 200
     return jsonify({'error': 'Database update failed'}), 406
+#
+# Prints a individual story
+#
+@bp.route("/print_story", methods=["POST"])
+def print_story():
+    story_id = request.values.get("story_id")
+    story=editor.db.get_story(story_id)
+    dl_name=f"{story['title']}.docx"
+    logging.debug(f"Printing {dl_name}")
+    if story_id:
+        try:
+            doc_buffer = editor.docwriter.generate_doc_from_posts(story_id)  
+            return send_file(
+                doc_buffer,
+                as_attachment=True,
+                download_name=dl_name,
+                mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+        except Exception as e:
+            logging.debug (f"Error {e}")
+            return jsonify({'error': 'Print generation failed'}), 406
+    return jsonify({'error': 'Missing story id'}), 406
 #
 # Used to display an individual story and the chat. Behind the scenes it also populates the chat with previous messages
 #

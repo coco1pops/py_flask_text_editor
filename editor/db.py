@@ -21,7 +21,7 @@ def get_character(char_id):
         
         image_data = None
 
-        if row['image_mime_type'] != "":
+        if row['image_mime_type'] != "" and row['image_mime_type'] != None:
             image_data ="data:" + row['image_mime_type'] + ";base64," + base64.b64encode(row['image_data']).decode('utf-8')
         
         format_row=({"char_id" : row['char_id'],"name": row['name'],"description": row['description'], "personality" : row['personality'], "motivation" : row['motivation'],

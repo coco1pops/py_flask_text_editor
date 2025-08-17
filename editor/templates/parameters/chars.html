@@ -23,14 +23,20 @@
         <td>{{char["name"]}}</td>
         <td>{{char["description"]}}</td>
         <td>{{char["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
+
         <td class="button_col">
           <form method="post">
-            <button type="submit" name="action" id="{{char['char_id']}}" value="{{char['char_id']}}" class="btn btn-secondary btn-sm">OK</button>
+            <button type="submit" name="action" id="{{char['char_id']}}" value="{{char['char_id']}}" class="btn btn-secondary">
+              <i class="bi bi-pen-fill"></i>
+            </button>
           </form>
         </td>
+
         <td class="button_col">
-          <button class='btn btn-secondary btn-sm deletebutton' type="button" id="{{char['char_id']}}">OK</button>
-        </td>
+          <button class='btn btn-danger btn-secondary deletebutton' type="button" id="{{char['char_id']}}">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </td>        
 
       </tr>
     {% endfor %}
@@ -75,7 +81,7 @@
 
     document.querySelectorAll('.deletebutton').forEach(button => {
       button.addEventListener('click', event => {
-        var id = event.target.id;
+        var id = event.currentTarget.id;
         deleteClicked(id);
       });
     });
