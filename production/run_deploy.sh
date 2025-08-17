@@ -41,11 +41,11 @@ echo "Starting deployment with build arguments:"
 echo $BUILD_ARGS
 
 gcloud run deploy editorapp \
-  --image europe-west4-docker.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:$PTAG \
+  --image us-east1-docker.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:$PTAG \
   --platform managed \
-  --region europe-west4 \
+  --region us-east1 \
   --allow-unauthenticated \
-  --add-cloudsql-instances story-writer-469107:europe-west4:editordb \
+  --add-cloudsql-instances story-writer-469107:us-east1:editordb \
   $BUILD_ARGS
 
 echo "Updating TAG"
