@@ -1,5 +1,5 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-east1.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:${_PTAG}', '.']
+  args: ['build', '-t', 'us-east1-docker.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:${_PTAG}', '.']
 images:
-- 'us-east1.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:${_PTAG}'
+- 'us-east1-docker.pkg.dev/story-writer-469107/cloud-run-source-deploy/editorapp:${_PTAG}'
