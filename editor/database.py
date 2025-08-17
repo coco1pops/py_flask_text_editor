@@ -1,6 +1,6 @@
 import sqlite3
 import click
-import psycopg2
+import psycopg3
 import logging
 import os
 
@@ -27,7 +27,7 @@ def get_db():
             if env_value and env_value.strip() == "PROD":
                 logging.debug("DB - Loading Postgres database")
 
-                g.db = psycopg2.connect(
+                g.db = psycopg3.connect(
                     dbname=current_app.config['DB_NAME'],
                     user=current_app.config['DB_USER'],
                     password=current_app.config['DB_PASSWORD'],

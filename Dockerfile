@@ -4,8 +4,6 @@ FROM python:3.12.1
 # Set the working directory in the container
 WORKDIR /app
 
-RUN pip install --no-cache-dir psycopg2-binary
-
 # Copy the requirements file into the container at /app
 COPY requirements.txt .
 
@@ -41,4 +39,4 @@ EXPOSE 8080
 
 # Run app.py when the container launches
 # Use gunicorn for production WSGI server
-CMD gunicorn editor:app --bind 0.0.0.0:$PORT --log-level debug
+CMD gunicorn editor:app --bind 0.0.0.0:$PORT

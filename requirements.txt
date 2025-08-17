@@ -5,7 +5,7 @@ protobuf
 python-dotenv==1.1.1
 google.generativeai
 google.auth
-psycopg2
+psycopg3
 gunicorn
 docopt
 python-docx
