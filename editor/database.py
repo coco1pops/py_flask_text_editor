@@ -26,14 +26,16 @@ def get_db():
 
             if env_value and env_value.strip() == "PROD":
                 logging.debug("DB - Loading Postgres database")
+                instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME")
+
+                socket_dir = "/cloudsql"
+                host = f"{socket_dir}/{instance_connection_name}"
 
                 g.db = psycopg.connect(
                     dbname=current_app.config['DB_NAME'],
                     user=current_app.config['DB_USER'],
                     password=current_app.config['DB_PASSWORD'],
-                    host=current_app.config['DB_HOST'],
-                    port=current_app.config.get('DB_POST',5432)
-                )
+                    host=host)
 
             else:
                 logging.debug(("DB - Loading SQLite database"))

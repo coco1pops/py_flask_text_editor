@@ -21,8 +21,6 @@ def create_app():
     env_value = os.getenv("ENVIRONMENT")
     if env_value and env_value.strip() == "PROD":
         logging.info (f"Startup-DB Credentials: Name {app.config['DB_NAME']} User {app.config['DB_USER']} Password {app.config['DB_PASSWORD']}")
-        db_port = app.config.get("DB_PORT", 5432)
-        logging.info (f"Startup-More DB Credentials: Host {app.config['DB_HOST']} Port {db_port}")
     else:
         logging.info (f"Startup-DB Credentials {app.config['DATABASE']}")
 

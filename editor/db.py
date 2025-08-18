@@ -2,6 +2,7 @@ from editor.database import get_db
 import base64
 import markdown
 import logging
+import os
 #
 # Character database functions
 #
@@ -34,8 +35,10 @@ def get_character(char_id):
     
 def get_character_raw(char_id):
     db = get_db()
+    sep=build_sel()
+    select=f"SELECT char_id, name, description, personality, motivation, image_data, image_mime_type from chars WHERE char_id = {sep}"
     try:         
-        row = db.execute("SELECT char_id, name, description, personality, motivation, image_data, image_mime_type from chars WHERE char_id = (?)", 
+        row = db.execute(select, 
                          (char_id,)).fetchone()
       
         return row
@@ -46,7 +49,9 @@ def get_character_raw(char_id):
 def insert_character(name, description, personality, motivation):      
     db=get_db()
     try:
-        row_id=db.execute(f"INSERT INTO chars (name, description, personality, motivation) VALUES (?, ?, ?, ?)", 
+        sep=build_sel()
+        ins=f"INSERT INTO chars (name, description, personality, motivation) VALUES ({sep}, {sep}, {sep}, {sep})"
+        row_id=db.execute(ins, 
                    (name, description, personality, motivation,)).lastrowid
         db.commit()
         return row_id
@@ -57,7 +62,9 @@ def insert_character(name, description, personality, motivation):
 def update_character(char_id, field, value):
     db=get_db()
     try:
-        db.execute(f"UPDATE chars SET ({field} = (?)) WHERE char_id = (?)", (value, char_id))
+        sep=build_sel()
+        upd=f"UPDATE chars SET ({field} = {sep}) WHERE char_id = {sep}"
+        db.execute(upd, (value, char_id))
         db.commit()
         return True
     except Exception as e:
@@ -66,8 +73,10 @@ def update_character(char_id, field, value):
     
 def update_all_character(char_id, name, description, personality, motivation):
     db=get_db()
+    sep=build_sel()
+    upd=f"UPDATE chars SET name = {sep}, description = {sep}, personality = {sep}, motivation = {sep} WHERE char_id = {sep}"
     try:
-        db.execute("UPDATE chars SET name = (?), description = (?), personality = (?), motivation = (?) WHERE char_id = (?)", 
+        db.execute(upd, 
                    (name, description, personality, motivation, char_id))
         db.commit()
         return True
@@ -78,7 +87,9 @@ def update_all_character(char_id, name, description, personality, motivation):
 def update_character_image(char_id, image_data, image_mime_type):
     db=get_db()
     try:
-        db.execute("UPDATE chars SET image_data = (?), image_mime_type = (?) WHERE char_id = (?)", 
+        sep=build_sel()
+        upd=f"UPDATE chars SET image_data = {sep}, image_mime_type = {sep} WHERE char_id = {sep}"
+        db.execute(upd, 
                    (image_data, image_mime_type, char_id))
         db.commit()
         return True
@@ -89,7 +100,9 @@ def update_character_image(char_id, image_data, image_mime_type):
 def delete_character(char_id):
     db=get_db()
     try:
-        db.execute(f"DELETE from chars WHERE char_id = (?)", (char_id))
+        sep=build_sel()
+        exc=f"DELETE from chars WHERE char_id = {sep}"
+        db.execute(exc, (char_id))
         db.commit()
         return True
     except Exception as e:
@@ -323,3 +336,9 @@ def print_except(func, e):
         logging.exception(f"{func} Database error: {e}")
         logging.exception("Exception Type:", type(e).__name__)
         logging.exception("Exception Message:", str(e))
+
+def build_sel()->str:
+    if os.getenv("ENVIRONMENT") == "PROD":
+        return "%s"
+    else:
+        return "?"
