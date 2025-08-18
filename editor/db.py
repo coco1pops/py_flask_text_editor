@@ -53,7 +53,7 @@ def insert_character(name, description, personality, motivation):
         if os.getenv("ENVIRONMENT")=="PROD":
             ins=f"{ins} RETURNING char_id"
             cursor=db.execute(ins,(name, description, personality, motivation, ))
-            row_id=cursor.fetchone()[0]                  
+            row_id=cursor.fetchone()["char_id"]                  
         else:
             row_id=db.execute(ins, 
                        (name, description, personality, motivation,)).lastrowid
