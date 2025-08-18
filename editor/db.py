@@ -51,8 +51,13 @@ def insert_character(name, description, personality, motivation):
     try:
         sep=build_sel()
         ins=f"INSERT INTO chars (name, description, personality, motivation) VALUES ({sep}, {sep}, {sep}, {sep})"
-        row_id=db.execute(ins, 
-                   (name, description, personality, motivation,)).lastrowid
+        if os.gentenv("ENVIRONMENT")=="PROD":
+            ins=f"{ins} RETURNING char_id"
+            cursor=db.execute(ins,(name, description, personality, motivation, ))
+            cursor.fetchone()[0]                  
+        else:
+            row_id=db.execute(ins, 
+                       (name, description, personality, motivation,)).lastrowid
         db.commit()
         return row_id
     except Exception as e:
