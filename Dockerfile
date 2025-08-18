@@ -21,7 +21,6 @@ ARG FLASK_DB_HOST
 ARG FLASK_DB_NAME
 ARG FLASK_DB_PORT
 ARG ENVIRONMENT
-ARG CLOUD_SQL_CONNECTION_NAME
 
 # Set these build arguments as environment variables within the image
 ENV FLASK_DB_USER=${FLASK_DB_USER}
@@ -30,7 +29,6 @@ ENV FLASK_DB_HOST=${FLASK_DB_HOST}
 ENV FLASK_DB_NAME=${FLASK_DB_NAME}
 ENV FLASK_DB_PORT=$(FLASK_DB_PORT)
 ENV ENVIRONMENT=$(ENVIRONMENT)
-ENV CLOUD_SQL_CONNECTION_NAME=$(CLOUD_SQL_CONNECTION_NAME)
 # -------------------------------------------------
 
 # Make port 8080 available to the world outside this image
