@@ -51,7 +51,7 @@ def insert_character(name, description, personality, motivation):
     try:
         sep=build_sel()
         ins=f"INSERT INTO chars (name, description, personality, motivation) VALUES ({sep}, {sep}, {sep}, {sep})"
-        if os.gentenv("ENVIRONMENT")=="PROD":
+        if os.getenv("ENVIRONMENT")=="PROD":
             ins=f"{ins} RETURNING char_id"
             cursor=db.execute(ins,(name, description, personality, motivation, ))
             cursor.fetchone()[0]                  
