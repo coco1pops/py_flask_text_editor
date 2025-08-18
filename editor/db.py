@@ -9,12 +9,8 @@ import os
 def get_characters():
     db = get_db()
     try:
-        if os.getenv("ENVIRONMENT")=="PROD":
-            cur=db.execute("SELECT char_id, created, name, description from chars")
-            return [row.as_dict() for row in cur.fetchall()]
-        else:
-            rows = db.execute("SELECT char_id, created, name, description from chars").fetchall()
-            return rows
+        rows = db.execute("SELECT char_id, created, name, description from chars").fetchall()
+        return rows
     except Exception as e:
         print_except("get_characters",e)
         return False
@@ -42,13 +38,9 @@ def get_character_raw(char_id):
     sep=build_sel()
     select=f"SELECT char_id, name, description, personality, motivation, image_data, image_mime_type from chars WHERE char_id = {sep}"
     try:
-        if os.getenv("ENVIRONMENT")=="PROD": 
-            cur=db.execute(select)
-            return [cur.fetchone().as_dict()] 
-        else:       
-            row = db.execute(select, 
-                (char_id,)).fetchone()
-            return row
+        row = db.execute(select, 
+            (char_id,)).fetchone()
+        return row
     except Exception as e:
         print_except("get_character",e)
         return False

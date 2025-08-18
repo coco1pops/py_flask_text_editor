@@ -1,6 +1,9 @@
 import sqlite3
 import click
+
 import psycopg
+from psycopg.rows import dict_row
+
 import logging
 import os
 
@@ -35,7 +38,8 @@ def get_db():
                     dbname=current_app.config['DB_NAME'],
                     user=current_app.config['DB_USER'],
                     password=current_app.config['DB_PASSWORD'],
-                    host=host)
+                    host=host,
+                    row_factory=dict_row)
 
             else:
                 logging.debug(("DB - Loading SQLite database"))
