@@ -35,7 +35,7 @@ BUILD_ARGS="${BUILD_ARGS} --set-env-vars FLASK_DB_HOST=${FLASK_DB_HOST}"
 BUILD_ARGS="${BUILD_ARGS} --set-env-vars FLASK_DB_PORT=${FLASK_DB_PORT}"
 BUILD_ARGS="${BUILD_ARGS} --set-env-vars FLASK_DB_NAME=${FLASK_DB_NAME}"
 BUILD_ARGS="${BUILD_ARGS} --set-env-vars ENVIRONMENT=${ENVIRONMENT}" 
-BUILD_ARGS="${BUILD_ARGS} --set-env-vars CLOUD_SQL_CONNECTION_NAME=${CLOUD_SQL_CONNECTION_NAME}" 
+#BUILD_ARGS="${BUILD_ARGS} --set-env-vars CLOUD_SQL_CONNECTION_NAME=${CLOUD_SQL_CONNECTION_NAME}" 
 
 echo "Starting deployment with build arguments:"
 echo $BUILD_ARGS
@@ -45,8 +45,9 @@ gcloud run deploy editorapp \
   --platform managed \
   --region us-east1 \
   --allow-unauthenticated \
-  --add-cloudsql-instances story-writer-469107:us-east1:editordb \
   $BUILD_ARGS
+
+#  --add-cloudsql-instances story-writer-469107:us-east1:editordb \
 
 echo "Updating TAG"
 TAG=$((TAG+1))
