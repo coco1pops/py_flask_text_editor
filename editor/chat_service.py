@@ -31,7 +31,7 @@ def get_chat_service():
     return chat_service_instance
 
 # Path to your downloaded service account JSON key
-SERVICE_ACCOUNT_FILE_PATH = "big-pact-460610-j7-63b0aadaba1f.json"
+SERVICE_ACCOUNT_FILE_PATH = os.getenv("SERVICE_ACCOUNT_FILE_PATH")
 
 class ChatService:
     """
@@ -52,33 +52,33 @@ class ChatService:
         # --- Load Credentials ---
         credentials = None
         try:
-            env_value = os.getenv("ENVIRONMENT")
-            if env_value and env_value.strip() == "PROD":
-                logging.info("Chat - Loading Production credentials")
+        #    env_value = os.getenv("ENVIRONMENT")
+        #    if env_value and env_value.strip() == "PROD":
+        #        logging.info("Chat - Loading Production credentials")
 
-                SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+        #        SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
                 # Get default credentials and project ID
-                credentials, project_id = google.auth.default()
+         #       credentials, project_id = google.auth.default()
 
                 # If credentials need scopes, wrap them
-                if hasattr(credentials, "with_scopes"):
-                    credentials = credentials.with_scopes(SCOPES)
+        #        if hasattr(credentials, "with_scopes"):
+        #            credentials = credentials.with_scopes(SCOPES)
 
                 # Refresh if needed
-                credentials.refresh(Request())
+         #       credentials.refresh(Request())
 
-                logging.debug("Successfully loaded default credentials")
-            else:
+         #       logging.debug("Successfully loaded default credentials")
+          #  else:
                 # Attempt to load credentials from the specified service account file
-                logging.info("Chat - Loading Development credentials")
-                credentials, project_id = google.auth.load_credentials_from_file(SERVICE_ACCOUNT_FILE_PATH)
-                logging.debug(f"Successfully loaded credentials from '{SERVICE_ACCOUNT_FILE_PATH}'")
+            logging.info("Chat - Loading  credentials")
+            credentials, project_id = google.auth.load_credentials_from_file(SERVICE_ACCOUNT_FILE_PATH)
+            logging.debug(f"Successfully loaded credentials from '{SERVICE_ACCOUNT_FILE_PATH}'")
 
-                # If you are running this on Google Cloud infrastructure (e.g., GCE, Cloud Run),
-                # google.auth.load_credentials_from_file() might not be needed if ADC are automatically available.
-                # In that case, you could simply rely on:
-                # credentials, project_id = google.auth.default()
+            # If you are running this on Google Cloud infrastructure (e.g., GCE, Cloud Run),
+            # google.auth.load_credentials_from_file() might not be needed if ADC are automatically available.
+            # In that case, you could simply rely on:
+            # credentials, project_id = google.auth.default()
 
         except FileNotFoundError:
             logging.exception(f"Error: Service account file '{SERVICE_ACCOUNT_FILE_PATH}' not found.")
