@@ -106,7 +106,7 @@ def delete_character(char_id):
     try:
         sep=build_sel()
         exc=f"DELETE from chars WHERE char_id = {sep}"
-        db.execute(exc, (char_id))
+        db.execute(exc, (char_id,))
         db.commit()
         return True
     except Exception as e:
@@ -138,8 +138,10 @@ def build_char(char_id):
 def get_story(story_id):
     try:
         db = get_db()
-        story = db.execute(
-            "SELECT story_id, author, title, note, systemInstruction, created FROM stories WHERE story_id =(?)", (story_id,)
+        sep = build_sel()
+        select = f"SELECT story_id, author, title, note, systemInstruction, created FROM stories WHERE story_id = {sep}"
+        story = db.execute(select
+            , (story_id,)
             ).fetchone()
         return story
     except Exception as e:
@@ -160,10 +162,15 @@ def get_latest_story():
 def insert_story(author, title, note, systemInstruction):
     try:
         db = get_db()
-        story_id = db.execute(
-            "INSERT INTO stories (author, title, note, systemInstruction) VALUES (?, ?, ? ,?)",
-            (author, title, note, systemInstruction),
-        ).lastrowid
+        sep = build_sel()
+        ins=f"INSERT INTO stories (author, title, note, systemInstruction) VALUES ({sep}, {sep}, {sep} ,{sep})"
+        if os.getenv("ENVIRONMENT")=="PROD":
+            ins=f"{ins} RETURNING story_id"
+            cursor=db.execute(ins,(author, title, note, systemInstruction,))
+            story_id=cursor.fetchone()["story_id"]
+        else:       
+            story_id = db.execute(ins,(author, title, note, systemInstruction),
+                ).lastrowid
         db.commit()
         return story_id
     except Exception as e:
@@ -184,23 +191,28 @@ def get_stories():
 def delete_story(story_id):
     try:
         db = get_db()
-        db.execute(
-            "DELETE FROM posts WHERE story_id=(?)", (story_id,)
-        )
-        db.execute(
-            "DELETE FROM post_parts WHERE story_id=(?)", (story_id,)
-        )  
-        db.execute(
-            "DELETE FROM stories WHERE story_id=(?)",(story_id,))
+        sep = build_sel()
+
+        exc=f"DELETE FROM post_parts WHERE story_id={sep}"
+        db.execute(exc, (story_id,))
+
+        exc=f"DELETE FROM posts WHERE story_id={sep}"
+        db.execute(exc, (story_id,))
+
+        exc=f"DELETE FROM stories WHERE story_id={sep}"
+        db.execute(exc,(story_id,))
         db.commit()
+
     except Exception as e:
         print_except("delete_story",e)
         return False
 
 def update_story(story_id, field, value):
     db=get_db()
+    sep = build_sel()
     try:
-        db.execute(f"UPDATE stories SET {field} = (?) WHERE story_id = (?)", (value, story_id))
+        upd = f"UPDATE stories SET {field} = {sep} WHERE story_id = {sep}"
+        db.execute(upd, (value, story_id))
         db.commit()
         return True
     except Exception as e:
@@ -213,8 +225,10 @@ def update_story(story_id, field, value):
 
 def get_message(post_id):
     db=get_db()
+    sep=build_sel()
     try:
-        row = db.execute("SELECT message FROM posts WHERE post_id = (?)", (post_id,)).fetchone()
+        select=f"SELECT message FROM posts WHERE post_id = {sep}"
+        row = db.execute(select, (post_id,)).fetchone()
         return row['message']
 
     except Exception as e:
@@ -223,8 +237,10 @@ def get_message(post_id):
     
 def update_message(post_id, value):
     db=get_db()
+    sep=build_sel()
     try:
-        row = db.execute("UPDATE posts SET message = (?) WHERE post_id = (?)", (value, post_id,))
+        upd = f"UPDATE posts SET message = {sep} WHERE post_id = {sep}"
+        db.execute(upd, (value, post_id,))
         db.commit()
         return True
     
@@ -272,8 +288,9 @@ def get_all_posts(story_id):
 def get_all_posts_raw(story_id):
     try:
         db = get_db()
+        sep=build_sel()
         select_string = "SELECT post_id, created, creator, multi_modal, content, source, part_type, part_text, part_image_data, part_image_mime_type"
-        select_string = f"{select_string} from unified_post_timeline WHERE story_id=(?) ORDER BY post_id, created ASC"
+        select_string = f"{select_string} from unified_post_timeline WHERE story_id={sep} ORDER BY post_id, created ASC"
         posts = db.execute(select_string,(story_id,)).fetchall()
     
         return posts
@@ -285,12 +302,13 @@ def get_all_posts_raw(story_id):
 def delete_posts_from(story_id, post_id):
     try:
         db = get_db()
-        db.execute(
-            "DELETE FROM posts WHERE story_id=(?) AND post_id >= (?)", (story_id,post_id,)
-        )
-        db.execute(
-            "DELETE FROM post_parts WHERE story_id=(?) AND post_id >= (?)", (story_id, post_id)
-        )  
+        sep = build_sel()
+        exc=f"DELETE FROM post_parts WHERE story_id={sep} AND post_id >={sep}"
+        db.execute(exc, (story_id, post_id))  
+
+        exc=f"DELETE FROM posts WHERE story_id={sep} AND post_id >= {sep}"
+        db.execute(exc, (story_id,post_id,))
+
         db.commit()
     except Exception as e:
         print_except("delete_posts_from",e)
@@ -299,9 +317,14 @@ def delete_posts_from(story_id, post_id):
 def insert_post(story_id, creator, prompt, multi):
     try:
         db=get_db()
-        inserted_id=db.execute (
-            "INSERT INTO posts (story_id, creator, message, multi_modal) VALUES (?, ?, ?, ?)", (story_id, creator, prompt, multi)
-        ).lastrowid
+        sep=build_sel()
+        ins=f"INSERT INTO posts (story_id, creator, message, multi_modal) VALUES ({sep}, {sep}, {sep}, {sep})"
+        if os.getenv("ENVIRONMENT")=="PROD":
+            ins=f"{ins} RETURNING post_id"
+            cursor=db.execute(ins,(story_id, creator, prompt, multi, ))
+            inserted_id=cursor.fetchone()["post_id"]                  
+        else:
+            inserted_id=db.execute(ins, (story_id, creator, prompt, multi)).lastrowid
         db.commit()
         return inserted_id
     except Exception as e:
@@ -314,11 +337,18 @@ def insert_post(story_id, creator, prompt, multi):
 def insert_post_text_part(story_id, post_id, part_text):
     try:
         db=get_db()
-        inserted_id=db.execute (
-            "INSERT INTO post_parts (story_id, post_id, part_type, part_text) VALUES (?, ?, ?, ?)", (story_id, post_id, 'text', part_text)
-        ).lastrowid
+        sep=build_sel()
+        ins=f"INSERT INTO post_parts (story_id, post_id, part_type, part_text) VALUES ({sep}, {sep}, 'text', {sep})"
+        if os.getenv("ENVIRONMENT")=="PROD":
+            ins=f"{ins} RETURNING part_id"
+            cursor=db.execute(ins,(story_id, post_id, part_text, ))
+            inserted_id=cursor.fetchone()["part_id"]
+        else:  
+            inserted_id=db.execute(ins, (story_id, post_id, part_text)).lastrowid
+        
         db.commit()
         return inserted_id
+    
     except Exception as e:
         print_except("insert_post_text_part",e)
         return False
@@ -326,12 +356,17 @@ def insert_post_text_part(story_id, post_id, part_text):
 def insert_post_image_part(story_id, post_id, part_image_data, part_image_mime_type):
     try:
         db=get_db()
-        inserted_id=db.execute (
-            "INSERT INTO post_parts (story_id, post_id, part_type, part_image_data, part_image_mime_type) VALUES (?, ?, ?, ?, ?)", 
-                (story_id, post_id, 'image', part_image_data, part_image_mime_type)
-        ).lastrowid
+        sep=build_sel()
+        ins=f"INSERT INTO post_parts (story_id, post_id, part_type, part_image_data, part_image_mime_type) VALUES ({sep}, {sep}, 'image', {sep}, {sep})"
+        if os.getenv("ENVIRONMENT")=="PROD":
+            ins=f"{ins} RETURNING part_id"
+            cursor=db.execute(ins,(story_id, post_id, part_image_data, part_image_mime_type,))
+            inserted_id=cursor.fetchone()["part_id"]
+        else:  
+            inserted_id=db.execute(ins,(story_id, post_id, part_image_data, part_image_mime_type)).lastrowid
         db.commit()
         return inserted_id
+
     except Exception as e:
         print_except("insert_post_image_part",e)
         return False
