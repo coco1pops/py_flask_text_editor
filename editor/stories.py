@@ -19,10 +19,10 @@ def create():
         author = request.form["author"] or "Anonymous"
         story = request.form["title"]
         note = request.form["note"] or ""
-        systemInstruction = request.form["systemInstruction"] or ""
+        systeminstruction = request.form["systeminstruction"] or ""
 
         if story:
-            story_id = editor.db.insert_story(author, story, note, systemInstruction)
+            story_id = editor.db.insert_story(author, story, note, systeminstruction)
             return redirect(url_for("stories.generate_story", story_id=story_id))
         
     return render_template("stories/create.html")
@@ -151,7 +151,7 @@ def generate_text():
     # Build the chat service
     chat = get_chat_service()
     story = editor.db.get_story(story_id)
-    chat.reset_chat(story['systemInstruction'])
+    chat.reset_chat(story['systeminstruction'])
     buildHistory(chat, story_id)
     #
     # Generating new content

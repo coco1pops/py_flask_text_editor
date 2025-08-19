@@ -139,7 +139,7 @@ def get_story(story_id):
     try:
         db = get_db()
         sep = build_sel()
-        select = f"SELECT story_id, author, title, note, systemInstruction, created FROM stories WHERE story_id = {sep}"
+        select = f"SELECT story_id, author, title, note, systeminstruction, created FROM stories WHERE story_id = {sep}"
         story = db.execute(select
             , (story_id,)
             ).fetchone()
@@ -159,17 +159,17 @@ def get_latest_story():
         print_except("get_latest_story", e)
         return False
     
-def insert_story(author, title, note, systemInstruction):
+def insert_story(author, title, note, systeminstruction):
     try:
         db = get_db()
         sep = build_sel()
-        ins=f"INSERT INTO stories (author, title, note, systemInstruction) VALUES ({sep}, {sep}, {sep} ,{sep})"
+        ins=f"INSERT INTO stories (author, title, note, systeminstruction) VALUES ({sep}, {sep}, {sep} ,{sep})"
         if os.getenv("ENVIRONMENT")=="PROD":
             ins=f"{ins} RETURNING story_id"
-            cursor=db.execute(ins,(author, title, note, systemInstruction,))
+            cursor=db.execute(ins,(author, title, note, systeminstruction,))
             story_id=cursor.fetchone()["story_id"]
         else:       
-            story_id = db.execute(ins,(author, title, note, systemInstruction),
+            story_id = db.execute(ins,(author, title, note, systeminstruction),
                 ).lastrowid
         db.commit()
         return story_id

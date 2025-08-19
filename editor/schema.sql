@@ -7,7 +7,7 @@ CREATE TABLE stories (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     title TEXT NOT NULL,
     note TEXT,
-    systemInstruction TEXT,
+    systeminstruction TEXT,
     author TEXT NOT NULL,
     newprompt
 );
