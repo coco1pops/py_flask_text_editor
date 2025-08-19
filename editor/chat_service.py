@@ -1,4 +1,6 @@
 import google.auth
+from google.auth.transport.requests import Request
+
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from google.auth.exceptions import DefaultCredentialsError
@@ -53,7 +55,19 @@ class ChatService:
             env_value = os.getenv("ENVIRONMENT")
             if env_value and env_value.strip() == "PROD":
                 logging.info("Chat - Loading Production credentials")
+
+                SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+
+                # Get default credentials and project ID
                 credentials, project_id = google.auth.default()
+
+                # If credentials need scopes, wrap them
+                if hasattr(credentials, "with_scopes"):
+                    credentials = credentials.with_scopes(SCOPES)
+
+                # Refresh if needed
+                credentials.refresh(Request())
+
                 logging.debug("Successfully loaded default credentials")
             else:
                 # Attempt to load credentials from the specified service account file
