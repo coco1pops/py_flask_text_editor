@@ -9,7 +9,7 @@ bp = Blueprint("login", __name__)
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == "POST":
-        user_record = editor.db.get_user(request.form['username'])
+        user_record = editor.db.get_user(request.form['username'],allow_not_found=True)
     
         if user_record:
             user=User(user_record['user_id'], user_record['user_password'], user_record['user_name'], user_record['user_role'])

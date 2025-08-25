@@ -250,7 +250,7 @@ def createsysint(sysint_id=None):
     return render_template("parameters/create_sysint.html", sysint=sysint)
 
 @bp.route("/getSysInt",methods=["POST"])
-@admin_required
+@login_required
 def getsysint():
     sysint_id=request.values.get("sysint_id")
     row=editor.db.get_sysint(sysint_id)
