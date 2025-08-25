@@ -2,16 +2,20 @@ import os
 import logging
 from dotenv import load_dotenv
 from flask import Flask
+from flask_login import LoginManager
 
-from editor import pages, database, stories, chat_service, parameters
+from editor import database, chat_service
 
 load_dotenv()
+login_manager = LoginManager()
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_prefixed_env()
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # Limit to 2MB
-    app.config['UPLOAD_EXTENSIONS'] = ['.jpg', '.png', '.gif']
+    app.config['UPLOAD_EXTENSIONS'] = ['.jpg', '.png', '.jpeg']
+    app.secret_key = app.config["SECRET_KEY"]
 
     if app.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -29,7 +33,14 @@ def create_app():
     logging.info("Startup-Initialising chat")
     chat_service.initialize_global_chat_service();
     
+    logging.info("Startup-Initialising login module")
+    login_manager.init_app(app)
+    login_manager.login_view="login.login"
+    from . import auth 
+    from editor.routes import login, pages, parameters, stories
+    
     logging.info("Startup-registering blueprints")
+    app.register_blueprint(login.bp)
     app.register_blueprint(pages.bp)
     app.register_blueprint(stories.bp)
     app.register_blueprint(parameters.bp)
@@ -39,3 +50,4 @@ def create_app():
 # This conditional ensures that 'app' is only created when the module is run directly by Gunicorn
 if __name__ != '__main__':
     app = create_app()
+

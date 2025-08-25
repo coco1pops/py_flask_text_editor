@@ -7,6 +7,7 @@ import markdown
 from bs4 import BeautifulSoup
 from io import BytesIO
 import editor.db
+from flask_login import current_user
 
 def markdown_to_docx_paragraph(doc: Document, input_text: str):
     # Convert markdown to HTML then parse
@@ -45,7 +46,7 @@ def generate_doc_from_posts(story_id) -> BytesIO:
     doc = Document()
     story = editor.db.get_story(story_id)
     doc.add_heading(f"Title {story['title']}", level=0)
-    doc.add_heading(f"Author {story['Author']}", level=2)
+    doc.add_heading(f"Author {current_user.user_name}", level=2)
     markdown_to_docx_paragraph(doc, story['note'])
 
     ix=1

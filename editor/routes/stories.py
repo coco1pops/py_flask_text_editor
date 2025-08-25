@@ -2,6 +2,7 @@ import json
 import logging
 
 from flask import (Blueprint, redirect, render_template, request, url_for, jsonify, send_file)
+from flask_login import current_user
 
 from editor.chat_service import get_chat_service
 
@@ -9,6 +10,13 @@ import editor.db
 import editor.docwriter
 
 bp = Blueprint("stories", __name__)
+
+@bp.before_request
+def require_login():
+    if not current_user.is_authenticated:
+        logging.debug("Not authenticated")
+        return redirect(url_for('login.login'))  # Redirect to your login route
+
 #
 # Creates a new story and adds a system instruction record
 #
@@ -16,16 +24,16 @@ bp = Blueprint("stories", __name__)
 def create():
     if request.method == "POST":
         logging.debug("Creating story ")
-        author = request.form["author"] or "Anonymous"
         story = request.form["title"]
         note = request.form["note"] or ""
         systeminstruction = request.form["systeminstruction"] or ""
 
         if story:
-            story_id = editor.db.insert_story(author, story, note, systeminstruction)
+            story_id = editor.db.insert_story(story, note, systeminstruction)
             return redirect(url_for("stories.generate_story", story_id=story_id))
-        
-    return render_template("stories/create.html")
+    
+    sysints=editor.db.get_sysints()    
+    return render_template("stories/create.html",sysints=sysints)
 
 # Returns a list of stories
 @bp.route("/stories", methods=["GET", "POST"])

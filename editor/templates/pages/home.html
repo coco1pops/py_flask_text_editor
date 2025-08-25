@@ -10,7 +10,7 @@
   </p>
   {% if story is defined %}
     <h4>Latest Story</h4>
-    <p>Author: {{story['author']}}</p>
+    <p>Author: {{current_user.user_name}}</p>
     <p>Title: {{story['title']}}</p>
     <p>Note: {{story['note']}}</p>
 

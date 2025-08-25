@@ -3,17 +3,16 @@
 {% block header %}
   <div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
     <div class="flex-grow-1 text-center">
-      <h2 class="m-0">Characters</h2>
+      <h2 class="m-0">AI Guidance</h2>
     </div>
     <div class="ms-auto">
-      <a href="/createchar" class="btn btn-primary">Add</a>
+      <a href="/createsysint" class="btn btn-primary">Add</a>
     </div>
   </div>
-
 {% endblock header %}
 
 {% block content %}
-<table id='charTable'>
+<table id='sysintTable'>
   <thead>
     <th class="hide">id</th>
     <th>Name</th>
@@ -25,34 +24,29 @@
 
   <tbody>
 
-    {% for char in chars %}
-      <tr id="row_{{char['char_id']}}">
-        <td class="hide">{{char["char_id"]}}</td>
-        <td>{{char["name"]}}</td>
-        <td>{{char["description"]}}</td>
-        <td>{{char["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
+    {% for sysint in sysints %}
+      <tr id="row_{{sysint['sysint_id']}}">
+        <td class="hide">{{sysint["sysint_id"]}}</td>
+        <td>{{sysint["name"]}}</td>
+        <td>{{sysint["description"]}}</td>
+        <td>{{sysint["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
 
         <td class="button_col">
           <form method="post">
-            <button type="submit" name="action" id="{{char['char_id']}}" value="{{char['char_id']}}" class="btn btn-secondary">
+            <button type="submit" name="action" id="{{sysint['sysint_id']}}" value="{{sysint['sysint_id']}}" class="btn btn-secondary">
               <i class="bi bi-pen-fill"></i>
             </button>
           </form>
         </td>
 
         <td class="button_col">
-          <button class='btn btn-danger btn-secondary deletebutton' type="button" id="{{char['char_id']}}">
+          <button class='btn btn-danger btn-secondary deletebutton' type="button" id="{{sysint['sysint_id']}}">
             <i class="bi bi-trash-fill"></i>
           </button>
         </td>        
 
       </tr>
     {% endfor %}
-
-  </tbody>
-  </table>
- 
-  <div id="flash-container" style="margin-top: 20px;"</div></div>
 
   <!-- Confirmation Modal -->
   <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
@@ -72,7 +66,11 @@
     </div>
   </div>
 
+  </tbody>
+  </table> 
 
+  <div id="flash-container" style="margin-top: 20px;"</div>
+ 
  <script>
 
     function showBootstrapConfirm(callback) {
@@ -101,51 +99,51 @@
     function deleteClicked(id){
       showBootstrapConfirm((confirmed) => {
         if (confirmed) {
-          console.log("Confirmed delete character "+ id + "!");
-          deleteChar(id);
+          console.log("Confirmed delete AI Guidance "+ id + "!");
+          deleteSysint(id);
         }
         else {console.log ("Delete Cancelled.");
-
         };
       }
     );
     };
 
-    function deleteChar(id) {
+    function deleteSysint(id) {
       $.ajax({
-      url: "/deletechar",
+      url: "/deletesysint",
       type: "post",
-      data: {'char_id': id},
+      data: {'sysint_id': id},
       dataType: 'json'}
       ).done(function(response) {
-        console.log(response);
-        var rowid = "row_" + id;
-        var r = document.getElementById(rowid);
-        var i = r.rowIndex;
-        document.getElementById("charTable").deleteRow(i);
-        if (response.messages) {
-          response.messages.forEach(([category, message]) => {
-          showFlashMessage(category, message);
-          });
+          console.log(response);
+          var rowid = "row_" + id;
+          var r = document.getElementById(rowid);
+          var i = r.rowIndex;
+          document.getElementById("sysintTable").deleteRow(i);
+          if (response.messages) {
+            response.messages.forEach(([category, message]) => {
+            showFlashMessage(category, message);
+            });
           }
-       }).fail(function(error) {
+        }
+      ).fail(function(error) {
         console.log(error);
-      })
-      }; 
+      });
+    };
 
     function showFlashMessage(category, message) {
-      const alertClass = {
-      success: "alert-success",
-      error: "alert-danger",
-      warning: "alert-warning",
-      info: "alert-info"
-      }[category] || "alert-secondary";
+        const alertClass = {
+        success: "alert-success",
+        error: "alert-danger",
+        warning: "alert-warning",
+        info: "alert-info"
+        }[category] || "alert-secondary";
 
-      const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
-      $("#flash-container").html(alert);  // Or append if you want multiple
+        const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
+        $("#flash-container").html(alert);  // Or append if you want multiple
     };
   </script>
 
 
-</table> 
+
 {% endblock content %}

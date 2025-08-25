@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h2> {{mode}} User</h2>
+{% endblock header %}
+
+{% block content %}
+  <form method="post" class="needs-validation" novalidate autocomplete="off" >
+    <div class="form-group">
+        <label for="user_id">User Id</label>
+        <input type="text" name="user_id" id="user_id" value="{{ user.user_id if user.user_id else '' }}" class="form-control"  
+            {% if mode != "Add" %}disabled{% endif %} minlength="4" maxlength="20" required autocomplete="off">
+            <div class="invalid-feedback">
+                User ID must be between 4 and 20 characters.
+            </div>
+    </div>
+    {% if mode == "Add" %}
+    <div class="form-group">
+        <label for="user_password">User Password</label>
+        <input type="password" name="user_password" id="user_password" class="form-control"
+            minlength="6" maxlength="20" required autocomplete="off" >
+        <div class="invalid-feedback">
+            Password must be between 6 and 20 characters.
+        </div>
+    </div>
+    {% endif %}
+    <div class="form-group">
+        <label for="user_name">User Name</label>
+        <input type="text" name="user_name" id="user_name" class="form-control" value="{{ user.user_name if user.user_name else '' }}"
+          autocomplete="off">
+    </div>
+    <div class="form-group">
+        <label for="user_role">User Role</label>
+        <select name="user_role" class="form-select" id="user_role">
+            <option value="Standard" {% if user['user_role'] == 'Standard' %}selected{% endif %}>Standard</option>
+            <option value="Admin" {% if user['user_role'] == 'Admin' %}selected{% endif %}>Admin</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary" name="action" value="main">Post</button>
+    </div>
+</form>
+
+{% if mode == "Update" %}
+<h4>Password Reset</h4>
+<form method="post" class="needs-validation" novalidate autocomplete="off">
+    <div class="form-group">
+      <label for="new_password">New Password</label>
+      <input type="password" name="new_password" id="new_password" class="form-control"
+            minlength="6" maxlength="20" required autocomplete="off" value="{{ user.new_password if user.new_password else '' }}">
+      <div class="invalid-feedback">
+          Password must be between 6 and 20 characters.
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="conf_password">Confirm Password</label>
+        <input type="password" name="conf_password" id="conf_password" class="form-control"
+            minlength="6" maxlength="20" required autocomplete="off" value="{{ user.conf_password if user.conf_password else '' }}">
+        <div class="invalid-feedback">
+            Password must be between 6 and 20 characters.
+        </div>
+    </div>
+    <div class="form-group">
+           <button class="btn btn-primary" type="submit" id="pwordReset" name="action" value="reset">Reset</button>
+    </div>
+  </form>
+  {% endif %}
+
+
+
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+<script>
+  (() => {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+
+{% endblock content %}

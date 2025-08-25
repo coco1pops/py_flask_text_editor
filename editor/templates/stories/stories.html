@@ -1,7 +1,14 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}Stories{% endblock title %}</h2>
+  <div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+    <div class="flex-grow-1 text-center">
+      <h2 class="m-0">Stories</h2>
+    </div>
+    <div class="ms-auto">
+      <a href="/create" class="btn btn-primary">Add</a>
+    </div>
+  </div>
 {% endblock header %}
 
 {% block content %}
@@ -24,7 +31,7 @@
         <td class="hide">{{story["story_id"]}}</td>
         <td>{{story["title"]}}</td>
         <td>{{story["note"]}}</td>
-        <td>{{story["author"]}}</td>
+        <td>{{current_user.user_name}}</td>
         <td>{{story["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
         <td class="button_col">
           <form method="post">

@@ -9,7 +9,7 @@
 {% block content %}
 
 <div id="top">
-    <h2> Story id: {{story['story_id']}} Author {{story['author']}}</h2>
+    <h2> Story id: {{story['story_id']}} Author {{current_user.user_name}}</h2>
     <p style="text-align: right;"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
 
 </div>
@@ -23,7 +23,7 @@
             <textarea class="form-control" rows="6" id="note" onchange="handleInput(event)">{{story['note']}}</textarea>
         </div>
         <div class="edit-text">
-            <label for="systeminstruction"> System Instruction: </label>
+            <label for="systeminstruction"> AI Guidance: </label>
             <textarea class="form-control" rows="6" id="systeminstruction" onchange="handleInput(event)">{{story['systeminstruction']}}</textarea> 
         </div>
     </div>
@@ -85,10 +85,10 @@
 
         <div class="row" align-items-center>
             <div class="col-6 d-flex justify-content-between">
-                <button onclick="cancelUpdate()" class="btn btn-primary btn-lg">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
-                <button onclick="post()" class="btn btn-primary btn-lg">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+                <button onclick="cancelUpdate()" class="btn btn-primary">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+                <button onclick="post()" class="btn btn-primary">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
                 In editPost it removes the chat history from that post onwards and resubmits the chat-->
-                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add Character</button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add Character</button>
             </div>
 
             <div class="col-2 dflex"> </div>

@@ -1,4 +1,10 @@
-PRAGMA foreign_keys = ON;
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    user_id TEXT PRIMARY KEY CHECK (LENGTH(user_id) BETWEEN 4 AND 20),
+    user_password TEXT,
+    user_role TEXT NOT NULL CHECK (user_role IN ('Admin', 'Standard')),
+    user_name);
+
 
 DROP TABLE IF EXISTS stories;
 
@@ -8,8 +14,9 @@ CREATE TABLE stories (
     title TEXT NOT NULL,
     note TEXT,
     systeminstruction TEXT,
-    author TEXT NOT NULL,
-    newprompt
+    newprompt,
+    user_id,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
 DROP TABLE IF EXISTS posts;
@@ -22,21 +29,8 @@ CREATE TABLE posts (
     multi_modal BOOLEAN DEFAULT false,
     message TEXT NOT NULL,
     FOREIGN KEY (story_id) REFERENCES stories(story_id)
-        ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS chars;
-
-CREATE TABLE chars (
-    char_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    name TEXT NOT NULL,
-    description TEXT,
-    personality TEXT, 
-    motivation TEXT,
-    image_data BLOB, 
-    image_mime_type TEXT
-);
 
 DROP TABLE IF EXISTS post_parts;
 
@@ -51,6 +45,33 @@ CREATE TABLE post_parts (
     part_image_mime_type TEXT,
     FOREIGN KEY (post_id) REFERENCES posts(post_id)
 );
+
+
+DROP TABLE IF EXISTS chars;
+
+CREATE TABLE chars (
+    char_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name TEXT NOT NULL,
+    description TEXT,
+    personality TEXT, 
+    motivation TEXT,
+    image_data BLOB, 
+    image_mime_type TEXT,
+    user_id,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+DROP TABLE IF EXISTS sysints;
+CREATE TABLE sysints (
+    sysint_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name TEXT NOT NULL,
+    description TEXT,
+    instruction TEXT NOT NULL
+);
+
+DROP VIEW IF EXISTS unified_post_timeline;
 
 CREATE VIEW unified_post_timeline AS
 SELECT
@@ -84,5 +105,3 @@ SELECT
 FROM post_parts
 
 ORDER BY post_id, created;
-
-

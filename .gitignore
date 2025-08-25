@@ -9,6 +9,7 @@
 
 # Ignore database
 *.sqlite
+*.sql
 
 # Ignore VSCode files
 *.code-workspace

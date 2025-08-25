@@ -10,3 +10,4 @@ gunicorn
 docopt
 python-docx
 beautifulsoup4
+flask_login==0.6.3

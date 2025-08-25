@@ -1,5 +1,5 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <div class="container-fluid">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
     <div class="navbar-header">
       <a>
         <img src="{{ url_for('static', filename='book.png')}}"  width="30" height="30" class="d-inline-block align-top" alt="">
@@ -9,11 +9,29 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav mr-auto">
         <li class="nav-item nav-link"><a href="{{ url_for('pages.home') }}">Home</a></li>
-        <li class="nav-item nav-link"><a href="{{ url_for('stories.stories') }}">All Stories</a></li>
-        <li class="nav-item nav-link"><a href="{{ url_for('stories.create') }}">Add Story</a></li>
-        <li class="nav-item nav-link"><a href="{{ url_for('parameters.chars') }}">All Characters</a></li>
-        <li class="nav-item nav-link"><a href="{{ url_for('parameters.createchar') }}">Add Character</a></li>
+        {% if current_user.is_authenticated %}
+          <li class="nav-item nav-link"><a href="{{ url_for('stories.stories') }}">Stories</a></li>
+          <li class="nav-item nav-link"><a href="{{ url_for('parameters.chars') }}">Characters</a></li>
+          <li class="nav-item nav-link"><a href="{{ url_for('parameters.create_user',mode='Update',user_id=current_user.id) }}">Update User</a></li>
+        {% endif %}
+        {% if current_user.is_authenticated and current_user.is_admin %}
+          <li class="nav-item nav-link"><a href="{{ url_for('parameters.users') }}">Users</a></li>
+          <li class="nav-item nav-link"><a href="{{ url_for('parameters.sysints') }}">AI Guidance</a></li>
+        {% endif %}
         <li class="nav-item nav-link"><a href="{{ url_for('pages.about') }}">About</a></li>
+
+        {% if current_user.is_authenticated %}
+          <li class="nav-item nav-link">
+            <a href="{{ url_for('login.logout') }}">Logout</a>
+          </li>
+        {% else %}
+          <li class="nav-item nav-link">
+              <a href="{{ url_for('login.login') }}">Login</a>
+          </li>
+        {% endif %}
+
       </ul>
+      <span class="navbar-text ms-auto">{% if current_user.is_authenticated %}{{current_user.user_name}}{% endif %}</span>
     </div>
 </nav>
+
