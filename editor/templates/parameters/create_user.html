@@ -33,7 +33,9 @@
         <label for="user_role">User Role</label>
         <select name="user_role" class="form-select" id="user_role">
             <option value="Standard" {% if user['user_role'] == 'Standard' %}selected{% endif %}>Standard</option>
-            <option value="Admin" {% if user['user_role'] == 'Admin' %}selected{% endif %}>Admin</option>
+            {% if current_user.is_admin %}
+              <option value="Admin" {% if user['user_role'] == 'Admin' %}selected{% endif %}>Admin</option>
+            {% endif %}
         </select>
     </div>
     <div class="form-group">
