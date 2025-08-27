@@ -47,7 +47,8 @@ def generate_doc_from_posts(story_id) -> BytesIO:
     story = editor.db.get_story(story_id)
     doc.add_heading(f"Title {story['title']}", level=0)
     doc.add_heading(f"Author {current_user.user_name}", level=2)
-    markdown_to_docx_paragraph(doc, story['note'])
+    if story['note'] != "":
+        markdown_to_docx_paragraph(doc, story['note'])
 
     ix=1
     char_print=False

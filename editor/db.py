@@ -163,8 +163,8 @@ def get_latest_story():
     try:
         db = get_db()
         sep=build_sel()
-        select = f"SELECT story_id, title, note FROM stories WHERE created = (SELECT MAX(created) from stories WHERE user_id = {sep})"
-        story = db.execute (select,(current_user.id,)).fetchone()
+        select = f"SELECT story_id, title, note FROM stories WHERE user_id = {sep} AND created = (SELECT MAX(created) from stories WHERE user_id = {sep})"
+        story = db.execute (select,(current_user.id, current_user.id,)).fetchone()
         return story
     except Exception as e:
         print_except("get_latest_story", e)
