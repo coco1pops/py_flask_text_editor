@@ -1,23 +1,24 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}{{ 'Update' if char else 'Add' }} Character{% endblock title %}</h2>
+    <h2>{% block title %}{{ 'Update' if char else 'Add' }} Character{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
-  <form method="POST" enctype="multipart/form-data" autocomplete="off">
+<form method="POST" enctype="multipart/form-data" autocomplete="off">
     <div class="form-group">
         <label for="name">Name</label>
         <input type="text" name="name" id="name" value="{{ char.name if char else '' }}" class="form-control">
     </div>
     <div class="form-group">
         <label for="description">Description</label>
-        <textarea name="description" id="description" class="form-control">{{ char.description if char else '' }}</textarea>
+        <textarea name="description" id="description"
+            class="form-control">{{ char.description if char else '' }}</textarea>
     </div>
 
     <div class="mb-3">
         <label for="imageUpload" class="btn btn-primary">
-            📁 Choose Image 
+            📁 Choose Image
         </label> <span id="fileName" class="text-muted"></span>
         <input type="file" id="imageUpload" name="image" class="d-none">
     </div>
@@ -26,53 +27,55 @@
     {% if char.image_data %}
         <img id="currentImage" name="currentImage" src="{{ char.image_data }}" style="max-width:300px;" />
     {% endif %}
-     
+
     <div class="form-group">
         <label for="personality">Personality</label>
-        <textarea name="personality" id="personality" class="form-control">{{ char.personality if char else '' }}</textarea>
+        <textarea name="personality" id="personality"
+            class="form-control">{{ char.personality if char else '' }}</textarea>
     </div>
     <div class="form-group">
         <label for="motivation">Motivation</label>
-        <textarea name="motivation" id="motivation" class="form-control">{{ char.motivation if char else '' }}</textarea>
+        <textarea name="motivation" id="motivation"
+            class="form-control">{{ char.motivation if char else '' }}</textarea>
     </div>
     <div class="form-group">
         <button type="submit" class="btn btn-primary">{{ 'Update' if char else 'Add' }}</button>
     </div>
-  </form>
-    {% with messages = get_flashed_messages(with_categories=true) %}
+</form>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message }}</div>
-        {% endfor %}
+            <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message
+                }}</div>
+            {% endfor %}
     {% endif %}
-    {% endwith %}
+{% endwith %}
 
-    <div class="modal fade" id="Notify" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade" id="Notify" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
 
-        <div class="modal-header">
-            <h5 class="modal-title" id="myModalLabel">Error !</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
+            <div class="modal-header">
+                <h5 class="modal-title" id="myModalLabel">Error !</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 
-        <div class="modal-body" id="modal-message">
-            Invalid file type
-        </div>
+            <div class="modal-body" id="modal-message">
+                Invalid file type
+            </div>
 
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
 
         </div>
     </div>
-    </div>
-
-
+</div>
 
 <script>
 
-    function setFormMode(mode, row_id){
+    function setFormMode(mode, row_id) {
         AppState.formMode = mode;
         AppState.editRow = row_id;
     };
@@ -82,13 +85,13 @@
 
     const AppState = {
         formMode: "New",
-        editRow: -1, 
+        editRow: -1,
     };
 
     const input = document.getElementById('imageUpload');
     const fileName = document.getElementById('fileName');
     const currentImage = document.getElementById('currentImage');
-    
+
 
     input.addEventListener('change', () => {
         fileName.textContent = input.files[0]?.name || 'No file chosen';
@@ -97,35 +100,37 @@
             formData.append("file", input.files[0]);  // input is your file input
 
             $.ajax({
-            url: "/checkimage",
-            type: "post",
-            data: formData,
+                url: "/checkimage",
+                type: "post",
+                data: formData,
                 processData: false,
                 contentType: false,
-            success: function(response) {
-                const file = input.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentImage.src = '';
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(file)
+                success: function (response) {
+                    const file = input.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        currentImage.src = '';
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file)
                 },
-            error: function(xhr, status, error) {
-                const modal = new bootstrap.Modal(document.getElementById('Notify'));
-                if (xhr.status == "413") {
-                    document.getElementById("modal-message").textContent="File too large"; }
-                else {
-                    document.getElementById("modal-message").textContent="Invalid file type";};
+                error: function (xhr, status, error) {
+                    const modal = new bootstrap.Modal(document.getElementById('Notify'));
+                    if (xhr.status == "413") {
+                        document.getElementById("modal-message").textContent = "File too large";
+                    }
+                    else {
+                        document.getElementById("modal-message").textContent = "Invalid file type";
+                    };
 
-                fileName.textContent = 'No file chosen';
-                modal.show();
+                    fileName.textContent = 'No file chosen';
+                    modal.show();
 
-            }       
-        })
+                }
+            })
         }
-  });
+    });
 
 </script>
 {% endblock content %}

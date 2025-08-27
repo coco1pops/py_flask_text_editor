@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 
 {% block header %}
-    <div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
-    <div class="flex-grow-1 text-center">
-      <h2 class="m-0">User</h2>
-    </div>
-    <div class="ms-auto">
-      <a href="/createuser" class="btn btn-primary">Add</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+  <div class="flex-grow-1 text-center">
+    <h2 class="m-0">User</h2>
   </div>
+  <div class="ms-auto">
+    <a href="/createuser" class="btn btn-primary">Add</a>
+  </div>
+</div>
 {% endblock header %}
 
 {% block content %}
@@ -31,7 +31,8 @@
 
         <td class="button_col">
           <form method="post">
-            <button type="submit" name="action" id="{{user['user_id']}}" value="{{user['user_id']}}" class="btn btn-secondary">
+            <button type="submit" name="action" id="{{user['user_id']}}" value="{{user['user_id']}}"
+              class="btn btn-secondary">
               <i class="bi bi-pen-fill"></i>
             </button>
           </form>
@@ -41,14 +42,14 @@
           <button class='btn btn-danger btn-secondary deletebutton' type="button" id="{{user['user_id']}}">
             <i class="bi bi-trash-fill"></i>
           </button>
-        </td>        
+        </td>
 
       </tr>
     {% endfor %}
 
   </tbody>
- 
-</table> 
+
+</table>
 
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
@@ -68,79 +69,80 @@
   </div>
 </div>
 
-<div id="flash-container" style="margin-top: 20px;"</div>
+<div id="flash-container" style="margin-top: 20px;" </div>
 
 
- <script>
-    function showBootstrapConfirm(callback) {
-      const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
-      modal.show();
+<script>
+  function showBootstrapConfirm(callback) {
+    const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
+    modal.show();
 
-      // Remove previous handlers to avoid stacking
-      $('#confirmBtn').off('click').on('click', function () {
-        $('#confirmModal').modal('hide');
-        callback(true);
-      });
-
-      $('#cancelBtn').off('click').on('click', function () {
-        $('#confirmModal').modal('hide');
-        callback(false);
-      });
-    } 
-
-    document.querySelectorAll('.deletebutton').forEach(button => {
-      button.addEventListener('click', event => {
-        var id = event.currentTarget.id;
-        deleteClicked(id);
-      });
+    // Remove previous handlers to avoid stacking
+    $('#confirmBtn').off('click').on('click', function () {
+      $('#confirmModal').modal('hide');
+      callback(true);
     });
 
-    function deleteClicked(id){
-      showBootstrapConfirm((confirmed) => {
-        if (confirmed) {
-          console.log("Confirmed delete user "+ id + "!");
-          deleteUser(id);
-        }
-        else {console.log ("Delete Cancelled.");
+    $('#cancelBtn').off('click').on('click', function () {
+      $('#confirmModal').modal('hide');
+      callback(false);
+    });
+  }
 
-        };
+  document.querySelectorAll('.deletebutton').forEach(button => {
+    button.addEventListener('click', event => {
+      var id = event.currentTarget.id;
+      deleteClicked(id);
+    });
+  });
+
+  function deleteClicked(id) {
+    showBootstrapConfirm((confirmed) => {
+      if (confirmed) {
+        console.log("Confirmed delete user " + id + "!");
+        deleteUser(id);
       }
-    );
-    };
+      else {
+        console.log("Delete Cancelled.");
 
-    function deleteUser(id) {
-      $.ajax({
+      };
+    }
+    );
+  };
+
+  function deleteUser(id) {
+    $.ajax({
       url: "/deleteuser",
       type: "post",
-      data: {'user_id': id},
+      data: { 'user_id': id },
       dataType: 'json'
-      }).done(function(response) {
-        console.log(response);
-        var rowid = "row_" + id;
-        var r = document.getElementById(rowid);
-        var i = r.rowIndex;
-        document.getElementById("userTable").deleteRow(i);
-        if (response.messages) {
-          response.messages.forEach(([category, message]) => {
-            showFlashMessage(category, message);
-            });
-        }
-       }).fail(function(error) {
-        console.log(error);
-        })
-      };
-      
-      function showFlashMessage(category, message) {
-        const alertClass = {
-        success: "alert-success",
-        error: "alert-danger",
-        warning: "alert-warning",
-        info: "alert-info"
-        }[category] || "alert-secondary";
-
-        const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
-        $("#flash-container").html(alert);  // Or append if you want multiple
+    }).done(function (response) {
+      console.log(response);
+      var rowid = "row_" + id;
+      var r = document.getElementById(rowid);
+      var i = r.rowIndex;
+      document.getElementById("userTable").deleteRow(i);
+      if (response.messages) {
+        response.messages.forEach(([category, message]) => {
+          showFlashMessage(category, message);
+        });
       }
+    }).fail(function (error) {
+      console.log(error);
+    })
+  };
 
-  </script>
+  function showFlashMessage(category, message) {
+    const alertClass = {
+      success: "alert-success",
+      error: "alert-danger",
+      warning: "alert-warning",
+      info: "alert-info"
+    }[category] || "alert-secondary";
+
+    const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
+    $("#flash-container").html(alert);  // Or append if you want multiple
+  }
+
+</script>
 {% endblock content %}

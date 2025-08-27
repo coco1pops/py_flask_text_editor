@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}User Login{% endblock title %}</h2>
+<h2>{% block title %}User Login{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
@@ -10,14 +10,15 @@
     <input type="password" name="password" placeholder="Password" required autocomplete="off">
     <button class="btn btn-primary" type="submit">Login</button>
 
-</form>
+  </form>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message
+          }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 
 {% endblock content %}

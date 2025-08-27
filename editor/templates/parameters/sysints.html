@@ -33,7 +33,8 @@
 
         <td class="button_col">
           <form method="post">
-            <button type="submit" name="action" id="{{sysint['sysint_id']}}" value="{{sysint['sysint_id']}}" class="btn btn-secondary">
+            <button type="submit" name="action" id="{{sysint['sysint_id']}}" value="{{sysint['sysint_id']}}"
+              class="btn btn-secondary">
               <i class="bi bi-pen-fill"></i>
             </button>
           </form>
@@ -43,107 +44,110 @@
           <button class='btn btn-danger btn-secondary deletebutton' type="button" id="{{sysint['sysint_id']}}">
             <i class="bi bi-trash-fill"></i>
           </button>
-        </td>        
+        </td>
 
       </tr>
     {% endfor %}
 
-  <!-- Confirmation Modal -->
-  <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
-        </div>
-        <div class="modal-body">
-          Are you sure you want to proceed?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmBtn">Yes, Proceed</button>
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle"
+      aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to proceed?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmBtn">Yes, Proceed</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
   </tbody>
-  </table> 
+</table>
 
-  <div id="flash-container" style="margin-top: 20px;"</div>
- 
- <script>
+<div id="flash-container" style="margin-top: 20px;" </div>
 
-    function showBootstrapConfirm(callback) {
-      const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
-      modal.show();
+<script>
 
-      // Remove previous handlers to avoid stacking
-      $('#confirmBtn').off('click').on('click', function () {
-        $('#confirmModal').modal('hide');
-        callback(true);
-      });
+  function showBootstrapConfirm(callback) {
+    const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
+    modal.show();
 
-      $('#cancelBtn').off('click').on('click', function () {
-        $('#confirmModal').modal('hide');
-        callback(false);
-      });
-    } 
-
-    document.querySelectorAll('.deletebutton').forEach(button => {
-      button.addEventListener('click', event => {
-        var id = event.currentTarget.id;
-        deleteClicked(id);
-      });
+    // Remove previous handlers to avoid stacking
+    $('#confirmBtn').off('click').on('click', function () {
+      $('#confirmModal').modal('hide');
+      callback(true);
     });
 
-    function deleteClicked(id){
-      showBootstrapConfirm((confirmed) => {
-        if (confirmed) {
-          console.log("Confirmed delete AI Guidance "+ id + "!");
-          deleteSysint(id);
-        }
-        else {console.log ("Delete Cancelled.");
-        };
-      }
-    );
-    };
+    $('#cancelBtn').off('click').on('click', function () {
+      $('#confirmModal').modal('hide');
+      callback(false);
+    });
+  }
 
-    function deleteSysint(id) {
-      $.ajax({
+  document.querySelectorAll('.deletebutton').forEach(button => {
+    button.addEventListener('click', event => {
+      var id = event.currentTarget.id;
+      deleteClicked(id);
+    });
+  });
+
+  function deleteClicked(id) {
+    showBootstrapConfirm((confirmed) => {
+      if (confirmed) {
+        console.log("Confirmed delete AI Guidance " + id + "!");
+        deleteSysint(id);
+      }
+      else {
+        console.log("Delete Cancelled.");
+      };
+    }
+    );
+  };
+
+  function deleteSysint(id) {
+    $.ajax({
       url: "/deletesysint",
       type: "post",
-      data: {'sysint_id': id},
-      dataType: 'json'}
-      ).done(function(response) {
-          console.log(response);
-          var rowid = "row_" + id;
-          var r = document.getElementById(rowid);
-          var i = r.rowIndex;
-          document.getElementById("sysintTable").deleteRow(i);
-          if (response.messages) {
-            response.messages.forEach(([category, message]) => {
-            showFlashMessage(category, message);
-            });
-          }
-        }
-      ).fail(function(error) {
-        console.log(error);
-      });
-    };
+      data: { 'sysint_id': id },
+      dataType: 'json'
+    }
+    ).done(function (response) {
+      console.log(response);
+      var rowid = "row_" + id;
+      var r = document.getElementById(rowid);
+      var i = r.rowIndex;
+      document.getElementById("sysintTable").deleteRow(i);
+      if (response.messages) {
+        response.messages.forEach(([category, message]) => {
+          showFlashMessage(category, message);
+        });
+      }
+    }
+    ).fail(function (error) {
+      console.log(error);
+    });
+  };
 
-    function showFlashMessage(category, message) {
-        const alertClass = {
-        success: "alert-success",
-        error: "alert-danger",
-        warning: "alert-warning",
-        info: "alert-info"
-        }[category] || "alert-secondary";
+  function showFlashMessage(category, message) {
+    const alertClass = {
+      success: "alert-success",
+      error: "alert-danger",
+      warning: "alert-warning",
+      info: "alert-info"
+    }[category] || "alert-secondary";
 
-        const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
-        $("#flash-container").html(alert);  // Or append if you want multiple
-    };
-  </script>
+    const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
+    $("#flash-container").html(alert);  // Or append if you want multiple
+  };
+</script>
 
 
 
-{% endblock content %}
+  {% endblock content %}

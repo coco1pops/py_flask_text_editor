@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
-    <div class="flex-grow-1 text-center">
-      <h2 class="m-0">Stories</h2>
-    </div>
-    <div class="ms-auto">
-      <a href="/create" class="btn btn-primary">Add</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+  <div class="flex-grow-1 text-center">
+    <h2 class="m-0">Stories</h2>
   </div>
+  <div class="ms-auto">
+    <a href="/create" class="btn btn-primary">Add</a>
+  </div>
+</div>
 {% endblock header %}
 
 {% block content %}
@@ -35,7 +35,8 @@
         <td>{{story["created"].strftime("%b %d, %Y at %I:%M%p")}}</td>
         <td class="button_col">
           <form method="post">
-            <button type="submit" name="action" id="{{story['story_id']}}" value="{{story['story_id']}}" class="btn btn-secondary">
+            <button type="submit" name="action" id="{{story['story_id']}}" value="{{story['story_id']}}"
+              class="btn btn-secondary">
               <i class="bi bi-pen-fill"></i>
             </button>
           </form>
@@ -51,67 +52,68 @@
           <button class='btn btn-danger btn-secondary deletebutton' type="button" id="del_{{story['story_id']}}">
             <i class="bi bi-trash-fill"></i>
           </button>
-        </td>        
+        </td>
 
       </tr>
     {% endfor %}
 
-  <!-- Confirmation Modal -->
-  <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
-        </div>
-        <div class="modal-body" id="modal_text">
-          Are you sure you want to proceed?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
-          <button type="button" id="proceedButton" class="btn btn-secondary">Yes, Proceed</button>
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle"
+      aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
+          </div>
+          <div class="modal-body" id="modal_text">
+            Are you sure you want to proceed?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
+            <button type="button" id="proceedButton" class="btn btn-secondary">Yes, Proceed</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!--Modal Error Message-->
-  <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <!--Modal Error Message-->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-          <div id="errorModalBorder" class="modal-content border-danger">
-            <div id="errorModalColour" class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="errorModalBody">
-                <!-- Error message will be injected here -->
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelBtn">OK</button>
-            </div>
+        <div id="errorModalBorder" class="modal-content border-danger">
+          <div id="errorModalColour" class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="errorModalLabel">Error</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
+          <div class="modal-body" id="errorModalBody">
+            <!-- Error message will be injected here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelBtn">OK</button>
+          </div>
+        </div>
       </div>
-  </div>
+    </div>
 
   </tbody>
- 
- <script>
 
-    function showBootstrapConfirm(callback, options={}) {
+  <script>
+
+    function showBootstrapConfirm(callback, options = {}) {
       const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
       const button = document.getElementById('proceedButton');
       const title = document.getElementById('confirmTitle');
       const txt = document.getElementById('modal_text');
-      if (options.mode=="print") {
-        title.innerHTML="Confirm Print"
-        txt.innerHTML="Are you sure you want to print story "+ options.title + "?"         
+      if (options.mode == "print") {
+        title.innerHTML = "Confirm Print"
+        txt.innerHTML = "Are you sure you want to print story " + options.title + "?"
         button.classList.toggle('btn-secondary', true);
-        button.classList.toggle('btn-danger',false);
+        button.classList.toggle('btn-danger', false);
       }
       else {
-        title.innerHTML="Confirm Delete"
-        txt.innerHTML="Are you sure you want to delete story " + options.title + "?"
+        title.innerHTML = "Confirm Delete"
+        txt.innerHTML = "Are you sure you want to delete story " + options.title + "?"
         button.classList.toggle('btn-secondary', false);
-        button.classList.toggle('btn-danger',true);
+        button.classList.toggle('btn-danger', true);
       }
       modal.show();
 
@@ -125,7 +127,7 @@
         $('#confirmModal').modal('hide');
         callback(false);
       });
-    } 
+    }
 
     document.querySelectorAll('.deletebutton').forEach(button => {
       button.addEventListener('click', event => {
@@ -141,27 +143,28 @@
       });
     });
 
-    function deleteClicked(id){
-      const dlid=id.substr(4);
+    function deleteClicked(id) {
+      const dlid = id.substr(4);
       const rowid = "row_" + dlid;
       const row = document.getElementById(rowid);
       const title = row.cells[1].textContent.trim();
 
       showBootstrapConfirm((confirmed, opts) => {
         if (confirmed) {
-          console.log("Confirmed delete row "+ id + "!");
+          console.log("Confirmed delete row " + id + "!");
           deleteStory(dlid);
         }
-        else {console.log ("Delete Cancelled.");
+        else {
+          console.log("Delete Cancelled.");
         };
-        },{
-          mode: 'delete',
-          title: title
-        });
-      };
+      }, {
+        mode: 'delete',
+        title: title
+      });
+    };
 
-    function printClicked(id){
-      const prid=id.substr(5);
+    function printClicked(id) {
+      const prid = id.substr(5);
       const rowid = "row_" + prid;
       const row = document.getElementById(rowid);
       const title = row.cells[1].textContent.trim();
@@ -169,42 +172,43 @@
         if (confirmed) {
           printStory(prid);
         }
-        else {console.log ("Print Cancelled.");
+        else {
+          console.log("Print Cancelled.");
         };
-      },{
-          mode: 'print',
-          title: title
-        });
+      }, {
+        mode: 'print',
+        title: title
+      });
     };
 
     function deleteStory(id) {
       $.ajax({
-      url: "/delete_story",
-      type: "post",
-      data: {'story_id': id},
-      dataType: 'json',
-      success: function(response) {
-        console.log(response);
-        var rowid = "row_" + id;
-        var r = document.getElementById(rowid);
-        var i = r.rowIndex;
-        document.getElementById("storyTable").deleteRow(i);
-       },
-      error: function(error) {
-        console.log(error);
-      }
+        url: "/delete_story",
+        type: "post",
+        data: { 'story_id': id },
+        dataType: 'json',
+        success: function (response) {
+          console.log(response);
+          var rowid = "row_" + id;
+          var r = document.getElementById(rowid);
+          var i = r.rowIndex;
+          document.getElementById("storyTable").deleteRow(i);
+        },
+        error: function (error) {
+          console.log(error);
+        }
       })
-    }; 
+    };
 
     function printStory(id) {
       $.ajax({
-      url: "/print_story",
-      type: "post",
-      data: {'story_id': id},
-      xhrFields: {
-        responseType: 'blob'  // Expect binary data
+        url: "/print_story",
+        type: "post",
+        data: { 'story_id': id },
+        xhrFields: {
+          responseType: 'blob'  // Expect binary data
         }
-      }).done(function(blob){
+      }).done(function (blob) {
         // Create a temporary URL for the blob
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -218,38 +222,38 @@
         a.remove();
         window.URL.revokeObjectURL(url);  // Clean up
         showErrorModal("File created in Download folder")
-      }).fail (function(jqXHR, textStatus, errorThrown) {
+      }).fail(function (jqXHR, textStatus, errorThrown) {
         console.log("AJAX Error", textStatus, errorThrown);
         showErrorModal("Something went wrong: " + errorThrown, "Error");
       });
 
-      }
-      
+    }
+
     function showErrorModal(message, severity) {
-        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-        const modalBody = document.getElementById('errorModalBody');
-        modalBody.textContent = message;
-        const modalTitle = document.getElementById('errorModalLabel');
-        modalTitle.textContent = severity;
-        const modalColour=document.getElementById('errorModalColour');
-        const modalBorder=document.getElementById('errorModalBorder');
-        if (severity=="Error") {
-          modalColour.classList.toggle("bg-danger", true);
-          modalColour.classList.toggle("bg-success", false);
-          modalBorder.classList.toggle("border-danger", true);
-          modalBorder.classList.toggle("border-success", false);
-          }
-        else {
-          modalColour.classList.toggle("bg-danger", false);
-          modalColour.classList.toggle("bg-success", true);
-          modalBorder.classList.toggle("border-danger", false);
-          modalBorder.classList.toggle("border-success", true);      
-        };
-        errorModal.show();
+      const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+      const modalBody = document.getElementById('errorModalBody');
+      modalBody.textContent = message;
+      const modalTitle = document.getElementById('errorModalLabel');
+      modalTitle.textContent = severity;
+      const modalColour = document.getElementById('errorModalColour');
+      const modalBorder = document.getElementById('errorModalBorder');
+      if (severity == "Error") {
+        modalColour.classList.toggle("bg-danger", true);
+        modalColour.classList.toggle("bg-success", false);
+        modalBorder.classList.toggle("border-danger", true);
+        modalBorder.classList.toggle("border-success", false);
+      }
+      else {
+        modalColour.classList.toggle("bg-danger", false);
+        modalColour.classList.toggle("bg-success", true);
+        modalBorder.classList.toggle("border-danger", false);
+        modalBorder.classList.toggle("border-success", true);
+      };
+      errorModal.show();
     }
 
   </script>
 
 
-</table> 
+</table>
 {% endblock content %}

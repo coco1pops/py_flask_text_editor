@@ -1,30 +1,33 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}Update Story{% endblock title %}</h2>
-
-
+<h2>{% block title %}Update Story{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
 
 <div id="top">
-    <h2> Story id: {{story['story_id']}} Author {{current_user.user_name}}</h2>
-    <p style="text-align: right;"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</p>
-
+    <h2> Story: {{story['title']}} </h2>
+    <div class="row d-flex justify-content-between align-items-center mb-3">
+    <div class="col-md-4">
+        <h4>Author {{current_user.user_name}}</h4>
+    </div>
+    <div class="created col-md-4"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</span>
+    </div>
 </div>
 
-<div id="controls" class="container">
+<div id="controls" class="container-fluid">
     <label for="title"> Title: </label>
     <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
     <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-6">
             <label for="note"> Note: </label>
             <textarea class="form-control" rows="6" id="note" onchange="handleInput(event)">{{story['note']}}</textarea>
         </div>
-        <div class="col-md-6 mb-3">
+        <div class="col-md-6">
             <label for="systeminstruction"> AI Guidance: </label>
-            <textarea class="form-control" rows="6" id="systeminstruction" onchange="handleInput(event)">{{story['systeminstruction']}}</textarea> 
+            <textarea class="form-control" rows="6" id="systeminstruction"
+                onchange="handleInput(event)">{{story['systeminstruction']}}</textarea>
         </div>
     </div>
 </div>
@@ -36,7 +39,7 @@
         <thead>
             <th class="hide">id</th>
             <th>Message</th>
-         </thead>
+        </thead>
 
         <tbody>
 
@@ -48,28 +51,34 @@
                         <div class="row border p-3 mb-3 align-items-start">
 
                             {%if post.image_mime_type != ""%}
-                                <div class="col-auto">
-                                    <img src="{{post['image_data']}}" class="img-fluid" style="max-width:300px; vertical-align: middle;" />
-                                </div>
+                            <div class="col-auto">
+                                <img src="{{post['image_data']}}" class="img-fluid"
+                                    style="max-width:300px; vertical-align: middle;" />
+                            </div>
                             {% endif %}
                             <div class="col d-flex flex-column h-100 justify-content-between">
                                 <p>{{post["message"]| safe }}</p>
                             </div>
                         </div>
                     {% else %}
-                        <div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
+                        <div id="message{{post['post_id']}}"
+                            class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}
+                        </div>
                         <div class="button_bar">
                             {% if post['creator'] == "user" %}
-                                <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
-                            {% endif %}  
+                                <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}"
+                                    onclick="selectRow(this, 'Edit Prompt')">Edit</button>
+                            {% endif %}
                             {% if loop.last and post['creator'] == "model" %}
-                                <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
+                                <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}"
+                                    onclick="selectRow(this, 'Edit Response')">Edit</button>
                             {% else %}
-                                <div></div>     
+                                <div></div>
                             {% endif %}
 
+                            <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span>
+                        </div>
                     {% endif %}
-                    <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span>
                 </td>
             </tr>
 
@@ -77,85 +86,90 @@
 
         </tbody>
     </table>
+</div>
 
-    <div class="controls-bar">
-        <h2 id="mode"></h2>
-        <textarea id="newprompt" class="entry-textarea" oninput="updateCount()" onchange="handleInput(event)">{{story['newpost']}}</textarea>
-        <br>
+<div class="controls-bar">
+    <h2 id="mode"></h2>
+    <textarea id="newprompt" class="entry-textarea mb-3" oninput="updateCount()"
+        onchange="handleInput(event)">{{story['newpost']}}</textarea>
+    <br>
 
-        <div class="row" align-items-center>
-            <div class="col-6 d-flex justify-content-between">
-                <button onclick="cancelUpdate()" class="btn btn-primary">Cancel</button> <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
-                <button onclick="post()" class="btn btn-primary">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+    <div class="row" align-items-center>
+        <div class="col-6 d-flex justify-content-between">
+            <button onclick="cancelUpdate()" class="btn btn-primary">Cancel</button>
+            <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+            <button onclick="post()" class="btn btn-primary">Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
                 In editPost it removes the chat history from that post onwards and resubmits the chat-->
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add Character</button>
-            </div>
-
-            <div class="col-2 dflex"> </div>
-
-            <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-
-                <!-- Spinner (initially hidden) -->
-                <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <div>
-                    Character count: <span id="charCount" class="text-end">0</span>
-                </div>
-            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add
+                Character</button>
         </div>
 
-        <div id="placeholder" style="margin-top: 30px"></div>
+        <div class="col-2 dflex"> </div>
+
+        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
+
+            <!-- Spinner (initially hidden) -->
+            <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div>
+                Character count: <span id="charCount" class="text-end">0</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Modal Add Character -->
-    <div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
+    <div id="placeholder" style="margin-top: 30px"></div>
+</div>
+
+<!-- Modal Add Character -->
+<div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
             <form id="assignCharForm">
                 <div class="modal-header">
-                <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                <div class="mb-3">
-                    <label for="charSelect" class="form-label">Choose a Character</label>
-                    <select class="form-select" id="charSelect" name="char_id" required>
-                    {% for char in chars %}
-                        <option value="{{ char.char_id }}">
-                        {{ char.name }}
-                        </option>
-                    {% endfor %}
-                    </select>
-                </div>
+                    <div class="mb-3">
+                        <label for="charSelect" class="form-label">Choose a Character</label>
+                        <select class="form-select" id="charSelect" name="char_id" required>
+                            {% for char in chars %}
+                            <option value="{{ char.char_id }}">
+                                {{ char.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Add</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </form>
-            </div>
         </div>
     </div>
+</div>
 
 
-    <!--Modal Error Message-->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-danger">
+<!--Modal Error Message-->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
             <div class="modal-body" id="errorModalBody">
                 <!-- Error message will be injected here -->
             </div>
-            </div>
         </div>
-        </div>
+    </div>
+</div>
 
 
-  <script>  
+<script>
     //
     // Function to update the number of characters in the prompt
     // TODO:Could be changed to calculate tokens
@@ -170,26 +184,26 @@
     function handleInput(event) {
         var target = event.target.id;
         var new_value = event.target.value;
-    
+
         $.ajax({
             url: "/update_story",
             type: "post",
-            data: {'story_id': st_id, 'field' : target , 'new value' : new_value },
+            data: { 'story_id': st_id, 'field': target, 'new value': new_value },
             dataType: 'json'
-        }).done(function(response) {
-                console.log(response);
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("AJAX Error", textStatus, errorThrown);
-                showErrorModal("Something went wrong: " + errorThrown);
-                })
+        }).done(function (response) {
+            console.log(response);
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.log("AJAX Error", textStatus, errorThrown);
+            showErrorModal("Something went wrong: " + errorThrown);
+        })
     };
     // Function to reset the prompt field
     // Resets the story newprompt value to "", the prompt to "" and the screen mode to New
     //
-    function cancelUpdate(){
+    function cancelUpdate() {
         document.getElementById("newprompt").value = "";
-        const row_id="row_" + AppState.editRow;
-        console.log("Row "+row_id)
+        const row_id = "row_" + AppState.editRow;
+        console.log("Row " + row_id)
         document.getElementById(row_id).classList.remove("highlighted");
         document.querySelectorAll('.edit-row').forEach(btn => {
             btn.disabled = false;
@@ -198,15 +212,15 @@
         $.ajax({
             url: "/update_story",
             type: "post",
-            data: {'story_id': st_id, 'field' : 'newprompt' , 'new value' : '' },
+            data: { 'story_id': st_id, 'field': 'newprompt', 'new value': '' },
             dataType: 'json'
-        }).done(function(response) {
-                console.log(response);
-                setFormMode("New", -1);
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("AJAX Error", textStatus, errorThrown);
-                showErrorModal("Something went wrong: " + errorThrown);
-            })
+        }).done(function (response) {
+            console.log(response);
+            setFormMode("New", -1);
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.log("AJAX Error", textStatus, errorThrown);
+            showErrorModal("Something went wrong: " + errorThrown);
+        })
     };
     //
     // Generic function to post prompts to the back-end
@@ -218,75 +232,77 @@
         const spinner = document.getElementById('loadingSpinner');
         spinner.style.display = 'inline-block'; // Show spinner
         document.querySelectorAll('.btn').forEach(btn => {
-            btn.disabled = true; 
+            btn.disabled = true;
         });
 
         $.ajax({
             url: "/generate",
             type: "post",
-            data: {'story_id': st_id, 
-                'prompt' : prompt, 
-                "mode" : AppState.formMode, 
-                'row_id' : AppState.editRow, 
-                'chars' : JSON.stringify(AppState.chars)},
+            data: {
+                'story_id': st_id,
+                'prompt': prompt,
+                "mode": AppState.formMode,
+                'row_id': AppState.editRow,
+                'chars': JSON.stringify(AppState.chars)
+            },
             dataType: 'json'
-        }).done(function(response) {
-                console.log(response);
-                window.location.reload();
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("AJAX Error", textStatus, errorThrown);
-                showErrorModal("Something went wrong: " + errorThrown);
-                console.log(error);
-        }).always(function(){
-                spinner.style.display = 'none'; 
-                document.querySelectorAll('.btn').forEach(btn => {
-                    btn.disabled = False; 
-                });
+        }).done(function (response) {
+            console.log(response);
+            window.location.reload();
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.log("AJAX Error", textStatus, errorThrown);
+            showErrorModal("Something went wrong: " + errorThrown);
+            console.log(error);
+        }).always(function () {
+            spinner.style.display = 'none';
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.disabled = False;
+            });
         })
     };
     //
     // Used to retrieve a row. Only works for posts, not parts
     //
-    function selectRow(btn, mode){
+    function selectRow(btn, mode) {
         const row = btn.closest("tr");
         // Highlight the selected row
         row.classList.add("highlighted");
         document.querySelectorAll('.edit-row').forEach(btn => {
-            btn.disabled = true; 
+            btn.disabled = true;
         });
         // retrieve prompt and assign to row contents
-       $.ajax({
+        $.ajax({
             url: "/get_message",
             type: "get",
-            data: {'post_id': row.cells[0].textContent},
+            data: { 'post_id': row.cells[0].textContent },
             dataType: 'json'
-        }).done(function(response) {
-                console.log(response);
-                document.getElementById("newprompt").value = response['message'];
-                window.scrollTo(0, document.body.scrollHeight);
-                setFormMode(mode, row.cells[0].textContent);
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("AJAX Error", textStatus, errorThrown);
-                showErrorModal("Something went wrong: " + errorThrown);
-        }).always(function() {
-                document.querySelectorAll('.edit-row').forEach(btn => {
-                btn.disabled = False; 
+        }).done(function (response) {
+            console.log(response);
+            document.getElementById("newprompt").value = response['message'];
+            window.scrollTo(0, document.body.scrollHeight);
+            setFormMode(mode, row.cells[0].textContent);
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.log("AJAX Error", textStatus, errorThrown);
+            showErrorModal("Something went wrong: " + errorThrown);
+        }).always(function () {
+            document.querySelectorAll('.edit-row').forEach(btn => {
+                btn.disabled = False;
             });
         });
-        
+
     }
 
     //
     // Used to create and display a container with a character and the associated text
     //
-    function buildchar(id, mime_type, img, text){
+    function buildchar(id, mime_type, img, text) {
         // 1. Create the container
         const container = document.createElement('div');
-        container.id = 'Container_'+id;
+        container.id = 'Container_' + id;
         container.className = 'row border p-3 mb-3 align-items-start characters';
 
         // 2. Create the image
-        if (mime_type != ""){
+        if (mime_type != "") {
             imgContainer = document.createElement('div');
             imgContainer.className = 'col-auto';
             const imgout = document.createElement('img');
@@ -299,19 +315,19 @@
         }
         // 3. Create the text
         const tbox1 = document.createElement('div');
-        tbox1.className="col";
+        tbox1.className = "col";
         const tbox2 = document.createElement('div');
-        tbox2.classname="d-flex flex-column h-100 justify-content-between"
+        tbox2.classname = "d-flex flex-column h-100 justify-content-between"
         const textout = document.createElement('p');
         textout.innerHTML = text;
         textout.className = 'mt-2 text-muted';
         const tbutton = document.createElement('div');
-        tbutton.className="text-end";
+        tbutton.className = "text-end";
         const clearbutton = document.createElement('button');
-        clearbutton.className="btn btn-secondary";
-        clearbutton.textContent="Clear";
-        clearbutton.type="button";
-        clearbutton.id="clear_" + id;
+        clearbutton.className = "btn btn-secondary";
+        clearbutton.textContent = "Clear";
+        clearbutton.type = "button";
+        clearbutton.id = "clear_" + id;
         tbutton.appendChild(clearbutton);
         tbox2.appendChild(textout);
         tbox2.appendChild(tbutton);
@@ -322,12 +338,12 @@
         const main = document.getElementById("placeholder");
         main.appendChild(container);
         // 5. Enable the clear button to delete the html component
-        document.getElementById("clear_" + id).onclick = function(event) {
+        document.getElementById("clear_" + id).onclick = function (event) {
             var target = event.target.id;
             const number = target.split("_")[1];
             const contdel = "Container_" + number;
             document.getElementById(contdel).remove();
-            const ix = AppState.chars.indexOf(number); 
+            const ix = AppState.chars.indexOf(number);
             AppState.chars.splice(ix, 1);
         }
         return true;
@@ -335,11 +351,11 @@
     // 
     // Used to determine if form is in add or edit mode and to blank list of characters
     //
-    function setFormMode(mode, row_id){
+    function setFormMode(mode, row_id) {
         AppState.formMode = mode;
         AppState.editRow = row_id;
         document.getElementById("mode").textContent = mode + " Mode";
-        AppState.chars =[]
+        AppState.chars = []
     };
 
     function showErrorModal(message) {
@@ -359,43 +375,43 @@
     const AppState = {
         formMode: "New",
         editRow: -1,
-        chars: [] 
+        chars: []
     };
 
     document.addEventListener("DOMContentLoaded", function () {
         updateCount();
-        setFormMode("New",-1);
+        setFormMode("New", -1);
     });
 
     window.addEventListener("load", function () {
         window.scrollTo(0, document.body.scrollHeight);
     });
 
-    document.getElementById('assignCharForm').addEventListener('submit', function(e) {
+    document.getElementById('assignCharForm').addEventListener('submit', function (e) {
         e.preventDefault();
         const id = document.getElementById("charSelect").value
         document.querySelectorAll('.btn').forEach(btn => {
-            btn.disabled = true; 
+            btn.disabled = true;
         });
         $.ajax({
             url: "/assignChar",
             type: "post",
-            data: {'char_id': id},
+            data: { 'char_id': id },
             dataType: "json"
-        }).done(function(response) {
-                AppState.chars.push(id);
-                buildchar(id, response['image_mime_type'], response['img'], response['text'])
-                const modal = bootstrap.Modal.getInstance(document.getElementById('assignCharModal'));
-                modal.hide();
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("AJAX Error", textStatus, errorThrown);
-                showErrorModal("Something went wrong: " + errorThrown);
-        }).always(function() {
-                document.querySelectorAll('.btn').forEach(btn => {
-                btn.disabled = false; 
+        }).done(function (response) {
+            AppState.chars.push(id);
+            buildchar(id, response['image_mime_type'], response['img'], response['text'])
+            const modal = bootstrap.Modal.getInstance(document.getElementById('assignCharModal'));
+            modal.hide();
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.log("AJAX Error", textStatus, errorThrown);
+            showErrorModal("Something went wrong: " + errorThrown);
+        }).always(function () {
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.disabled = false;
             });
         });
-    
+
     });
 
 </script>

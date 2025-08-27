@@ -1,85 +1,114 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}Instructions{% endblock title %}</h2>
+<h2>{% block title %}Instructions{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
 <h3>Introduction</h1>
-<p>This web-site allows you to write a story using AI.</p>
+  <p>This web-site allows you to write a story using AI.</p>
 
-<p>You supply the background to the story, the plot and the characters and the AI will develop a story based on this information.</p>
+  <p>You supply the background to the story, the plot and the characters and the AI will develop a story based on this
+    information.</p>
 
-<h3>Prompts and Responses</h3>
-<p>You provide prompts that the AI will respond to. The AI will use previous prompts and responses to generate the next response in the story.
-</p>
-<p>The AI will not be perfect. It will often misinterpret what you want to say or forget something that happened a few messages ago so you can edit the latest response and make corrections.
-</p>
-<p>If the AI gets it totally wrong, you can edit a previous prompt. This will delete all prompts and responses after the prompt you edited.
-</p>
+  <h3>Prompts and Responses</h3>
+  <p>You provide prompts that the AI will respond to. The AI will use previous prompts and responses to generate the
+    next response in the story.
+  </p>
+  <p>The AI will not be perfect. It will often misinterpret what you want to say or forget something that happened a few
+    messages ago so you can edit the latest response and make corrections.
+  </p>
+  <p>If the AI gets it totally wrong, you can edit a previous prompt. This will delete all prompts and responses after
+    the prompt you edited.
+  </p>
 
-<h3>Logging in</h3>
-<p>When you first access the site, you will be presented with the home page:</p>
-<img src="{{ url_for('static', filename='images/image12.jpg') }}" alt="First login" class="mb-3 border rounded w-75 img-fluid">
+  <h3>Logging in</h3>
+  <p>When you first access the site, you will be presented with the home page:</p>
+  <img src="{{ url_for('static', filename='images/image12.jpg') }}" alt="First login"
+    class="mb-3 border rounded w-50 img-fluid">
 
-<p>Pick login and you will get the login page. After logging in, you will get additional options on the home page:</p>
-<img src="{{ url_for('static', filename='images/image2.jpg') }}" alt="After login" class="mb-3 border rounded w-75 img-fluid">
+  <p>Pick login and you will get the login page. After logging in, you will get additional options on the home page:</p>
+  <img src="{{ url_for('static', filename='images/image2.jpg') }}" alt="After login"
+    class="mb-3 border rounded w-50 img-fluid">
 
-<p>You can update your user details by selecting the Update User link:
-</p>
-<img src="{{ url_for('static', filename='images/image5.jpg') }}" alt="Update user" class="mb-3 border rounded w-75 img-fluid">
+  <p>You can update your user details by selecting the Update User link:
+  </p>
+  <img src="{{ url_for('static', filename='images/image5.jpg') }}" alt="Update user"
+    class="mb-3 border rounded w-50 img-fluid">
 
-<h3>Characters</h3>
-<h4>List of Characters</h4>
-<p>Before you start writing a story, it’s a good idea to prepare some characters. These will be the main players in the story. You can do this by selecting the Characters link:
-</p>
-<img src="{{ url_for('static', filename='images/image4.jpg') }}" alt="List characters" class="mb-3 border rounded w-75 img-fluid">
-<p>This lists all the characters you have created. You can use the Add button in the top right to add more and the update and delete buttons on existing characters.
-</p>
-<h3>Adding a Character
-</h3>
-<p>Pressing Add brings up the following screen:
-</p>
-<img src="{{ url_for('static', filename='images/image13.png') }}" alt="Add character" class="mb-3 border rounded w-75 img-fluid">
-<p>Once you’ve added a character, the update screen will be displayed
-</p>
-<h4>Updating a Character</h4>
-<img src="{{ url_for('static', filename='images/image3.png') }}" alt="Update character" class="mb-3 border rounded w-75 img-fluid">
-<h3>Stories</h3>
-<p>Now that you have some characters, you can build a story. Select Stories from the toolbar to get a list
-</p>
-<h4>List of Stories:
-</h4>
-<img src="{{ url_for('static', filename='images/image7.png') }}" alt="List stories" class="mb-3 border rounded w-75 img-fluid">
-<p>Again, use the Add button on the top right to add a story
-</p>
-<h4>Adding a Story
-</h4>
-<p>AI Guidance are instructions for the AI to use throughout the story. You can change them but it won’t affect posts you’ve already created. Changing them radically will likely result in later parts of the story reading differently to earlier parts.
-</p>
-<p>AI Guidance can be populated with a template using the Get button which will bring up a drop-down list. Select one and tailor it for your needs afterwards.
-</p>
-<img src="{{ url_for('static', filename='images/image1.png') }}" alt="Add story" class="mb-3 border rounded w-75 img-fluid">
-<p>Once you press Post, the Update Story screen will be displayed.</p>
-<h4>Update Story</h4>
-<p>Below is a story screen populated with a note and AI guidance. The box at the bottom is where you add prompts and where responses will appear. The first prompt is particularly important and should prepare the ground for the rest of the story</p>
-<p>You can use the Add Character button to associate your characters with a prompt. Make sure you reference them in the prompt to direct the AI to look for them.
-</p>
-<img src="{{ url_for('static', filename='images/image8.png') }}" alt="Update story" class="mb-3 border rounded w-75 img-fluid">
-<h4>Example First Prompt</h4>
-<p>Here’s what an example prompt might look like. The Add Character button has been used to add in Merlin and Wilfred and they are referenced in the prompt itself.</p>
-<img src="{{ url_for('static', filename='images/image11.png') }}" alt="Example prompt" class="mb-3 border rounded w-50 img-fluid">
-<h4>Example Response</h4>
-<p>Pressing Submit will ask the AI to generate a response. It will think for a little while before the prompt will be displayed first, see below. </p>
-<img src="{{ url_for('static', filename='images/image9.png') }}" alt="Example prompt in table" class="mb-3 border rounded w-50 img-fluid">
-<p>The prompt will be followed by the response:</p>
-<img src="{{ url_for('static', filename='images/image6.png') }}" alt="Example response" class="mb-3 border rounded w-50 img-fluid">
-<p>Both the prompt and the response can be edited. It’s best to edit the responses in particular as you go. This also makes any responses that come afterwards more accurate.</p>
-<p>You can now add more prompts and the AI will generate more responses</p>
-<h4>Updating and Printing</h4>
-<p>You can use the Stories link to come back to a story and edit it or add further prompts
-</p>
-<p>You can also generate a Word document (docx) using the print option. This will be downloaded to the default location on your device (Download on a PC). It will not include the user prompts but will include the characters.
-</p>
-<img src="{{ url_for('static', filename='images/image10.png') }}" alt="Updating and Printing" class="mb-3 border rounded w-75 img-fluid">
-{% endblock content %}
+  <h3>Characters</h3>
+  <h4>List of Characters</h4>
+  <p>Before you start writing a story, it’s a good idea to prepare some characters. These will be the main players in
+    the story. You can do this by selecting the Characters link:
+  </p>
+  <img src="{{ url_for('static', filename='images/image4.jpg') }}" alt="List characters"
+    class="mb-3 border rounded w-50 img-fluid">
+  <p>This lists all the characters you have created. You can use the Add button in the top right to add more and the
+    update and delete buttons on existing characters.
+  </p>
+  <h3>Adding a Character
+  </h3>
+  <p>Pressing Add brings up the following screen:
+  </p>
+  <img src="{{ url_for('static', filename='images/image13.png') }}" alt="Add character"
+    class="mb-3 border rounded w-50 img-fluid">
+  <p>Once you’ve added a character, the update screen will be displayed
+  </p>
+  <h4>Updating a Character</h4>
+  <img src="{{ url_for('static', filename='images/image3.png') }}" alt="Update character"
+    class="mb-3 border rounded w-50 img-fluid">
+  <h3>Stories</h3>
+  <p>Now that you have some characters, you can build a story. Select Stories from the toolbar to get a list
+  </p>
+  <h4>List of Stories:
+  </h4>
+  <img src="{{ url_for('static', filename='images/image7.png') }}" alt="List stories"
+    class="mb-3 border rounded w-50 img-fluid">
+  <p>Again, use the Add button on the top right to add a story
+  </p>
+  <h4>Adding a Story
+  </h4>
+  <p>AI Guidance are instructions for the AI to use throughout the story. You can change them but it won’t affect posts
+    you’ve already created. Changing them radically will likely result in later parts of the story reading differently
+    to earlier parts.
+  </p>
+  <p>AI Guidance can be populated with a template using the Get button which will bring up a drop-down list. Select one
+    and tailor it for your needs afterwards.
+  </p>
+  <img src="{{ url_for('static', filename='images/image1.png') }}" alt="Add story"
+    class="mb-3 border rounded w-50 img-fluid">
+  <p>Once you press Post, the Update Story screen will be displayed.</p>
+  <h4>Update Story</h4>
+  <p>Below is a story screen populated with a note and AI guidance. The box at the bottom is where you add prompts and
+    where responses will appear. The first prompt is particularly important and should prepare the ground for the rest
+    of the story</p>
+  <p>You can use the Add Character button to associate your characters with a prompt. Make sure you reference them in
+    the prompt to direct the AI to look for them.
+  </p>
+  <img src="{{ url_for('static', filename='images/image8.png') }}" alt="Update story"
+    class="mb-3 border rounded w-50 img-fluid">
+  <h4>Example First Prompt</h4>
+  <p>Here’s what an example prompt might look like. The Add Character button has been used to add in Merlin and Wilfred
+    and they are referenced in the prompt itself.</p>
+  <img src="{{ url_for('static', filename='images/image11.png') }}" alt="Example prompt"
+    class="mb-3 border rounded w-50 img-fluid">
+  <h4>Example Response</h4>
+  <p>Pressing Submit will ask the AI to generate a response. It will think for a little while before the prompt will be
+    displayed first, see below. </p>
+  <img src="{{ url_for('static', filename='images/image9.png') }}" alt="Example prompt in table"
+    class="mb-3 border rounded w-25 img-fluid">
+  <p>The prompt will be followed by the response:</p>
+  <img src="{{ url_for('static', filename='images/image6.png') }}" alt="Example response"
+    class="mb-3 border rounded w-25 img-fluid">
+  <p>Both the prompt and the response can be edited. It’s best to edit the responses in particular as you go. This also
+    makes any responses that come afterwards more accurate.</p>
+  <p>You can now add more prompts and the AI will generate more responses</p>
+  <h4>Updating and Printing</h4>
+  <p>You can use the Stories link to come back to a story and edit it or add further prompts
+  </p>
+  <p>You can also generate a Word document (docx) using the print option. This will be downloaded to the default
+    location on your device (Download on a PC). It will not include the user prompts but will include the characters.
+  </p>
+  <img src="{{ url_for('static', filename='images/image10.png') }}" alt="Updating and Printing"
+    class="mb-3 border rounded w-50 img-fluid">
+  {% endblock content %}

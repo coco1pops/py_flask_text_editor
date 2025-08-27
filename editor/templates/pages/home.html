@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h2>{% block title %}Home{% endblock title %}</h2>
+<h2>{% block title %}Home{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
-  <p>
-    To find instructions visit the <a href="{{ url_for('pages.instructions') }}">Instructions page</a>.
-  </p>
+<p>
+  To find instructions visit the <a href="{{ url_for('pages.instructions') }}">Instructions page</a>.
+</p>
   {% if story is defined %}
     <h4>Latest Story</h4>
     <p>Author: {{current_user.user_name}}</p>
@@ -20,6 +20,5 @@
       </div>
     </form>
   {% endif %}
-  
 
 {% endblock content %}

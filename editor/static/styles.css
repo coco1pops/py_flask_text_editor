@@ -1,5 +1,5 @@
 h2 {
-  text-align:center;
+  text-align: center;
 }
 
 .form-group {
@@ -10,16 +10,16 @@ table {
   border-collapse: collapse;
   margin-left: auto;
   margin-right: auto;
-
- }
+}
 
 .controls-bar {
   border-collapse: collapse;
   margin-left: auto;
   margin-right: auto;
- }
+}
 
- th, td {
+th,
+td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
@@ -30,8 +30,8 @@ th {
 }
 
 .entry-textarea {
-  width:100%;
-  height: 200px;
+  width: 100%;
+  height: 300px;
   resize: vertical;
 }
 
@@ -40,31 +40,26 @@ th {
 }
 
 .created {
-  color:darkgray;   
-  display: flex; 
+  color: darkgray;
+  display: flex;
   justify-content: flex-end;
 
 }
 
 .model {
-  color:black;
+  color: black;
 }
 
 .user {
-  color:blue;
-  font-style :italic;
+  color: blue;
+  font-style: italic;
 }
 
 .highlighted {
-  background-color: #ffff99; /* soft yellow */
+  background-color: #ffff99;
+  /* soft yellow */
 }
 
 .button_col {
   text-align: center;
-}
-
-.edit-text {
-  display:inline-block;
-  width:45%;
-  resize: vertical;
 }
