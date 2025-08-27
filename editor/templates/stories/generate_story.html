@@ -14,15 +14,15 @@
 
 </div>
 
-<div id="controls">
+<div id="controls" class="container">
     <label for="title"> Title: </label>
     <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
-    <div class="button_bar">
-        <div class="edit-text">
+    <div class="row">
+        <div class="col-md-6 mb-3">
             <label for="note"> Note: </label>
             <textarea class="form-control" rows="6" id="note" onchange="handleInput(event)">{{story['note']}}</textarea>
         </div>
-        <div class="edit-text">
+        <div class="col-md-6 mb-3">
             <label for="systeminstruction"> AI Guidance: </label>
             <textarea class="form-control" rows="6" id="systeminstruction" onchange="handleInput(event)">{{story['systeminstruction']}}</textarea> 
         </div>
@@ -166,7 +166,6 @@
     };
     //
     // Function to update a field on the stories table
-    // TODO: Error and success console logging might be improved
     //
     function handleInput(event) {
         var target = event.target.id;
@@ -196,7 +195,6 @@
             btn.disabled = false;
         });
 
-
         $.ajax({
             url: "/update_story",
             type: "post",
@@ -219,6 +217,9 @@
         const prompt = document.getElementById("newprompt").value;
         const spinner = document.getElementById('loadingSpinner');
         spinner.style.display = 'inline-block'; // Show spinner
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.disabled = true; 
+        });
 
         $.ajax({
             url: "/generate",
@@ -238,6 +239,9 @@
                 console.log(error);
         }).always(function(){
                 spinner.style.display = 'none'; 
+                document.querySelectorAll('.btn').forEach(btn => {
+                    btn.disabled = False; 
+                });
         })
     };
     //
@@ -247,6 +251,9 @@
         const row = btn.closest("tr");
         // Highlight the selected row
         row.classList.add("highlighted");
+        document.querySelectorAll('.edit-row').forEach(btn => {
+            btn.disabled = true; 
+        });
         // retrieve prompt and assign to row contents
        $.ajax({
             url: "/get_message",
@@ -261,11 +268,12 @@
         }).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("AJAX Error", textStatus, errorThrown);
                 showErrorModal("Something went wrong: " + errorThrown);
-            })
-        
-        document.querySelectorAll('.edit-row').forEach(btn => {
-            btn.disabled = true; 
+        }).always(function() {
+                document.querySelectorAll('.edit-row').forEach(btn => {
+                btn.disabled = False; 
+            });
         });
+        
     }
 
     //
@@ -366,6 +374,9 @@
     document.getElementById('assignCharForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const id = document.getElementById("charSelect").value
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.disabled = true; 
+        });
         $.ajax({
             url: "/assignChar",
             type: "post",
@@ -379,7 +390,11 @@
         }).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("AJAX Error", textStatus, errorThrown);
                 showErrorModal("Something went wrong: " + errorThrown);
-        })
+        }).always(function() {
+                document.querySelectorAll('.btn').forEach(btn => {
+                btn.disabled = false; 
+            });
+        });
     
     });
 

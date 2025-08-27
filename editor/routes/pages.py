@@ -19,3 +19,7 @@ def home():
 @bp.route("/about")
 def about():
     return render_template("pages/about.html")
+
+@bp.route("/instructions")
+def instructions():
+    return render_template("instructions/StoriesInstructions.html")
