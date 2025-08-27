@@ -40,40 +40,40 @@
 
         <tbody>
 
-            {% for post in posts %}
-                <tr id="row_{{post['post_id']}}">
-                    <td class="hide">{% if post.part_type == "text" %}None{% else %}{{post["post_id"]}}{% endif %}</td>
-                    <td>
-                        {% if post.part_type=="text" %}
-                            <div class="row border p-3 mb-3 align-items-start">
- 
-                                {%if post.image_mime_type != ""%}
-                                    <div class="col-auto">
-                                        <img src="{{post['image_data']}}" class="img-fluid" style="max-width:300px; vertical-align: middle;" />
-                                    </div>
-                                {% endif %}
-                                <div class="col d-flex flex-column h-100 justify-content-between">
-                                    <p>{{post["message"]| safe }}</p>
+        {% for post in posts %}
+            <tr id="row_{{post['post_id']}}">
+                <td class="hide">{% if post.part_type == "text" %}None{% else %}{{post["post_id"]}}{% endif %}</td>
+                <td>
+                    {% if post.part_type=="text" %}
+                        <div class="row border p-3 mb-3 align-items-start">
+
+                            {%if post.image_mime_type != ""%}
+                                <div class="col-auto">
+                                    <img src="{{post['image_data']}}" class="img-fluid" style="max-width:300px; vertical-align: middle;" />
                                 </div>
+                            {% endif %}
+                            <div class="col d-flex flex-column h-100 justify-content-between">
+                                <p>{{post["message"]| safe }}</p>
                             </div>
-                        {% else %}
-                            <div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
-                            <div class="button_bar">
-                                {% if post['creator'] == "user" %}
-                                    <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
-                                {% endif %}  
-                                {% if loop.last and post['creator'] == "model" %}
-                                    <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
-                                {% else %}
-                                    <div></div>     
-                                {% endif %}
+                        </div>
+                    {% else %}
+                        <div id="message{{post['post_id']}}" class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %}">{{post["message"]| safe }}</div>
+                        <div class="button_bar">
+                            {% if post['creator'] == "user" %}
+                                <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Prompt')">Edit</button> 
+                            {% endif %}  
+                            {% if loop.last and post['creator'] == "model" %}
+                                <button class='btn btn-secondary btn-sm edit-row' type="button" id="{{post['post_id']}}" onclick="selectRow(this, 'Edit Response')">Edit</button>
+                            {% else %}
+                                <div></div>     
+                            {% endif %}
 
-                        {% endif %}
-                        <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span>
-                    </td>
-                </tr>
+                    {% endif %}
+                    <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span>
+                </td>
+            </tr>
 
-            {% endfor %}
+        {% endfor %}
 
         </tbody>
     </table>

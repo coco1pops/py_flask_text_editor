@@ -15,8 +15,11 @@
   <header>
     {% block header %}{% endblock header %}
   </header>
-  <main>
+  <main class="container-fluid px-3 px-lg-5">
+    <div class="mx-auto" style="max-width: 80%;">
+    <!-- Your page content here -->
     {% block content %}<p>No messages.</p>{% endblock content %}
+  </div>
   </main>
 </section>
 
