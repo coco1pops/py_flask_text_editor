@@ -1,8 +1,8 @@
 from flask import Blueprint, request, redirect, render_template, flash
 from flask_login import login_user, logout_user, login_required
 
-import editor.db
-from editor.auth import User
+import editor.utils.db
+from editor.models.auth import User
 
 bp = Blueprint("login", __name__)
 
@@ -10,7 +10,7 @@ bp = Blueprint("login", __name__)
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user_record = editor.db.get_user(request.form["username"], allow_not_found=True)
+        user_record = editor.utils.db.get_user(request.form["username"], allow_not_found=True)
 
         if user_record:
             user = User(

@@ -6,7 +6,7 @@ import logging
 import markdown
 from bs4 import BeautifulSoup
 from io import BytesIO
-import editor.db
+import editor.utils.db
 from flask_login import current_user
 
 def markdown_to_docx_paragraph(doc: Document, input_text: str):
@@ -41,10 +41,10 @@ def insert_image(doc: Document, image_b64: str, mime_type: str) -> None:
         doc.add_paragraph(f"[Image failed to render: {e}]")
 
 def generate_doc_from_posts(story_id) -> BytesIO:
-    posts=editor.db.get_all_posts_raw(story_id)
+    posts=editor.utils.db.get_all_posts_raw(story_id)
     logging.debug("Entering print generation")
     doc = Document()
-    story = editor.db.get_story(story_id)
+    story = editor.utils.db.get_story(story_id)
     doc.add_heading(f"Title {story['title']}", level=0)
     doc.add_heading(f"Author {current_user.user_name}", level=2)
     if story['note'] != "":

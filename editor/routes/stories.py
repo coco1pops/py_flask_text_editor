@@ -12,10 +12,10 @@ from flask import (
 )
 from flask_login import current_user
 
-from editor.chat_service import get_chat_service
+from editor.models.chat_service import get_chat_service
 
-import editor.db
-import editor.docwriter
+import editor.utils.db
+import editor.utils.docwriter
 
 bp = Blueprint("stories", __name__)
 
@@ -39,10 +39,10 @@ def create():
         systeminstruction = request.form["systeminstruction"] or ""
 
         if story:
-            story_id = editor.db.insert_story(story, note, systeminstruction)
+            story_id = editor.utils.db.insert_story(story, note, systeminstruction)
             return redirect(url_for("stories.generate_story", story_id=story_id))
 
-    sysints = editor.db.get_sysints()
+    sysints = editor.utils.db.get_sysints()
     return render_template("stories/create.html", sysints=sysints)
 
 
@@ -53,7 +53,7 @@ def stories():
         story_id = request.form.get("action")
         return redirect(url_for("stories.generate_story", story_id=story_id))
 
-    stories = editor.db.get_stories()
+    stories = editor.utils.db.get_stories()
 
     return render_template("stories/stories.html", stories=stories)
 
@@ -66,7 +66,7 @@ def delete_story():
     story_id = request.values.get("story_id")
     logging.debug(f"Requested delete of row {story_id}")
     if story_id:
-        editor.db.delete_story(story_id)
+        editor.utils.db.delete_story(story_id)
         return jsonify({"success": "Record deleted"}), 200
     return jsonify({"error": "Database delete failed"}), 406
 
@@ -82,7 +82,7 @@ def update_story():
 
     logging.debug(f"Updating {story_id} {field} {value}")
     if story_id:
-        editor.db.update_story(story_id, field, value)
+        editor.utils.db.update_story(story_id, field, value)
         return jsonify({"success": "Record udpdated"}), 200
     return jsonify({"error": "Database update failed"}), 406
 
@@ -93,12 +93,12 @@ def update_story():
 @bp.route("/print_story", methods=["POST"])
 def print_story():
     story_id = request.values.get("story_id")
-    story = editor.db.get_story(story_id)
+    story = editor.utils.db.get_story(story_id)
     dl_name = f"{story['title']}.docx"
     logging.debug(f"Printing {dl_name}")
     if story_id:
         try:
-            doc_buffer = editor.docwriter.generate_doc_from_posts(story_id)
+            doc_buffer = editor.utils.docwriter.generate_doc_from_posts(story_id)
             return send_file(
                 doc_buffer,
                 as_attachment=True,
@@ -118,9 +118,9 @@ def print_story():
 def generate_story():
     story_id = request.values.get("story_id")
 
-    story = editor.db.get_story(story_id)
-    posts = editor.db.get_all_posts(story_id)
-    chars = editor.db.get_characters()
+    story = editor.utils.db.get_story(story_id)
+    posts = editor.utils.db.get_all_posts(story_id)
+    chars = editor.utils.db.get_characters()
 
     return render_template(
         "stories/generate_story.html", story=story, posts=posts, chars=chars
@@ -133,7 +133,7 @@ def get_message():
 
     logging.debug(f"Retrieving message for {post_id}")
     if post_id:
-        message = editor.db.get_message(post_id)
+        message = editor.utils.db.get_message(post_id)
         return jsonify({"message": message}), 200
     return jsonify({"error": "Database read failed"}), 406
 
@@ -144,7 +144,7 @@ def get_message():
 @bp.route("/assignChar", methods=["POST"])
 def assignChar():
     char_id = request.form["char_id"]
-    resp = editor.db.build_char(char_id)
+    resp = editor.utils.db.build_char(char_id)
     return jsonify(resp), 200
 
 
@@ -174,7 +174,7 @@ def generate_text():
     # If Edit then all you need to do is update the database
     #
     if mode == "Edit Response":
-        success = editor.db.update_message(row_id, prompt)
+        success = editor.utils.db.update_message(row_id, prompt)
         if success:
             return jsonify({"success": "Prompt update succeeded"}), 200
         else:
@@ -185,12 +185,12 @@ def generate_text():
     #
     if mode == "Edit Prompt":
         logging.debug(f"Deleting older posts from {row_id}")
-        editor.db.delete_posts_from(story_id, row_id)
+        editor.utils.db.delete_posts_from(story_id, row_id)
 
     # Try to generate more chat
     # Build the chat service
     chat = get_chat_service()
-    story = editor.db.get_story(story_id)
+    story = editor.utils.db.get_story(story_id)
     chat.reset_chat(story["systeminstruction"])
     buildHistory(chat, story_id)
     #
@@ -227,24 +227,24 @@ def generate_text():
 
         logging.debug("Inserting new prompt into database")
 
-        post = editor.db.insert_post(story_id, "user", prompt, multi)
+        post = editor.utils.db.insert_post(story_id, "user", prompt, multi)
         for ix in chars:
-            part = editor.db.get_character_raw(ix)
+            part = editor.utils.db.get_character_raw(ix)
             text_part = buildChar(
                 part["name"],
                 part["description"],
                 part["personality"],
                 part["motivation"],
             )
-            editor.db.insert_post_text_part(story_id, post, text_part)
+            editor.utils.db.insert_post_text_part(story_id, post, text_part)
             if part["image_mime_type"] != "":
-                editor.db.insert_post_image_part(
+                editor.utils.db.insert_post_image_part(
                     story_id, post, part["image_data"], part["image_mime_type"]
                 )
         #
         # Insert new message
         #
-        editor.db.insert_post(story_id, "model", message, False)
+        editor.utils.db.insert_post(story_id, "model", message, False)
 
         return jsonify({"success": "New Response Added"}), 200
     except:
@@ -258,7 +258,7 @@ def generate_text():
 def buildHistory(chat, story_id):
     multimodal = False
     multimessage = []
-    posts = editor.db.get_all_posts_raw(story_id)
+    posts = editor.utils.db.get_all_posts_raw(story_id)
     for post in posts:
         # Tidy up outstanding messages if building multi-modal message
         if post["source"] == "post" and multimodal:
@@ -294,7 +294,7 @@ def buildPrompt(content, chars):
     multi_modal_content = []
     multi_modal_content.append({"text": content})
     for ix in chars:
-        char = editor.db.get_character_raw(ix)
+        char = editor.utils.db.get_character_raw(ix)
         txtprompt = buildChar(
             char["name"], char["description"], char["personality"], char["motivation"]
         )

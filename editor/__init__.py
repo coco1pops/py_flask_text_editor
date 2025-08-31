@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
 
-from editor import database, chat_service
+from editor.models import database
+from editor.models import chat_service
 
 load_dotenv()
 login_manager = LoginManager()
@@ -36,7 +37,7 @@ def create_app():
     logging.info("Startup-Initialising login module")
     login_manager.init_app(app)
     login_manager.login_view="login.login"
-    from . import auth 
+    from .models import auth 
     from editor.routes import login, pages, parameters, stories
     
     logging.info("Startup-registering blueprints")

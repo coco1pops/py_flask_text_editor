@@ -152,22 +152,6 @@
 </div>
 
 
-<!--Modal Error Message-->
-<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-danger">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="errorModalBody">
-                <!-- Error message will be injected here -->
-            </div>
-        </div>
-    </div>
-</div>
-
 
 <script>
     //
@@ -194,7 +178,7 @@
             console.log(response);
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
-            showErrorModal("Something went wrong: " + errorThrown);
+            showNotifyModal("Story Update - Something went wrong: " + errorThrown, "Error");
         })
     };
     // Function to reset the prompt field
@@ -219,7 +203,7 @@
             setFormMode("New", -1);
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
-            showErrorModal("Something went wrong: " + errorThrown);
+            showNotifyModal("Cancel Story Update - Something went wrong: " + errorThrown, "Error");
         })
     };
     //
@@ -251,7 +235,7 @@
             window.location.reload();
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
-            showErrorModal("Something went wrong: " + errorThrown);
+            showNotifyModal("Post - Something went wrong: " + errorThrown, "Error");
             console.log(error);
         }).always(function () {
             spinner.style.display = 'none';
@@ -283,7 +267,7 @@
             setFormMode(mode, row.cells[0].textContent);
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
-            showErrorModal("Something went wrong: " + errorThrown);
+            showNotifyModal("Get Row - Something went wrong: " + errorThrown, "Error");
         }).always(function () {
             document.querySelectorAll('.edit-row').forEach(btn => {
                 btn.disabled = False;
@@ -405,13 +389,12 @@
             modal.hide();
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
-            showErrorModal("Something went wrong: " + errorThrown);
+            showNotifyModal("Assign Character - Something went wrong: " + errorThrown, "Error");
         }).always(function () {
             document.querySelectorAll('.btn').forEach(btn => {
                 btn.disabled = false;
             });
         });
-
     });
 
 </script>

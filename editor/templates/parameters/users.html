@@ -51,64 +51,22 @@
 
 </table>
 
-<!-- Confirmation Modal -->
-<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
-      </div>
-      <div class="modal-body">
-        Are you sure you want to proceed?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
-        <button type="button" class="btn btn-danger" id="confirmBtn">Yes, Proceed</button>
-      </div>
-    </div>
-  </div>
-</div>
+{{ macros.modal_box('confirmModal', 'Confirm Delete User') }}
 
 <div id="flash-container" style="margin-top: 20px;" </div>
 
 
 <script>
-  function showBootstrapConfirm(callback) {
-    const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
-    modal.show();
-
-    // Remove previous handlers to avoid stacking
-    $('#confirmBtn').off('click').on('click', function () {
-      $('#confirmModal').modal('hide');
-      callback(true);
-    });
-
-    $('#cancelBtn').off('click').on('click', function () {
-      $('#confirmModal').modal('hide');
-      callback(false);
-    });
-  }
 
   document.querySelectorAll('.deletebutton').forEach(button => {
     button.addEventListener('click', event => {
       var id = event.currentTarget.id;
-      deleteClicked(id);
+      const row = document.getElementById(id)?.closest("tr");
+      const title = row?.cells[1]?.textContent.trim();
+      deleteClicked(id,deleteUser, title);
     });
   });
 
-  function deleteClicked(id) {
-    showBootstrapConfirm((confirmed) => {
-      if (confirmed) {
-        console.log("Confirmed delete user " + id + "!");
-        deleteUser(id);
-      }
-      else {
-        console.log("Delete Cancelled.");
-
-      };
-    }
-    );
-  };
 
   function deleteUser(id) {
     $.ajax({
@@ -131,18 +89,6 @@
       console.log(error);
     })
   };
-
-  function showFlashMessage(category, message) {
-    const alertClass = {
-      success: "alert-success",
-      error: "alert-danger",
-      warning: "alert-warning",
-      info: "alert-info"
-    }[category] || "alert-secondary";
-
-    const alert = `<div class="alert ${alertClass}" role="alert">${category} - ${message}</div>`;
-    $("#flash-container").html(alert);  // Or append if you want multiple
-  }
 
 </script>
 {% endblock content %}

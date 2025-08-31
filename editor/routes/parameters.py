@@ -19,7 +19,7 @@ import os
 import logging
 import base64
 
-import editor.db
+import editor.utils.db
 
 app = Flask(__name__)
 bp = Blueprint("parameters", __name__)
@@ -33,7 +33,7 @@ bp = Blueprint("parameters", __name__)
 @login_required
 def createchar(char_id=None):
     if char_id:
-        char = editor.db.get_character(char_id)
+        char = editor.utils.db.get_character(char_id)
         logging.debug(f"Updating character {char['char_id']}")
     else:
         char = None
@@ -50,22 +50,22 @@ def createchar(char_id=None):
 
         if char_id == None:
             logging.debug("Inserting new character")
-            char_id = editor.db.insert_character(
+            char_id = editor.utils.db.insert_character(
                 name, description, personality, motivation
             )
             logging.debug(f"Inserted character {char_id}")
             if image_file:
-                editor.db.update_character_image(char_id, image_bytes, mimeType)
-            char = editor.db.get_character(char_id)
+                editor.utils.db.update_character_image(char_id, image_bytes, mimeType)
+            char = editor.utils.db.get_character(char_id)
             flash("Character added", "success")
         else:
             logging.debug(f"Updated character {char_id}")
-            editor.db.update_all_character(
+            editor.utils.db.update_all_character(
                 char_id, name, description, personality, motivation
             )
             if image_file:
-                editor.db.update_character_image(char_id, image_bytes, mimeType)
-            char = editor.db.get_character(char_id)
+                editor.utils.db.update_character_image(char_id, image_bytes, mimeType)
+            char = editor.utils.db.get_character(char_id)
             flash("Character updated", "success")
 
         return redirect(url_for("parameters.createchar", char_id=char_id))
@@ -77,7 +77,7 @@ def createchar(char_id=None):
 @login_required
 def getchar():
     char_id = request.values.get("char_id")
-    row = editor.db.get_character(char_id)
+    row = editor.utils.db.get_character(char_id)
     if row["image_mime_type"] != "":
         row["image_data"] = (
             "data:"
@@ -95,7 +95,7 @@ def getchar():
 def delchar():
     char_id = request.values.get("char_id")
     logging.debug(f"Deleting character {char_id}")
-    editor.db.delete_character(char_id)
+    editor.utils.db.delete_character(char_id)
     flash("Character deleted", "success")
     messages = get_flashed_messages(with_categories=True)
     return jsonify({"messages": messages})
@@ -104,7 +104,7 @@ def delchar():
 @bp.route("/chars", methods=["GET", "POST"])
 @login_required
 def chars():
-    chars = editor.db.get_characters()
+    chars = editor.utils.db.get_characters()
     if request.method == "POST":
         char_id = request.form.get("action")
         return redirect(url_for("parameters.createchar", char_id=char_id))
@@ -133,7 +133,7 @@ def create_user(mode="Add", user_id=None):
     if user_id and mode == "Update":
         if current_user.id != user_id and not current_user.is_admin:
             abort(403)
-        user = editor.db.get_user(user_id)
+        user = editor.utils.db.get_user(user_id)
         logging.debug(f"Updating user {user['user_id']}")
     else:
         if not current_user.is_admin:
@@ -165,7 +165,7 @@ def create_user(mode="Add", user_id=None):
             if len(user_password) < 6 or len(user_password) > 20:
                 flash("Invalid password", "danger")
                 fail = True
-            tst = editor.db.get_user(user_id, allow_not_found=True)
+            tst = editor.utils.db.get_user(user_id, allow_not_found=True)
             if tst:
                 flash("User already exists", "danger")
                 fail = True
@@ -193,7 +193,7 @@ def create_user(mode="Add", user_id=None):
                     "user_role": user_role,
                 }
             else:
-                tst = editor.db.get_user(user_id)
+                tst = editor.utils.db.get_user(user_id)
                 user_name = tst["user_name"]
                 user_role = tst["user_role"]
                 format_user = {
@@ -209,7 +209,7 @@ def create_user(mode="Add", user_id=None):
 
         if mode == "Add":
             logging.debug("Inserting new user")
-            user_id = editor.db.insert_user(
+            user_id = editor.utils.db.insert_user(
                 user_id, user_password, user_name, user_role
             )
             logging.debug(f"Inserted user {user_id}")
@@ -217,10 +217,10 @@ def create_user(mode="Add", user_id=None):
         else:
             if action == "main":
                 logging.debug(f"Updated user {user_id}")
-                editor.db.update_user(user_id, user_name, user_role)
+                editor.utils.db.update_user(user_id, user_name, user_role)
                 flash("User updated", "success")
             else:
-                editor.db.user_reset_pass(user_id, new_password)
+                editor.utils.db.user_reset_pass(user_id, new_password)
                 flash("Password reset", "success")
         return redirect(
             url_for("parameters.create_user", mode="Update", user_id=user_id)
@@ -234,7 +234,7 @@ def create_user(mode="Add", user_id=None):
 def deluser():
     user_id = request.values.get("user_id")
     logging.debug(f"Deleting user {user_id}")
-    editor.db.delete_user(user_id)
+    editor.utils.db.delete_user(user_id)
     flash("User deleted", "success")
     messages = get_flashed_messages(with_categories=True)
     return jsonify({"messages": messages})
@@ -243,7 +243,7 @@ def deluser():
 @bp.route("/users", methods=["GET", "POST"])
 @admin_required
 def users():
-    users = editor.db.get_users()
+    users = editor.utils.db.get_users()
     if request.method == "POST":
         user_id = request.form.get("action")
         return redirect(
@@ -256,7 +256,7 @@ def users():
 @bp.route("/sysints", methods=["GET", "POST"])
 @admin_required
 def sysints():
-    sysints = editor.db.get_sysints()
+    sysints = editor.utils.db.get_sysints()
     if request.method == "POST":
         sysint_id = request.form.get("action")
         return redirect(url_for("parameters.createsysint", sysint_id=sysint_id))
@@ -269,7 +269,7 @@ def sysints():
 def delsysint():
     sysint_id = request.values.get("sysint_id")
     logging.debug(f"Deleting sysint {sysint_id}")
-    editor.db.delete_sysint(sysint_id)
+    editor.utils.db.delete_sysint(sysint_id)
     flash("AI Guidance deleted", "success")
     messages = get_flashed_messages(with_categories=True)
     return jsonify({"messages": messages})
@@ -280,7 +280,7 @@ def delsysint():
 @admin_required
 def createsysint(sysint_id=None):
     if sysint_id:
-        sysint = editor.db.get_sysint(sysint_id)
+        sysint = editor.utils.db.get_sysint(sysint_id)
         logging.debug(f"Updating sysint {sysint['sysint_id']}")
     else:
         sysint = None
@@ -292,13 +292,13 @@ def createsysint(sysint_id=None):
 
         if sysint_id == None:
             logging.debug("Inserting new sysint")
-            sysint_id = editor.db.insert_sysint(name, description, instruction)
+            sysint_id = editor.utils.db.insert_sysint(name, description, instruction)
             logging.debug(f"Inserted sysint {sysint_id}")
             flash("AI Guidance added", "success")
         else:
             logging.debug(f"Updated sysint {sysint_id}")
-            editor.db.update_sysint(sysint_id, name, description, instruction)
-            sysint = editor.db.get_sysint(sysint_id)
+            editor.utils.db.update_sysint(sysint_id, name, description, instruction)
+            sysint = editor.utils.db.get_sysint(sysint_id)
             flash("AI Guidance updated", "success")
 
         return redirect(url_for("parameters.createsysint", sysint_id=sysint_id))
@@ -310,5 +310,5 @@ def createsysint(sysint_id=None):
 @login_required
 def getsysint():
     sysint_id = request.values.get("sysint_id")
-    row = editor.db.get_sysint(sysint_id)
+    row = editor.utils.db.get_sysint(sysint_id)
     return ({"instruction": row["instruction"]}), 200

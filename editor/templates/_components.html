@@ -1,0 +1,53 @@
+{% macro modal_box(id, title, body='', footer='') %}
+  <!-- Confirmation Modal -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
+        </div>
+        <div class="modal-body" id="confirmText">
+          Are you sure you want to proceed?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmBtn">Yes, Proceed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro modalConfirm(title, message) %}
+  <div class="modal fade" id="Notify" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content" id="myModalBorder">
+
+              <div class="modal-header" id="myModalHeader">
+                  <h5 class="modal-title" id="myModalLabel">{{title}}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <div class="modal-body" id="modal-message">
+                  {{message}}
+              </div>
+
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+
+          </div>
+      </div>
+  </div>
+{% endmacro %}
+
+{% macro flashMessages() %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message
+          }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+{% endmacro %}

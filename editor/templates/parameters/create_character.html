@@ -43,35 +43,11 @@
     </div>
 </form>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message
-                }}</div>
-            {% endfor %}
-    {% endif %}
-{% endwith %}
+ {{ macros.modalConfirm('Invalid File', 'Error message') }}
 
-<div class="modal fade" id="Notify" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+ {{ macros.flashMessages() }}
 
-            <div class="modal-header">
-                <h5 class="modal-title" id="myModalLabel">Error !</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
 
-            <div class="modal-body" id="modal-message">
-                Invalid file type
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-
-        </div>
-    </div>
-</div>
 
 <script>
 
@@ -104,8 +80,8 @@
                 type: "post",
                 data: formData,
                 processData: false,
-                contentType: false,
-                success: function (response) {
+                contentType: false }
+            ).done(function (response) {
                     const file = input.files[0];
                     const reader = new FileReader();
                     reader.onload = function (e) {
@@ -114,21 +90,18 @@
                         preview.style.display = 'block';
                     };
                     reader.readAsDataURL(file)
-                },
-                error: function (xhr, status, error) {
-                    const modal = new bootstrap.Modal(document.getElementById('Notify'));
-                    if (xhr.status == "413") {
-                        document.getElementById("modal-message").textContent = "File too large";
+                }
+            ).fail(function (xhr, status, error) {
+                fileName.textContent = 'No file chosen';
+                input.value=''
+                if (xhr.status == "413") {
+                        showNotifyModal("File too large", "Error") ;
                     }
                     else {
-                        document.getElementById("modal-message").textContent = "Invalid file type";
+                        showNotifyModal("Invalid file type", "Error") ;
                     };
-
-                    fileName.textContent = 'No file chosen';
-                    modal.show();
-
                 }
-            })
+            );
         }
     });
 

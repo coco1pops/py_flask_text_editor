@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for
-import editor.db
+import editor.utils.db
 from flask_login import current_user
 
 bp = Blueprint("pages", __name__)
@@ -11,7 +11,7 @@ def home():
         story_id = request.form.get("action")
         return redirect(url_for("stories.generate_story", story_id=story_id))
     if current_user.is_authenticated:
-        latest_story = editor.db.get_latest_story()
+        latest_story = editor.utils.db.get_latest_story()
         if latest_story:
             return render_template("pages/home.html", story=latest_story)
     return render_template("pages/home.html")

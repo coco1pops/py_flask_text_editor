@@ -1,4 +1,4 @@
-from editor.database import get_db
+from editor.models.database import get_db
 import base64
 import markdown
 import logging
