@@ -5,12 +5,30 @@
 {% endblock header %}
 
 {% block content %}
-  <h2>Instructions</h2>
 
-  <ol type="1">
-    <li><b>Prepare Characters:</b> Existing characters are available from <a href="{{ url_for('parameters.chars') }}">All Characters</a>. If none are suitable, use <a href="{{ url_for('parameters.createchar') }}">Add Character</a> to add the new ones you need. Characters have a name, description, personalityy and motivation and can have an associated picture</li>
-    <li><b>Add Story:</b> Use the <a href="{{ url_for('stories.create') }}">Add Story</a> option. Each story needs a header comprising an author, a title, a note and system instructions. The note is just for reference and displayed in the the <a href="{{ url_for('stories.stories') }}">All Stories</a> option. System instructions guide the AI and can be changed </li> 
-    <li><b>Build the Story:</b> If you add a post, the AI will respond. You can add characters to posts to give the AI a good background. You can edit the last response from the AI and previous prompts. Editing a prior prompt will delete subsequent prompts and AI responses</li>
-    <li><b>Maintain Story:</b> Use <a href="{{ url_for('stories.stories') }}">All Stories</a> to select a story and modify it. You can also use this form to delete a story</li>
-  </ol>
+<p class="mb-3">
+A web site that will write a story using Google Gemini based on your prompts. 
+</p>
+<p class="mb-3">
+The site currently uses gemini-2.5-flash-lite as the AI generator but this may be cofigurable in future.
+</p>
+<p class="mb-3">
+The site is hosted on Google Cloud Run and uses Google Cloud SQL for storage.
+</p>
+<h4>Version 0.2</h4>
+<ol type="1">
+<li> Revamp of the story generation pages to allow edit in place </li>
+<li> Reworked error handling for the chat service </li>
+<li> Standardise validation and messaging</li>
+</ol>
+
+<h4>Ideas for the future</h4>
+<ol type="1">
+  <li>Copying stories</li>
+  <li>Adding more parameter options to configure the AI</li>
+</ol>
+
+
+  Instructions are available on the <a href="{{ url_for('pages.instructions') }}">Instructions page</a>.
+
 {% endblock content %}

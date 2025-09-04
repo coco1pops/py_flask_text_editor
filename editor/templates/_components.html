@@ -41,6 +41,39 @@
   </div>
 {% endmacro %}
 
+
+<!-- Modal Add Character -->
+{% macro charPicker(chars) %}
+  <div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <form id="assignCharForm">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <div class="mb-3">
+                          <label for="charSelect" class="form-label">Choose a Character</label>
+                          <select class="form-select" id="charSelect" name="char_id" required>
+                              {% for char in chars %}
+                              <option value="{{ char.char_id }}">
+                                  {{ char.name }}
+                              </option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary">Add</button>
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
+{% endmacro %}
+
 {% macro flashMessages() %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

@@ -260,35 +260,61 @@ def get_all_posts(story_id):
     
         format_posts = []
         posts_ix = 0
- 
-        for post in posts:
 
-            message = ""
-            upd = False
-            if post['source'] =="post":
-                message =  markdown.markdown(post['content'])
-            if post['source'] == 'part' and post['part_type'] =='text':
-                message =  markdown.markdown(post['part_text'])
-            if post['source'] == 'part' and post['part_type'] == 'image' and post['part_image_mime_type'] != '':
-                image_data ="data:" + post['part_image_mime_type'] + ";base64," + base64.b64encode(post['part_image_data']).decode('utf-8')
-                upd=True
-            else:
-                image_data = ''
-            
-            if upd:
-                format_posts[posts_ix - 1]['image_data'] = image_data
-                format_posts[posts_ix - 1]['image_mime_type'] = post['part_image_mime_type']
-            else:
-                format_posts.append({'post_id' : post['post_id'], 'created' : post['created'], 'creator' : post['creator'],
-                                  "multi_modal" : post['multi_modal'], "source" : post['source'], "part_type": post['part_type'], 
-                                  "message" : message, 'image_data' : image_data, "image_mime_type" : post['part_image_mime_type']})
-            
-                posts_ix += 1
+        format_posts=parse_posts(posts)
 
         return format_posts
     
     except Exception as e:
         print_except("get_all_posts",e)
+
+
+def get_post(post_id, allow_not_found=False):
+    try:
+        db = get_db()
+        sep=build_sel()
+        select_string = "SELECT post_id, created, creator, multi_modal, content, source, part_type, part_text, part_image_data, part_image_mime_type"
+        select_string = f"{select_string} from unified_post_timeline WHERE post_id={sep}"
+        post = db.execute(select_string,(post_id,)).fetchall()
+
+        format_posts=parse_posts(post)
+    
+        return format_posts
+
+    except Exception as e:
+        print_except("get_post",e)
+
+def parse_posts(posts):
+    format_posts = []
+    posts_ix = 0
+    for post in posts:
+        message = ""
+        upd = False
+        if post['source'] =="post":
+            message =  markdown.markdown(post['content'])
+            content = post['content']
+        if post['source'] == 'part' and post['part_type'] =='text':
+            message =  markdown.markdown(post['part_text'])
+            content = post['part_text']
+        if post['source'] == 'part' and post['part_type'] == 'image' and post['part_image_mime_type'] != '':
+            image_data ="data:" + post['part_image_mime_type'] + ";base64," + base64.b64encode(post['part_image_data']).decode('utf-8')
+            upd=True
+        else:
+            image_data = ''
+        
+        if upd:
+            format_posts[posts_ix - 1]['image_data'] = image_data
+            format_posts[posts_ix - 1]['image_mime_type'] = post['part_image_mime_type']
+        else:
+            format_posts.append({'post_id' : post['post_id'], 'created' : post['created'], 'creator' : post['creator'],
+                                "multi_modal" : post['multi_modal'], "source" : post['source'], "part_type": post['part_type'], 
+                                "message" : message, "message_md" : content, 'image_data' : image_data, "image_mime_type" : post['part_image_mime_type']})
+        
+            posts_ix += 1
+
+    return format_posts
+
+
 
 def get_all_posts_raw(story_id):
     try:

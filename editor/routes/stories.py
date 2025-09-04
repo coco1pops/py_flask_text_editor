@@ -9,6 +9,8 @@ from flask import (
     url_for,
     jsonify,
     send_file,
+    flash,
+    get_flashed_messages
 )
 from flask_login import current_user
 
@@ -67,7 +69,10 @@ def delete_story():
     logging.debug(f"Requested delete of row {story_id}")
     if story_id:
         editor.utils.db.delete_story(story_id)
-        return jsonify({"success": "Record deleted"}), 200
+        flash("Story deleted", "success")
+        messages = get_flashed_messages(with_categories=True)
+        return jsonify({"success": "Record deleted","messages": messages}),200
+
     return jsonify({"error": "Database delete failed"}), 406
 
 
@@ -147,6 +152,18 @@ def assignChar():
     resp = editor.utils.db.build_char(char_id)
     return jsonify(resp), 200
 
+#
+# Deletes posts
+#
+@bp.route("/deleteRows", methods=["POST"])
+def deleteRows():
+    post_id = request.values.get("post_id")
+    story_id = request.values.get("story_id")
+    logging.debug(f"Deleting older posts from {post_id}")
+    editor.utils.db.delete_posts_from(story_id, post_id)
+    flash("Posts deleted", "success")
+    messages = get_flashed_messages(with_categories=True)
+    return jsonify({"messages": messages}),200
 
 #
 # Generates a chat line from a prompt and inserts the response into the database
@@ -160,14 +177,7 @@ def generate_text():
     chars = json.loads(request.values.get("chars", []))
 
     if not prompt:
-        return (
-            jsonify(
-                {
-                    "error": "Invalid input. Please provide a JSON object with a 'prompt' key."
-                }
-            ),
-            400,
-        )
+        return (jsonify({"error": "Invalid input. Please provide a JSON object with a 'prompt' key."}),400)
 
     logging.debug(f"Received prompt: {prompt[:30]}, Mode {mode} Row {row_id} {chars} ")
     #
@@ -176,9 +186,12 @@ def generate_text():
     if mode == "Edit Response":
         success = editor.utils.db.update_message(row_id, prompt)
         if success:
-            return jsonify({"success": "Prompt update succeeded"}), 200
+            rows = editor.utils.db.get_post(row_id)
+            flash("Response updated", "success")
+            messages = get_flashed_messages(with_categories=True)
+            return jsonify({"success": "Response update succeeded", "posts" : rows, "messages" : messages}), 200
         else:
-            return jsonify({"error": "Prompt update failed"}), 406
+            return jsonify({"error": "Response update failed"}), 406
 
     #
     # If editing prompt need to delete everything after the prompt
@@ -216,6 +229,7 @@ def generate_text():
     #
     # Storing prompt and responses
     #
+    
     try:
         #
         # Insert new prompt
@@ -227,7 +241,8 @@ def generate_text():
 
         logging.debug("Inserting new prompt into database")
 
-        post = editor.utils.db.insert_post(story_id, "user", prompt, multi)
+        post_id = editor.utils.db.insert_post(story_id, "user", prompt, multi)
+
         for ix in chars:
             part = editor.utils.db.get_character_raw(ix)
             text_part = buildChar(
@@ -236,17 +251,28 @@ def generate_text():
                 part["personality"],
                 part["motivation"],
             )
-            editor.utils.db.insert_post_text_part(story_id, post, text_part)
+            editor.utils.db.insert_post_text_part(story_id, post_id, text_part)
             if part["image_mime_type"] != "":
                 editor.utils.db.insert_post_image_part(
-                    story_id, post, part["image_data"], part["image_mime_type"]
+                    story_id, post_id, part["image_data"], part["image_mime_type"]
                 )
         #
         # Insert new message
         #
-        editor.utils.db.insert_post(story_id, "model", message, False)
+        posts = editor.utils.db.get_post(post_id)
 
-        return jsonify({"success": "New Response Added"}), 200
+        newpost_id = editor.utils.db.insert_post(story_id, "model", message, False)
+        newpost=editor.utils.db.get_post(newpost_id)
+        posts.append(newpost[0])
+
+        flashMessage="New response added"
+        if mode == "Edit Prompt":
+            flashMessage = "Prompt updated and new response added"
+
+        flash(flashMessage, "success")
+        messages = get_flashed_messages(with_categories=True)
+
+        return jsonify({"success": "New Response Added", "posts" : posts, "messages" : messages}), 200
     except:
         logging.error(f"Error storing content: {e}")
         logging.error("Exception Type:", type(e).__name__)

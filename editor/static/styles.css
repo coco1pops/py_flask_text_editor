@@ -63,3 +63,18 @@ th {
 .button_col {
   text-align: center;
 }
+
+.editable-cell {
+  padding: 0; /* Remove padding so textarea fills cell */
+}
+
+.full-size-textarea {
+  width: 100%;
+  min-height: 1em;
+  border: none;
+  outline: none;
+  font: inherit;
+  background: transparent;
+  box-sizing: border-box;
+  overflow: hidden;
+}

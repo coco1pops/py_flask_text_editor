@@ -163,8 +163,14 @@ class ChatService:
             logging.debug(f"Received model response: {response_text[:30]}")
             return response_text
         except Exception as e:
-            logging.error(f"Error sending message: {e}")
-            raise
+            logging.error(f"Exception type: {type(e).__name__}")
+            logging.error(f"Exception module: {type(e).__module__}")
+            logging.error(f"Exception args: {e.args}")
+            if isinstance(e,str):
+                mess=e;
+            else:
+                mess=e.args[0]
+            raise Exception(f"Error in send prompt, {mess} ")
 
     def get_chat_history(self):
         """

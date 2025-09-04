@@ -59,6 +59,8 @@
   </tbody>
 </table>
 
+<div id="flash-container" style="margin-top: 20px;"></div>
+
 {{ macros.modal_box('confirmModal', 'Confirm dialogue') }}
 
 {{ macros.modalConfirm('title', 'message') }}
@@ -120,6 +122,11 @@ document.querySelectorAll('.deletebutton').forEach(button => {
           var r = document.getElementById(rowid);
           var i = r.rowIndex;
           document.getElementById("storyTable").deleteRow(i);
+          if (response.messages) {
+            response.messages.forEach(([category, message]) => {
+            showFlashMessage(category, message);
+        });
+      }
         },
         error: function (error) {
           console.log(error);
