@@ -41,4 +41,4 @@ EXPOSE 8080
 
 # Run app.py when the container launches
 # Use gunicorn for production WSGI server
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "editor:create_app()"]
+CMD ["gunicorn", "-b", "0.0.0.0:8080","--timeout", "300", "editor:create_app()"]
