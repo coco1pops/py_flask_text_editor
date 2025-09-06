@@ -89,7 +89,6 @@ function showNotifyModal(message, severity) {
 // Utilities
 //
 function formatDate(rawdate) {
-  console.log(rawdate);
   const date = new Date(rawdate);
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",

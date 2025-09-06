@@ -167,10 +167,10 @@ class ChatService:
             logging.error(f"Exception module: {type(e).__module__}")
             logging.error(f"Exception args: {e.args}")
             if isinstance(e,str):
-                mess=e;
+                mess=e
             else:
                 mess=e.args[0]
-            raise Exception(f"Error in send prompt, {mess} ")
+            raise Exception(f"Error in send prompt, {mess}")
 
     def get_chat_history(self):
         """

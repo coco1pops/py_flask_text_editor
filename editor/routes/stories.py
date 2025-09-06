@@ -221,11 +221,20 @@ def generate_text():
         message = chat.send_message(parsed_prompt)
 
     except Exception as e:
-        logging.error(f"Error generating content: {e}")
-        logging.error("Exception Type:", type(e).__name__)
-        logging.error("Exception Message:", str(e))
+    #
+    # Exception will be logged in the chat class 
+    # Field the message here and pass up the chain
+    #
+        logging.debug("Caught Error")
+        if isinstance(e,str):
+                mess=e
+        else:
+                mess=e.args[0]
+        logging.debug(f"Error message {mess}")
 
-        return jsonify({"error": str(e)}), 500
+        flash(f"{mess}", "error")
+        messages = get_flashed_messages(with_categories=True)
+        return jsonify({"error": "Generation Failed", "messages": messages}), 422
     #
     # Storing prompt and responses
     #

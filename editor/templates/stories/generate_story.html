@@ -6,6 +6,8 @@
 
 {% block content %}
 
+<div id="posts-data" data-posts='{{ posts | tojson }}'></div>
+
 <div id="top">
     <h2> Story: {{story['title']}} </h2>
     <div class="row d-flex justify-content-between align-items-center mb-3">
@@ -41,72 +43,7 @@
         </thead>
 
         <tbody id="postsRows">
-
-<!--            
-        {% for post in posts %}
-            <tr id="row_{{post['post_id']}}">
-                <td class="hide">{% if post.part_type == "text" %}None{% else %}{{post["post_id"]}}{% endif %}</td>
-                <td>
-                    {% if post.part_type=="text" %}
-                        <div class="row border p-3 mb-3 align-items-start">
-
-                            {%if post.image_mime_type != ""%}
-                            <div class="col-auto">
-                                <img src="{{post['image_data']}}" class="img-fluid"
-                                    style="max-width:300px; vertical-align: middle;" />
-                            </div>
-                            {% endif %}
-                            <div class="col d-flex flex-column h-100 justify-content-between" data-markdown="{{post['message_md']}}" data-html="{{post['message']}}">
-                                <p>{{post["message"]| safe }}</p>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div id="message_{{post['post_id']}}"
-                            class="{% if post['creator'] == 'model'%}model{% else %}user{% endif %} border-top border-secondary" data-markdown="{{post['message_md']}}" data-html="{{post['message']}}">
-                            {{post["message"]| safe }}
-                        </div>
-                        <div class="row" align-items-center>
-                            <div class="col-6 d-flex justify-content-start gap-2">
-                                {% if post['creator'] == "user" %}
-                                    <button class='btn btn-primary actions' type="button" id="{{post['post_id']}}"
-                                        onclick="editRow(this, 'Edit Prompt')">Edit</button>
-                                    <button class='btn btn-primary d-none row-button' type="button" id="update_{{post['post_id']}}"
-                                        onclick="updateRow(this, 'Edit Prompt')">Update</button>
-                                    <button class='btn btn-primary d-none row-button' type="button" id="cancel_{{post['post_id']}}"
-                                        onclick="cancelEditRow(this, 'Edit Prompt')">Cancel</button>
-                                    <button class='btn btn-primary d-none row-button' type="button" id="delete_{{post['post_id']}}"
-                                        onclick="deleteEditRow(this, 'Edit Prompt')">Delete</button>
-                                {% endif %}
-                                {% if loop.last and post['creator'] == "model" %}
-                                    <button class='btn btn-primary actions' type="button" id="{{post['post_id']}}"
-                                        onclick="editRow(this, 'Edit Response')">Edit</button>
-                                    <button class='btn btn-primary d-none row-button' type="button" id="update_{{post['post_id']}}"
-                                        onclick="updateRow(this, 'Edit Response')">Update</button>
-                                    <button class='btn btn-primary d-none row-button' type="button" id="cancel_{{post['post_id']}}"
-                                        onclick="cancelEditRow(this, 'Edit Response')">Cancel</button>
-                                {% else %}
-                                    <div></div>
-                                {% endif %}
-                            </div>
-
-                            <div class="col-2 dflex"> </div>
-
-                            <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-
-                                Comment: Spinner (initially hidden)
-                                <div id="loadingSpinner_{{post['post_id']}}" class="spinner-border text-primary" role="status" style="display: none;">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                        
-                                <span class="created">Created {{post["created"].strftime("%b %d, %Y at %I:%M%p")}}</span>
-                            </div>
-                        </div>
-                    {% endif %}
-                </td>
-            </tr>
-
-        {% endfor %}
--->
+        <!-- JS loads table here -->
         </tbody>
     </table>
 </div>
@@ -151,10 +88,11 @@
     <div id="placeholder" style="margin-top: 30px"></div>
 </div>
 
-
 {{ macros.modal_box('confirmModal', 'Confirm dialogue') }}
 
 {{ macros.charPicker(chars)}}
+
+<script src="{{url_for('static',filename='uibuilder.js')}}"></script>
 
 <script>
     //
@@ -231,21 +169,18 @@
                 'chars': JSON.stringify(AppState.chars)
             },
             dataType: 'json'
-        }).done(function (response) {
+        }).done(function(response) {
             console.log(response);
+            clearLastRowButtons(tbody);
             addNewRows(tbody,response.posts);
-            if (response.messages) {
-                response.messages.forEach(([category, message]) => {
-                    showFlashMessage(category, message);
-                });      
-            };
-        }).fail(function (jqXHR, textStatus, errorThrown) {
-            console.log("AJAX Error", textStatus, errorThrown);
-            showNotifyModal("Post - Something went wrong: " + errorThrown, "Error");
-            console.log(error);
-        }).always(function () {
-            spinner.style.display = 'none';
             document.getElementById("newprompt").value="";
+            showMessages(response.messages);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            console.log("AJAX Error", textStatus, errorThrown);
+            const messages = jqXHR.responseJSON?.messages || [];
+            showMessages(messages);
+        }).always(function() {
+            spinner.style.display = 'none';
             resetEdit("", all=false);
         })
     };
@@ -324,24 +259,19 @@
                 const cell = document.getElementById(mdiv);
 
                 updpost = response.posts[0];
-                console.log("Post" + updpost.post_id);
                 cell.innerHTML = updpost.message;
                 cell.dataset.html = updpost.message;
                 cell.dataset.markdown = updpost.message_md;
                 resetEdit(row, all=true)
 
             };
-            if (response.messages) {
-                response.messages.forEach(([category, message]) => {
-                    showFlashMessage(category, message);
-                });      
-            };    
             console.log(response);
+            showMessages(response.messages);
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
-            showNotifyModal("Post - Something went wrong: " + errorThrown, "Error");
-            console.log(error);
-        }).always(function () {
+            const messages = jqXHR.responseJSON?.messages || [];
+            showMessages(messages);
+        }).always(function(response) {
             spinner.style.display="None";
         });
         
@@ -360,7 +290,8 @@
         resetEdit(row);
     };
 //
-//
+// Delete functions. The first function brings up a dialogue, calling 
+// the second if the user confirms.
 //
     function deleteEditRow(btn, mode){     
         deleteClicked(AppState.editRow, deleteRows, "this post");
@@ -377,11 +308,8 @@
             const row=document.getElementById(row_div);
             deleteNextRows(row);
             row.remove();
-            if (response.messages) {
-                response.messages.forEach(([category, message]) => {
-                    showFlashMessage(category, message);
-                });      
-            }
+            resetLastRowButtons();
+            showMessages(response.messages);
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
             showNotifyModal("Delete rows - Something went wrong: " + errorThrown, "Error");
@@ -404,126 +332,12 @@
         });
         document.getElementById("newprompt").disabled = false;
         updateCount();
-        const chars = document.getElementById("placeholder");
-        chars.innerHTML = "";
         setFormMode('New',-1);
 
     };
-
-    function deleteNextRows(row) {
-        let current = row;
-
-        while (current) {
-            const next = current.nextElementSibling;
-            current.remove();
-            current = next;
-        };
-    };
-
-    function addNewRows(tbody, posts) {
-      posts.forEach((post, index)=> {
-        const is_last = index == posts.length - 1;
-        const row = tbody.insertRow();
-        row.id=`row_${post.post_id}`
-        var secondCell="";
-        var imgHTML="";
-        var btnHTML="";
-        const firstCell = `
-            <td class = "hide">${post.part_type == "text" ? "None" : post.post_id }</td>
-            `;
-        if (post.part_type == "text"){
-            imgHTML="";
-            if (post.image_mime_type != ""){
-                imgHTML=`<div class="col-auto">
-                            <img src="${post.image_data}" class="img-fluid"
-                            style="max-width:300px; vertical-align: middle;" />
-                        </div>`
-                };
-                secondCell = `
-                    <div class="row border p-3 mb-3 align-items-start">` + imgHTML + 
-                    `<div class="col d-flex flex-column h-100 justify-content-between" data-markdown="${escapeHtmlAttr(post.message_md)}" data-html="${escapeHtmlAttr(post.message)}">
-                       ${post.message}
-                    </div>
-                </div>
-                `;
-            }
-        else {
-            secondCell= `
-                <div id="message_${post.post_id}"
-                        class="${post.creator == 'model' ? 'model' : 'user'} border-top border-secondary" data-markdown="${escapeHtmlAttr(post.message_md)}" 
-                            data-html="${escapeHtmlAttr(post.message)}">
-                        ${post.message}
-                    </div>
-                    <div class="row" align-items-center>`;
-            
-            extra_buttons = "";
-            if (post.creator=="user") {
-                extra_buttons = `
-                <button class='btn btn-primary d-none row-button' type="button" id="delete_${post.post_id}"
-                    onclick="deleteEditRow(this, 'Edit Prompt')">Delete</button>
-                `;
-            }
-            if (post.creator=="user" || (post.creator=="model" && is_last)) {
-                btnHTML = `
-                        <div class="col-6 d-flex justify-content-start gap-2">
-                            <button class='btn btn-primary actions' type="button" id="${post.post_id}"
-                                onclick="editRow(this, '${post.creator=='user' ? 'Edit Prompt' : 'Edit Response'}')">Edit</button>
-                            <button class='btn btn-primary d-none row-button' type="button" id="update_${post.post_id}"
-                                onclick="updateRow(this, '${post.creator=='user' ? 'Edit Prompt' : 'Edit Response'}')">Update</button>
-                            <button class='btn btn-primary d-none row-button' type="button" id="cancel_${post.post_id}"
-                                onclick="cancelEditRow(this, '${post.creator=='user' ? 'Edit Prompt' : 'Edit Response'}')">Cancel</button>
-                    ` + extra_buttons + `</div>`;
-            }
-            else {
-                btnHTML= `<div class="col-6 dflex"></div>`;
-            };
-            
-            secondCell = secondCell + btnHTML + `
-                <div class="col-2 dflex"> </div>
-
-                <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-                    <div id="loadingSpinner_${post.post_id}" class="spinner-border text-primary" role="status" style="display: none;">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-
-                <span class="created">Created ${formatDate(post.created)}</span>
-            </div>`;
-        }
-        row.innerHTML = firstCell + "<td>" + secondCell + "</td>";
-        })
-    };
     //
-    // Used to create and display a container with a character and the associated text
+    // Handles press of clear button on character. Clears character from input 
     //
-    function buildChar(id, mime_type, img, text) {
-        // 1. Create the container
-
-        var outHTML= `
-            <div id="Container_${id}" class="row border p-3 mb-3 align-items-start characters">
-                `;
-        // 2. Create the image
-        if (mime_type != "") {
-            outHTML += `
-                <div class="col-auto">
-                    <img src=${img} alt="Preview" style="width: 200px; class="img-fluid">
-                </div>` ;
-        }
-
-        // 3. Create the text
-        outHTML += `
-                <div class="col">
-                    <div class="d-flex flex-column h-100 justify-content-between">
-                        <p class="mt-2 text-muted">${text}</p>
-                        <div class="text-end">
-                            <button class="btn btn-secondary" type="button" id="clear_${id}" onclick="processClearChar(event)">Clear</button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-
-        return outHTML;
-    }
-
     function processClearChar(event) {
         var target = event.target.id;
         const number = target.split("_")[1];
@@ -541,6 +355,8 @@
         AppState.editRow = row_id;
         document.getElementById("mode").textContent = mode + " Mode";
         AppState.chars = []
+        target = document.getElementById("placeholder");
+        target.innerHTML = "";
     };
 
     //
@@ -548,7 +364,6 @@
     //
     const urlParams = new URLSearchParams(window.location.search);
     const st_id = urlParams.get('story_id');
-    const posts={{ posts | tojson }};
 
     const AppState = {
         formMode: "New",
@@ -559,6 +374,9 @@
     document.addEventListener("DOMContentLoaded", function () {
         updateCount();
         setFormMode("New", -1);
+        const raw = document.getElementById('posts-data').dataset.posts;
+        const posts = JSON.parse(raw);
+
         const tbody=document.getElementById("postsRows");
         addNewRows(tbody,posts);
     });
@@ -566,7 +384,11 @@
     window.addEventListener("load", function () {
         window.scrollTo(0, document.body.scrollHeight);
     });
-
+    //
+    // Adds an event listener to the submit button of the assign character
+    // drop-down. This adds to the list of characters and appends the html 
+    // to the placeholder div.
+    //
     document.getElementById('assignCharForm').addEventListener('submit', function (e) {
         e.preventDefault();
         clearFlashMessage();
@@ -591,7 +413,6 @@
             showNotifyModal("Assign Character - Something went wrong: " + errorThrown, "Error");
         });
     });
-
 </script>
 
 {% endblock content %}
