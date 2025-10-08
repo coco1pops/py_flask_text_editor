@@ -335,7 +335,7 @@ def buildPrompt(content, chars):
         )
 
         multi_modal_content.append({"text": txtprompt})
-        if char["image_mime_type"] != "":
+        if char["image_mime_type"]:
             multi_modal_content.append(
                 {
                     "inline_data": {

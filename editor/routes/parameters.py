@@ -78,7 +78,7 @@ def createchar(char_id=None):
 def getchar():
     char_id = request.values.get("char_id")
     row = editor.utils.db.get_character(char_id)
-    if row["image_mime_type"] != "":
+    if row["image_mime_type"]:
         row["image_data"] = (
             "data:"
             + row["image_mime_type"]

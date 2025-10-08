@@ -123,7 +123,7 @@ def delete_character(char_id):
 def build_char(char_id):
     char = get_character(char_id)
     resp={"img": "", "image_mime_type" : "", "text" : ""}
-    if char['image_mime_type'] != "":
+    if char['image_mime_type']:
         resp["image_mime_type"] = char['image_mime_type']
         resp["img"] = char["image_data"]
         resp["text"] = f"The picture shows <b>{char['name']}</b><br>"
@@ -296,7 +296,7 @@ def parse_posts(posts):
         if post['source'] == 'part' and post['part_type'] =='text':
             message =  markdown.markdown(post['part_text'])
             content = post['part_text']
-        if post['source'] == 'part' and post['part_type'] == 'image' and post['part_image_mime_type'] != '':
+        if post['source'] == 'part' and post['part_type'] == 'image' and post['part_image_mime_type']:
             image_data ="data:" + post['part_image_mime_type'] + ";base64," + base64.b64encode(post['part_image_data']).decode('utf-8')
             upd=True
         else:
