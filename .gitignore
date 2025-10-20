@@ -7,6 +7,9 @@
 # Ignore .env file
 .env*
 
+# Ignore certs
+*.pem
+
 # Ignore database
 *.sqlite
 *.sql

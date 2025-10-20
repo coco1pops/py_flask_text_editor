@@ -39,8 +39,11 @@ def get_db():
                     user=current_app.config['DB_USER'],
                     password=current_app.config['DB_PASSWORD'],
                     host=host,
+                    sslmode='verify-ca',
+                    sslrootcert='certs/server-ca.pem',
+                    sslcert='certs/client-cert.pem',
+                    sslkey='certs/client-key.pem',
                     row_factory=dict_row)
-
             else:
                 logging.debug(("DB - Loading SQLite database"))
                 g.db = sqlite3.connect(
