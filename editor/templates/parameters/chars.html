@@ -49,14 +49,17 @@
       </tr>
     {% endfor %}
 
-  </tbody>
-  </table>
+    </tbody>
+
+</table>
  
-  <div id="flash-container" style="margin-top: 20px;"</div>
+  <div id="flash-container" style="margin-top: 20px;"></div>
 
   {{ macros.modal_box('confirmModal', 'Confirm Delete Character') }}
 
- <script>
+
+
+<script>
 
     document.querySelectorAll('.deletebutton').forEach(button => {
       button.addEventListener('click', event => {
@@ -91,6 +94,4 @@
 
   </script>
 
-
-</table> 
 {% endblock content %}
