@@ -31,8 +31,8 @@ th {
 
 .entry-textarea {
   width: 100%;
-  height: 300px;
-  resize: vertical;
+  overflow:hidden;
+  resize: none;
 }
 
 .hide {

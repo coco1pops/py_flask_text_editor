@@ -21,7 +21,6 @@ import editor.utils.docwriter
 
 bp = Blueprint("stories", __name__)
 
-
 @bp.before_request
 def require_login():
     if not current_user.is_authenticated:
@@ -30,23 +29,54 @@ def require_login():
 
 
 #
-# Creates a new story and adds a system instruction record
+# Creates a new story and adds the various parameters for the chat
 #
 @bp.route("/create", methods=["GET", "POST"])
 def create():
+
+    PARAM_TYPES = {
+        "temperature": float,
+        "top_p": float,
+        "model": str,
+        "harassment_threshold": str,
+        "explicit_content_threshold": str,
+        "hate_speech_threshold": str,
+        "dangerous_content_threshold": str
+    }
+    params = editor.utils.db.get_params()
+
     if request.method == "POST":
         logging.debug("Creating story ")
         story = request.form["title"]
         note = request.form["note"] or ""
         systeminstruction = request.form["systeminstruction"] or ""
-
+        logging.debug(f"Temperature: {request.form.get('temperature')}")
+        logging.debug(f"Model: {request.form.get('model')}")
+        new_params = parse_params(request.form, params, PARAM_TYPES)
         if story:
-            story_id = editor.utils.db.insert_story(story, note, systeminstruction)
+            story_id = editor.utils.db.insert_story(story, note, systeminstruction, new_params)
             return redirect(url_for("stories.generate_story", story_id=story_id))
 
     sysints = editor.utils.db.get_sysints()
-    return render_template("stories/create.html", sysints=sysints)
 
+    return render_template("stories/create.html", sysints=sysints, params=params, isadmin=current_user.is_admin)
+
+def parse_params(form, defaults, types):
+    params = dict(defaults)  # start with existing params
+
+    for key, datatype in types.items():
+
+        if key in form:
+            value = form.get(key)
+
+            if value != "":
+                try:
+                    params[key] = datatype(value)
+                except (ValueError, TypeError):
+                    pass   # keep existing value
+        else:
+            logging.debug(f"Parameter {key} not in form")
+    return params
 
 # Returns a list of stories
 @bp.route("/stories", methods=["GET", "POST"])
@@ -128,7 +158,7 @@ def generate_story():
     chars = editor.utils.db.get_characters()
 
     return render_template(
-        "stories/generate_story.html", story=story, posts=posts, chars=chars
+        "stories/generate_story.html", story=story, posts=posts, chars=chars, isadmin=current_user.is_admin
     )
 
 
@@ -204,7 +234,11 @@ def generate_text():
     # Build the chat service
     chat = get_chat_service()
     story = editor.utils.db.get_story(story_id)
-    chat.reset_chat(story["systeminstruction"])
+    # reset chat currently resets the system instruction and history. 
+    # Need to add temperature, top_p, model and safety settings
+    # temperature, seed and top_p are in generation config along with stop sequence 
+    # safety settings and model are passed separately
+    chat.reset_chat(story)
     buildHistory(chat, story_id)
     #
     # Generating new content

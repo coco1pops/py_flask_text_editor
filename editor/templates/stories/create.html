@@ -12,16 +12,17 @@
     </div>
     <div class="form-group">
         <label for="title">Title</label>
-        <input type="text" name="title" id="title" class="form-control">{{ request.form['title'] }}</textarea>
+        <input type="text" name="title" id="title" class="form-control" value="{{ request.form['title'] }}">
     </div>
+    
     <div class="form-group">
         <label for="note">Note</label>
-        <textarea name="note" id="notes" class="form-control">{{ request.form['note'] }}</textarea>
+        <textarea name="note" id="notes" class="form-control entry-textarea" rows="1">{{ request.form['note'] }}</textarea>
     </div>
     <div class="form-group">
         <label for="systeminstruction">AI Guidance</label>
         <textarea name="systeminstruction" id="systeminstruction"
-            class="form-control">{{ request.form['systeminstruction'] }}</textarea>
+            class="form-control entry-textarea" rows="1">{{ request.form['systeminstruction'] }}</textarea>
     </div>
     <div class="d-flex justify-content-between">
         <div class="form-group">
@@ -29,41 +30,125 @@
         </div>
         <div>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                data-bs-target="#assignSysInt">Get</button>
+                data-bs-target="#studio">Studio</button>
         </div>
     </div>
-</form>
-<!-- Modal Add AI Guidance -->
-<div class="modal fade" id="assignSysInt" tabindex="-1" aria-labelledby="assignSysInt" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="assignSysIntForm">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="assignSysIntLabel">Assign AI Guidance</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="sysIntSelect" class="form-label">Choose AI Guidance</label>
-                        <select class="form-select" id="sysIntSelect" name="sysint_id" required>
-                            {% for sysint in sysints %}
-                            <option value="{{ sysint.sysint_id }}">
-                                {{ sysint.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="picked" onclick="pickSysInt()">Add</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
+    <!-- Modal Add AI Guidance -->
+    <div class="modal fade" id="studio" tabindex="-1" aria-labelledby="studio" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="studioForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="studoLabel">Writer's Studio</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="sysIntSelect" class="form-label">Choose AI Guidance</label>
+                            <select class="form-select" id="sysIntSelect" name="sysint_id" required>
+                                {% for sysint in sysints %}
+                                <option value="{{ sysint.sysint_id }}">
+                                    {{ sysint.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Core Controls -->
+                        <h6 class="text-uppercase text-muted">Creativity</h6>
+
+                        <label>Temperature: <strong><span id="tempVal">{{params.temperature}}</span></strong></label>
+                        <input type="range" class="form-range" id="temperature" min="0.2" max="1.2" step="0.01" value={{params.temperature}} 
+                            name="temperature">
+
+                        <label>Top-p: <strong><span id="topVal">{{params.top_p}}</span></strong></label>
+                        <input type="range" class="form-range" id="top_p" min="0.5" max="1.0" step="0.01" value={{params.top_p}}
+                            name="top_p">
+
+                        <hr>
+
+                        <!-- Advanced Controls -->
+                        <h6 class="text-uppercase text-muted">Narrative Controls</h6>
+
+                        <label>Repetition Control</label>
+                        <input type="range" class="form-range" id="repetition" min="0" max="2" step="0.1" value="1">
+
+                        <label>Pacing</label>
+                        <input type="range" class="form-range" id="pacing" min="0" max="2" step="0.1" value="1">
+
+                        <label>Style Strength</label>
+                        <input type="range" class="form-range" id="style" min="0" max="2" step="0.1" value="1">
+
+                        <hr>
+
+                        <div class="alert alert-info" id="summaryBox">
+                            Balanced narrative with moderate creativity and steady pacing.
+                        </div>
+
+                        {% if isadmin %}
+
+                            <h6 class="text-uppercase text-muted">Safety Settings</h6>
+
+                            <label>Hate Speech</label>
+                            <select class="form-select mb-3" id="hateSafety" name="hate_speech_threshold">
+                                <option value="BLOCK_LOW_AND_ABOVE"{% if params.hate_speech_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                                <option value="BLOCK_MEDIUM_AND_ABOVE"{% if params.hate_speech_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                                <option value="BLOCK_ONLY_HIGH"{% if params.hate_speech_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                                <option value="BLOCK_NONE"{% if params.hate_speech_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                            </select>
+
+                            <label>Harassment</label>
+                            <select class="form-select mb-2" id="harassmentSafety" name="harassment_threshold">
+                                <option value="BLOCK_LOW_AND_ABOVE"{% if params.harassment_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                                <option value="BLOCK_MEDIUM_AND_ABOVE"{% if params.harassment_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                                <option value="BLOCK_ONLY_HIGH"{% if params.harassment_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                                <option value="BLOCK_NONE"{% if params.harassment_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                            </select>
+
+                            <label>Sexual Content</label>
+                            <select class="form-select mb-3" id="sexualSafety" name="explicit_content_threshold">
+                                <option value="BLOCK_LOW_AND_ABOVE"{% if params.explicit_content_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                                <option value="BLOCK_MEDIUM_AND_ABOVE"{% if params.explicit_content_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                                <option value="BLOCK_ONLY_HIGH"{% if params.explicit_content_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                                <option value="BLOCK_NONE"{% if params.explicit_content_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                            </select>
+
+                            <label>Dangerous</label>
+                            <select class="form-select mb-2" id="dangerousSafety" name="dangerous_content_threshold">
+                                <option value="BLOCK_LOW_AND_ABOVE"{% if params.dangerous_content_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                                <option value="BLOCK_MEDIUM_AND_ABOVE"{% if params.dangerous_content_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                                <option value="BLOCK_ONLY_HIGH"{% if params.dangerous_content_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                                <option value="BLOCK_NONE"{% if params.dangerous_content_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                            </select>
+
+                            <h6 class="text-uppercase text-muted">Model</h6>
+
+                            <select class="form-select mb-3" id="modelSelect" name="model">
+                                <option value="gemini-2.5-flash-lite"{% if params.model == 'gemini-2.5-flash-lite' %}selected{% endif %}>Gemini 2.5 Flash Lite</option>
+                                <option value="gemini-3.1-flash-lite-preview"{% if params.model == 'gemini-3.1-flash-lite-preview' %}selected{% endif %}>Gemini 3.1 Flash Lite Preview</option>
+                            </select>
+
+                        {% endif %}
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="picked" onclick="pickSysInt()">Apply</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Modal -->
+</form>
 <script>
+    const sliders = document.querySelectorAll("input[type=range]");
+    const summaryBox = document.getElementById("summaryBox");
+
+    let timeout = null;
+      
     function pickSysInt() {
         const id = document.getElementById("sysIntSelect").value;
         $.ajax({
@@ -72,13 +157,92 @@
             data: { 'sysint_id': id },
             dataType: "json"
         }).done(function (response) {
-            document.getElementById("systeminstruction").value = response['instruction'];
-            const modal = bootstrap.Modal.getInstance(document.getElementById('assignSysInt'));
+            const newSysInt = buildSysIntOptions(response['instruction']);
+            $("#systeminstruction").val(newSysInt).trigger('input');
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('studio'));
             modal.hide();
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX Error", textStatus, errorThrown);
         });
     };
+
+    function buildSysIntOptions(sysInt) {
+
+        // Add repetition guidance
+
+        if ($("#repetition").val() > 1.3) {
+            sysInt = sysInt + "\nAvoid repeating distinctive words or imagery."}
+        else if ($("#repetition").val() < 0.7) {
+            sysInt = sysInt + "\nRepetition is acceptable for thematic effect."
+        }
+
+        // Add pacing guidance
+ 
+        if ($("#pacing").val() > 1.3) {
+            sysInt = sysInt + "\nUse shorter sentences and increase narrative momentum."
+        } else if ($("#pacing").val() < 0.7) {
+            sysInt = sysInt + "\nUse richer description and slower scene development."
+        }
+
+        // Add Style strength guidance
+        if ($("#style").val() > 1.3) {
+            sysInt = sysInt + "\nLean strongly into a distinctive narrative voice."
+        } else if ($("#style").val() < 0.7) {
+            sysInt = sysInt + "\nKeep the prose neutral and unobtrusive."
+        }
+        return sysInt;
+    }
+
+    function updateLabels() {
+        document.getElementById("tempVal").textContent =
+            parseFloat(temperature.value).toFixed(2);
+
+        document.getElementById("topVal").textContent =
+            parseFloat(top_p.value).toFixed(2);
+    }
+
+    function generateSummary() {
+        const temp = parseFloat($("#temperature").val());
+        const rep = parseFloat($("#repetition").val());
+        const pace = parseFloat($("#pacing").val());
+
+        let creativity =
+            temp < 0.6 ? "controlled" :
+            temp < 0.95 ? "balanced" :
+            "highly creative";
+
+        let repText =
+            rep < 0.7 ? "may reuse phrasing" :
+            rep < 1.3 ? "moderate variation" :
+            "actively avoids repetition";
+
+        let pacingText =
+            pace < 0.7 ? "slow and descriptive" :
+            pace < 1.3 ? "steady pacing" :
+            "fast and dynamic";
+
+        summaryBox.textContent =
+            `${creativity} prose, ${pacingText}, ${repText}.`;
+    }
+
+// Attach update to all sliders + selectors
+
+    $("input[type=range], select").on("input change", function () {
+        updateLabels();
+        generateSummary();
+    });
+    $(".entry-textarea").on("input change", function() {
+        this.style.height = "auto"; 
+        this.style.height = (this.scrollHeight) + "px";
+    });
+
+
+
+    updateLabels();
+    generateSummary();
+
+
 
 </script>
 {% endblock content %}

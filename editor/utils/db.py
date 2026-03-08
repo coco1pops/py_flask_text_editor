@@ -146,7 +146,8 @@ def get_story(story_id, allow_not_found=False):
     try:
         db = get_db()
         sep = build_sel()
-        select = f"SELECT story_id, title, note, systeminstruction, created FROM stories WHERE story_id = {sep}"
+        select = f"SELECT story_id, title, note, systeminstruction, created, temperature, top_p, seed, harassment_threshold," +\
+            f"hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold, model FROM stories WHERE story_id = {sep}"
         select=add_user(select)
         story = db.execute(select
             , (story_id,current_user.id,)
@@ -169,7 +170,7 @@ def get_latest_story():
     except Exception as e:
         print_except("get_latest_story", e)
     
-def insert_story(title, note, systeminstruction):
+def insert_story(title, note, systeminstruction, params):
     try:
         db = get_db()
         sep = build_sel()
@@ -180,6 +181,10 @@ def insert_story(title, note, systeminstruction):
             story_id=cursor.fetchone()["story_id"]
         else:       
             story_id = db.execute(ins,(title, note, systeminstruction,current_user.id,)).lastrowid
+        
+        for key, val in params.items():
+            update_story(story_id, key, val)
+
         db.commit()
         return story_id
     except Exception as e:
@@ -536,6 +541,20 @@ def delete_sysint(sysint_id):
         return True
     except Exception as e:
         print_except("delete_sysint",e)
+
+# Database functions for params
+
+def get_params(allow_not_found=False):
+    db=get_db()
+    select=f"SELECT temperature, top_p, seed, harassment_threshold, model, " +\
+        f"hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold FROM params"
+    try:
+        usr=db.execute(select).fetchone()
+        if not usr and not allow_not_found:
+            print_except("get_params", "Record not found")
+        return usr
+    except Exception as e:
+        print_except("get_params",e)
 
 # 
 # Database functions utilities

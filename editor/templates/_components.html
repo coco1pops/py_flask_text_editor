@@ -84,3 +84,104 @@
     {% endif %}
   {% endwith %}
 {% endmacro %}
+
+<!-- Modal Show AI Params -->
+ {% macro studioModal(story, isadmin) %}
+  <div class="modal fade" id="studio" tabindex="-1" aria-labelledby="studio" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="studioForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="studioLabel">Writer's Studio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                  <!-- Core Controls -->
+                    <h6 class="text-uppercase text-muted">Creativity</h6>
+
+                    <label>Temperature: <strong><span id="tempVal">{{'%.2f' % story['temperature']}}</span></strong></label>
+                    <input type="range" class="form-range" id="temperature" min="0.2" max="1.2" step="0.01" value={{story['temperature']}} 
+                        name="temperature" oninput="updateLabel(event)", onchange="handleInput(event)">
+
+                    <label>Top-p: <strong><span id="topVal">{{'%.2f' % story['top_p']}}</span></strong></label>
+                    <input type="range" class="form-range" id="top_p" min="0.5" max="1.0" step="0.01" value={{story['top_p']}}
+                        name="top_p" oninput="updateLabel(event)", onchange="handleInput(event)">
+
+                    <hr>
+
+                    <h6 class="text-uppercase text-muted">Safety Settings</h6>
+
+                    <label>Hate Speech</label>
+
+                    {% if isadmin %}
+                        <select class="form-select mb-3" id="hate_speech_threshold" name="hate_speech_threshold" onchange="handleInput(event)">
+                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.hate_speech_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.hate_speech_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                            <option value="BLOCK_ONLY_HIGH"{% if story.hate_speech_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                            <option value="BLOCK_NONE"{% if story.hate_speech_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                        </select>
+                    {% else %}
+                            <input class="form-control" type="text" id="hate_speech_threshold" value="{{ story.hate_speech_threshold }}" readonly>
+                    {% endif %}
+
+                    <label>Harassment</label>
+
+                    {% if isadmin %}                
+                        <select class="form-select mb-2" id="harassment_threshold" name="harassment_threshold" onchange="handleInput(event)">
+                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.harassment_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.harassment_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                            <option value="BLOCK_ONLY_HIGH"{% if story.harassment_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                            <option value="BLOCK_NONE"{% if story.harassment_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                        </select>
+                    {% else %}
+                            <input class="form-control" type="text" id="harassment_threshold" value="{{ story.harassment_threshold }}" readonly>   
+                    {% endif %}
+
+                    <label>Sexual Content</label>
+
+                    {% if isadmin %}
+                        <select class="form-select mb-3" id="explicit_content_threshold" name="explicit_content_threshold" onchange="handleInput(event)">
+                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.explicit_content_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.explicit_content_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                            <option value="BLOCK_ONLY_HIGH"{% if story.explicit_content_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                            <option value="BLOCK_NONE"{% if story.explicit_content_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                        </select>
+                    {% else %}
+                            <input class="form-control" type="text" id="explicit_content_threshold" value="{{ story.explicit_content_threshold }}" readonly>
+                    {% endif %} 
+
+                    <label>Dangerous</label>
+
+                    {%if isadmin %}
+                        <select class="form-select mb-2" id="dangerous_content_threshold" name="dangerous_content_threshold" onchange="handleInput(event)">
+                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.dangerous_content_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
+                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.dangerous_content_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                            <option value="BLOCK_ONLY_HIGH"{% if story.dangerous_content_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
+                            <option value="BLOCK_NONE"{% if story.dangerous_content_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
+                        </select>
+                    {% else %}
+                            <input class="form-control" type="text" id="dangerous_content_threshold" value="{{ story.dangerous_content_threshold }}" readonly>   
+                    {% endif %}
+
+                    <h6 class="text-uppercase text-muted">Model</h6>
+
+                    {% if isadmin %}
+                        <select class="form-select mb-3" id="model" name="model" onchange="handleInput(event)">
+                            <option value="gemini-2.5-flash-lite"{% if story.model == 'gemini-2.5-flash-lite' %}selected{% endif %}>Gemini 2.5 Flash Lite</option>
+                            <option value="gemini-3.1-flash-lite-preview"{% if story.model == 'gemini-3.1-flash-lite-preview' %}selected{% endif %}>Gemini 3.1 Flash Lite Preview</option>
+                        </select>
+                    {% else %}
+                            <input class="form-control" type="text" id="model" value="{{ story.model }}" readonly>  
+
+                    {% endif %}
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}

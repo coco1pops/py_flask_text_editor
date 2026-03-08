@@ -20,8 +20,16 @@
 </div>
 
 <div id="controls" class="container-fluid mb-3">
-    <label for="title"> Title: </label>
-    <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
+
+    <div class="d-flex align-items-center">
+        <label for="title" class="me-2"> Title: </label>
+        <input type="text" id="title" value="{{story['title']}}" onchange="handleInput(event)">
+        <div class="ms-auto">
+            <button id="gotoBottom" onclick="gotoBottom()" class="btn btn-secondary me-2">Bottom</button>
+            <button id="settings" class="btn btn-secondary" data-bs-toggle="modal"
+                    data-bs-target="#studio">Settings</button>
+        </div>
+    </div>
     <div class="row">
         <div class="col-md-6">
             <label for="note"> Note: </label>
@@ -80,13 +88,19 @@
                 <span class="visually-hidden">Loading...</span>
             </div>
             <div>
+                <button id="gotoTop" onclick="gotoTop()" class="btn btn-secondary actions">Top</button>                
+            </div>
+            <div>
                 Character count: <span id="charCount" class="text-end">0</span>
             </div>
         </div>
     </div>
 
     <div id="placeholder" style="margin-top: 30px"></div>
+
 </div>
+
+{{ macros.studioModal(story, isadmin) }}
 
 {{ macros.modal_box('confirmModal', 'Confirm dialogue') }}
 
@@ -100,10 +114,14 @@
     // TODO:Could be changed to calculate tokens
     //
     function updateCount() {
-        const text = document.getElementById("newprompt").value;
+        const np= document.getElementById("newprompt");
+        const text = np.value;
         document.getElementById("charCount").textContent = text.length;
         document.getElementById('submit').disabled = text.length < 5;
         document.getElementById('cancel').disabled = text.length < 5;;
+
+        np.style.height = "auto";
+        np.style.height = np.scrollHeight + "px";
     };
     //
     // Function to update a field on the stories table
@@ -333,6 +351,7 @@
         document.getElementById("newprompt").disabled = false;
         updateCount();
         setFormMode('New',-1);
+        gotoBottom();
 
     };
     //
@@ -347,6 +366,16 @@
         AppState.chars.splice(ix, 1);
 
     };
+    //
+    // Updates the labels for temperature and top_p sliders in the studio modal
+    //
+    function updateLabels() {
+        document.getElementById("tempVal").textContent =
+            parseFloat(temperature.value).toFixed(2);
+
+        document.getElementById("topVal").textContent =
+            parseFloat(top_p.value).toFixed(2);
+    }
     // 
     // Used to determine if form is in add or edit mode and to blank list of characters
     //
@@ -379,11 +408,42 @@
 
         const tbody=document.getElementById("postsRows");
         addNewRows(tbody,posts);
+
+        // Maps for displaying safety settings in a more user-friendly way
+        const thresholdMap = {
+            "BLOCK_LOW_AND_ABOVE": "Strict",
+            "BLOCK_MEDIUM_AND_ABOVE": "Moderate",
+            "BLOCK_ONLY_HIGH": "Relaxed",
+            "BLOCK_NONE": "Off"
+        };
+
+        const isAdmin = JSON.parse('{{ isadmin | tojson }}');
+
+        if (!isAdmin) {
+            document.getElementById("hate_speech_threshold").value = thresholdMap[document.getElementById("hate_speech_threshold").value];
+            document.getElementById("harassment_threshold").value = thresholdMap[document.getElementById("harassment_threshold").value];
+            document.getElementById("explicit_content_threshold").value = thresholdMap[document.getElementById("explicit_content_threshold").value];
+            document.getElementById("dangerous_content_threshold").value = thresholdMap[document.getElementById("dangerous_content_threshold").value];
+        };
+
     });
 
-    window.addEventListener("load", function () {
-        window.scrollTo(0, document.body.scrollHeight);
-    });
+    window.addEventListener("load", gotoBottom);
+
+     function gotoBottom() {
+
+            document.getElementById("end-placeholder").scrollIntoView({
+            behavior: "smooth"
+        });
+
+    };
+
+    function gotoTop() {
+        document.getElementById("top").scrollIntoView({
+            behavior: "smooth"
+        });
+    };  
+
     //
     // Adds an event listener to the submit button of the assign character
     // drop-down. This adds to the list of characters and appends the html 
@@ -413,6 +473,13 @@
             showNotifyModal("Assign Character - Something went wrong: " + errorThrown, "Error");
         });
     });
+
+    $("input[type=range], select").on("input change", function () {
+        updateLabels();
+    });
+
 </script>
+
+<div id="end-placeholder"></div>
 
 {% endblock content %}
