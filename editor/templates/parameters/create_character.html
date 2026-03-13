@@ -12,8 +12,8 @@
     </div>
     <div class="form-group">
         <label for="description">Description</label>
-        <textarea name="description" id="description"
-            class="form-control">{{ char.description if char else '' }}</textarea>
+        <textarea name="description" id="description" rows="1"
+            class="entry-textarea form-control">{{ char.description if char else '' }}</textarea>
     </div>
 
     <div class="mb-3">
@@ -30,13 +30,13 @@
 
     <div class="form-group">
         <label for="personality">Personality</label>
-        <textarea name="personality" id="personality"
-            class="form-control">{{ char.personality if char else '' }}</textarea>
+        <textarea name="personality" id="personality" rows="1"
+            class="entry-textarea form-control">{{ char.personality if char else '' }}</textarea>
     </div>
     <div class="form-group">
         <label for="motivation">Motivation</label>
-        <textarea name="motivation" id="motivation"
-            class="form-control">{{ char.motivation if char else '' }}</textarea>
+        <textarea name="motivation" id="motivation" rows="1"
+            class="entry-textarea form-control">{{ char.motivation if char else '' }}</textarea>
     </div>
     <div class="form-group">
         <button type="submit" class="btn btn-primary">{{ 'Update' if char else 'Add' }}</button>
@@ -103,6 +103,15 @@
                 }
             );
         }
+    });
+
+    $(".entry-textarea").on("input change", function() {
+        this.style.height = "auto"; 
+        this.style.height = (this.scrollHeight) + "px";
+    });
+
+    $(document).ready(function () {
+        $(".entry-textarea").trigger("input");
     });
 
 </script>

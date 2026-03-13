@@ -293,6 +293,7 @@ def generate_text():
                 part["description"],
                 part["personality"],
                 part["motivation"],
+                part["image_mime_type"]
             )
             editor.utils.db.insert_post_text_part(story_id, post_id, text_part)
             if part["image_mime_type"] != "":
@@ -365,7 +366,7 @@ def buildPrompt(content, chars):
     for ix in chars:
         char = editor.utils.db.get_character_raw(ix)
         txtprompt = buildChar(
-            char["name"], char["description"], char["personality"], char["motivation"]
+            char["name"], char["description"], char["personality"], char["motivation"], char["image_mime_type"]
         )
 
         multi_modal_content.append({"text": txtprompt})
@@ -382,8 +383,10 @@ def buildPrompt(content, chars):
     return multi_modal_content
 
 
-def buildChar(name, description, personality, motivation):
-    resp = f"This picture shows **{name}**\n\n"
+def buildChar(name, description, personality, motivation, image_mime_type):
+    resp = ""
+    if image_mime_type:
+        resp = f"This picture shows **{name}**\n\n"
 
     if description != "":
         resp = f"{resp}**Description:** {description}\n\n"

@@ -166,6 +166,7 @@ class ChatService:
             logging.error(f"Exception type: {type(e).__name__}")
             logging.error(f"Exception module: {type(e).__module__}")
             logging.error(f"Exception args: {e.args}")
+
             if isinstance(e,str):
                 mess=e
             else:
