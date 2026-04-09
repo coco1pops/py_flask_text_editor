@@ -16,7 +16,7 @@
         {% if current_user.is_authenticated %}
           <li class="nav-item nav-link"><a href="{{ url_for('stories.stories') }}">Stories</a></li>
           <li class="nav-item nav-link"><a href="{{ url_for('parameters.chars') }}">Characters</a></li>
-          <li class="nav-item nav-link"><a href="{{ url_for('parameters.create_user',mode='Update',user_id=current_user.id) }}">Update User</a></li>
+          <li class="nav-item nav-link"><a href="{{ url_for('parameters.createuser',mode='Update',user_id=current_user.id) }}">Update User</a></li>
         {% endif %}
         {% if current_user.is_authenticated and current_user.is_admin %}
           <li class="nav-item nav-link"><a href="{{ url_for('parameters.users') }}">Users</a></li>

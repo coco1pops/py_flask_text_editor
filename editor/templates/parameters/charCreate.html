@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h2>{% block title %}{{ 'Update' if char else 'Add' }} Character{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data" autocomplete="off">
+
+    {{ macros.input('name', 'Name', char.name if char else '') }}
+
+    {{ macros.textarea('description', 'Description', char.description if char else '') }}
+
+    <div class="mb3">
+        <label class="form-label">{% if char and char.image_data %}Replace Image:{% else %}Upload Image:{% endif %}</label>
+        <input type="file" id="imageUpload" name="image" class="form-control">
+        <div id="fileName" class="form-text"></div>
+    </div>
+
+    <img id="preview" name="preview" style="display:none; max-width:300px;" />
+    {% if char.image_data %}
+        <img id="currentImage" name="currentImage" src="{{ char.image_data }}" style="max-width:300px;" />
+    {% endif %}
+
+    {{macros.textarea('personality', 'Personality', char.personality if char else '')}}
+
+    {{macros.textarea('motivation', 'Motivation', char.motivation if char else '')}}
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">{{ 'Update' if char else 'Add' }}</button>
+    </div>
+</form>
+
+ {{ macros.modalConfirm('Invalid File', 'Error message') }}
+
+ {{ macros.flashMessages() }}
+
+{% endblock content %}
+
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='charCreate.js') }}"></script>
+{% endblock scripts %}
+

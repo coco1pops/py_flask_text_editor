@@ -1,93 +1,93 @@
 {% macro modal_box(id, title, body='', footer='') %}
-  <!-- Confirmation Modal -->
-  <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmTitle" aria-hidden="true">
     <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmTitle">Confirm Delete</h5>
+            </div>
+            <div class="modal-body" id="confirmText">
+                Are you sure you want to proceed?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmBtn">Yes, Proceed</button>
+            </div>
         </div>
-        <div class="modal-body" id="confirmText">
-          Are you sure you want to proceed?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelBtn">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmBtn">Yes, Proceed</button>
-        </div>
-      </div>
     </div>
-  </div>
+</div>
 {% endmacro %}
 
 {% macro modalConfirm(title, message) %}
-  <div class="modal fade" id="Notify" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-          <div class="modal-content" id="myModalBorder">
+<div class="modal fade" id="Notify" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" id="myModalBorder">
 
-              <div class="modal-header" id="myModalHeader">
-                  <h5 class="modal-title" id="myModalLabel">{{title}}</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
+            <div class="modal-header" id="myModalHeader">
+                <h5 class="modal-title" id="myModalLabel">{{title}}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 
-              <div class="modal-body" id="modal-message">
-                  {{message}}
-              </div>
+            <div class="modal-body" id="modal-message">
+                {{message}}
+            </div>
 
-              <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
 
-          </div>
-      </div>
-  </div>
+        </div>
+    </div>
+</div>
 {% endmacro %}
 
 
 <!-- Modal Add Character -->
 {% macro charPicker(chars) %}
-  <div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
-      <div class="modal-dialog">
-          <div class="modal-content">
-              <form id="assignCharForm">
-                  <div class="modal-header">
-                      <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                      <div class="mb-3">
-                          <label for="charSelect" class="form-label">Choose a Character</label>
-                          <select class="form-select" id="charSelect" name="char_id" required>
-                              {% for char in chars %}
-                              <option value="{{ char.char_id }}">
-                                  {{ char.name }}
-                              </option>
-                              {% endfor %}
-                          </select>
-                      </div>
-                  </div>
-                  <div class="modal-footer">
-                      <button type="submit" class="btn btn-primary">Add</button>
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                  </div>
-              </form>
-          </div>
-      </div>
-  </div>
+<div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="assignCharForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="charSelect" class="form-label">Choose a Character</label>
+                        <select class="form-select" id="charSelect" name="char_id" required>
+                            {% for char in chars %}
+                            <option value="{{ char.char_id }}">
+                                {{ char.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endmacro %}
 
 {% macro flashMessages() %}
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message
-          }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">{% if category == "danger"%}error{% else %}{{category}}{% endif %} - {{ message
+    }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
 {% endmacro %}
 
 <!-- Modal Show AI Params -->
- {% macro studioModal(story, isadmin) %}
-  <div class="modal fade" id="studio" tabindex="-1" aria-labelledby="studio" aria-hidden="true">
+{% macro studioModal(story, isadmin) %}
+<div class="modal fade" id="studio" tabindex="-1" aria-labelledby="studio" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="studioForm">
@@ -97,16 +97,17 @@
                 </div>
                 <div class="modal-body">
 
-                  <!-- Core Controls -->
+                    <!-- Core Controls -->
                     <h6 class="text-uppercase text-muted">Creativity</h6>
 
-                    <label>Temperature: <strong><span id="tempVal">{{'%.2f' % story['temperature']}}</span></strong></label>
-                    <input type="range" class="form-range" id="temperature" min="0.2" max="1.2" step="0.01" value={{story['temperature']}} 
-                        name="temperature" oninput="updateLabel(event)", onchange="handleInput(event)">
+                    <label>Temperature: <strong><span id="temperatureVal">{{'%.2f' %
+                                story['temperature']}}</span></strong></label>
+                    <input type="range" class="form-range story-record" id="temperature" min="0.2" max="1.2" step="0.01"
+                        value={{story['temperature']}} name="temperature"  >
 
-                    <label>Top-p: <strong><span id="topVal">{{'%.2f' % story['top_p']}}</span></strong></label>
-                    <input type="range" class="form-range" id="top_p" min="0.5" max="1.0" step="0.01" value={{story['top_p']}}
-                        name="top_p" oninput="updateLabel(event)", onchange="handleInput(event)">
+                    <label>Top-p: <strong><span id="top_pVal">{{'%.2f' % story['top_p']}}</span></strong></label>
+                    <input type="range" class="form-range story-record" id="top_p" min="0.5" max="1.0" step="0.01"
+                        value={{story['top_p']}} name="top_p"  >
 
                     <hr>
 
@@ -115,64 +116,91 @@
                     <label>Hate Speech</label>
 
                     {% if isadmin %}
-                        <select class="form-select mb-3" id="hate_speech_threshold" name="hate_speech_threshold" onchange="handleInput(event)">
-                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.hate_speech_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
-                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.hate_speech_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
-                            <option value="BLOCK_ONLY_HIGH"{% if story.hate_speech_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
-                            <option value="BLOCK_NONE"{% if story.hate_speech_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
-                        </select>
+                    <select class="form-select mb-3 story-record" id="hate_speech_threshold" name="hate_speech_threshold">
+                        <option value="BLOCK_LOW_AND_ABOVE" {% if story.hate_speech_threshold=='BLOCK_LOW_AND_ABOVE'
+                            %}selected{% endif %}>Strict</option>
+                        <option value="BLOCK_MEDIUM_AND_ABOVE" {% if
+                            story.hate_speech_threshold=='BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate
+                        </option>
+                        <option value="BLOCK_ONLY_HIGH" {% if story.hate_speech_threshold=='BLOCK_ONLY_HIGH'
+                            %}selected{% endif %}>Relaxed</option>
+                        <option value="BLOCK_NONE" {% if story.hate_speech_threshold=='BLOCK_NONE' %}selected{% endif
+                            %}>Off</option>
+                    </select>
                     {% else %}
-                            <input class="form-control" type="text" id="hate_speech_threshold" value="{{ story.hate_speech_threshold }}" readonly>
+                    <input class="form-control" type="text" id="hate_speech_threshold"
+                        value="{{ story.hate_speech_threshold }}" readonly>
                     {% endif %}
 
                     <label>Harassment</label>
 
-                    {% if isadmin %}                
-                        <select class="form-select mb-2" id="harassment_threshold" name="harassment_threshold" onchange="handleInput(event)">
-                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.harassment_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
-                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.harassment_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
-                            <option value="BLOCK_ONLY_HIGH"{% if story.harassment_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
-                            <option value="BLOCK_NONE"{% if story.harassment_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
-                        </select>
+                    {% if isadmin %}
+                    <select class="form-select mb-2 story-record" id="harassment_threshold" name="harassment_threshold">
+                        <option value="BLOCK_LOW_AND_ABOVE" {% if story.harassment_threshold=='BLOCK_LOW_AND_ABOVE'
+                            %}selected{% endif %}>Strict</option>
+                        <option value="BLOCK_MEDIUM_AND_ABOVE" {% if
+                            story.harassment_threshold=='BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
+                        <option value="BLOCK_ONLY_HIGH" {% if story.harassment_threshold=='BLOCK_ONLY_HIGH' %}selected{%
+                            endif %}>Relaxed</option>
+                        <option value="BLOCK_NONE" {% if story.harassment_threshold=='BLOCK_NONE' %}selected{% endif %}>
+                            Off</option>
+                    </select>
                     {% else %}
-                            <input class="form-control" type="text" id="harassment_threshold" value="{{ story.harassment_threshold }}" readonly>   
+                    <input class="form-control" type="text" id="harassment_threshold"
+                        value="{{ story.harassment_threshold }}" readonly>
                     {% endif %}
 
                     <label>Sexual Content</label>
 
                     {% if isadmin %}
-                        <select class="form-select mb-3" id="explicit_content_threshold" name="explicit_content_threshold" onchange="handleInput(event)">
-                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.explicit_content_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
-                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.explicit_content_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
-                            <option value="BLOCK_ONLY_HIGH"{% if story.explicit_content_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
-                            <option value="BLOCK_NONE"{% if story.explicit_content_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
-                        </select>
+                    <select class="form-select mb-3 story-record" id="explicit_content_threshold" name="explicit_content_threshold">
+                        <option value="BLOCK_LOW_AND_ABOVE" {% if
+                            story.explicit_content_threshold=='BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict
+                        </option>
+                        <option value="BLOCK_MEDIUM_AND_ABOVE" {% if
+                            story.explicit_content_threshold=='BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate
+                        </option>
+                        <option value="BLOCK_ONLY_HIGH" {% if story.explicit_content_threshold=='BLOCK_ONLY_HIGH'
+                            %}selected{% endif %}>Relaxed</option>
+                        <option value="BLOCK_NONE" {% if story.explicit_content_threshold=='BLOCK_NONE' %}selected{%
+                            endif %}>Off</option>
+                    </select>
                     {% else %}
-                            <input class="form-control" type="text" id="explicit_content_threshold" value="{{ story.explicit_content_threshold }}" readonly>
-                    {% endif %} 
+                    <input class="form-control" type="text" id="explicit_content_threshold"
+                        value="{{ story.explicit_content_threshold }}" readonly>
+                    {% endif %}
 
                     <label>Dangerous</label>
 
                     {%if isadmin %}
-                        <select class="form-select mb-2" id="dangerous_content_threshold" name="dangerous_content_threshold" onchange="handleInput(event)">
-                            <option value="BLOCK_LOW_AND_ABOVE"{% if story.dangerous_content_threshold == 'BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict</option>
-                            <option value="BLOCK_MEDIUM_AND_ABOVE"{% if story.dangerous_content_threshold == 'BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate</option>
-                            <option value="BLOCK_ONLY_HIGH"{% if story.dangerous_content_threshold == 'BLOCK_ONLY_HIGH' %}selected{% endif %}>Relaxed</option>
-                            <option value="BLOCK_NONE"{% if story.dangerous_content_threshold == 'BLOCK_NONE' %}selected{% endif %}>Off</option>
-                        </select>
+                    <select class="form-select mb-2 story-record" id="dangerous_content_threshold" name="dangerous_content_threshold">
+                        <option value="BLOCK_LOW_AND_ABOVE" {% if
+                            story.dangerous_content_threshold=='BLOCK_LOW_AND_ABOVE' %}selected{% endif %}>Strict
+                        </option>
+                        <option value="BLOCK_MEDIUM_AND_ABOVE" {% if
+                            story.dangerous_content_threshold=='BLOCK_MEDIUM_AND_ABOVE' %}selected{% endif %}>Moderate
+                        </option>
+                        <option value="BLOCK_ONLY_HIGH" {% if story.dangerous_content_threshold=='BLOCK_ONLY_HIGH'
+                            %}selected{% endif %}>Relaxed</option>
+                        <option value="BLOCK_NONE" {% if story.dangerous_content_threshold=='BLOCK_NONE' %}selected{%
+                            endif %}>Off</option>
+                    </select>
                     {% else %}
-                            <input class="form-control" type="text" id="dangerous_content_threshold" value="{{ story.dangerous_content_threshold }}" readonly>   
+                    <input class="form-control" type="text" id="dangerous_content_threshold"
+                        value="{{ story.dangerous_content_threshold }}" readonly>
                     {% endif %}
 
                     <h6 class="text-uppercase text-muted">Model</h6>
 
                     {% if isadmin %}
-                        <select class="form-select mb-3" id="model" name="model" onchange="handleInput(event)">
-                            <option value="gemini-2.5-flash-lite"{% if story.model == 'gemini-2.5-flash-lite' %}selected{% endif %}>Gemini 2.5 Flash Lite</option>
-                            <option value="gemini-3.1-flash-lite-preview"{% if story.model == 'gemini-3.1-flash-lite-preview' %}selected{% endif %}>Gemini 3.1 Flash Lite Preview</option>
-                        </select>
+                    <select class="form-select mb-3 story-record" id="model" name="model" >
+                        <option value="gemini-2.5-flash-lite" {% if story.model=='gemini-2.5-flash-lite' %}selected{%
+                            endif %}>Gemini 2.5 Flash Lite</option>
+                        <option value="gemini-3.1-flash-lite-preview" {% if story.model=='gemini-3.1-flash-lite-preview'
+                            %}selected{% endif %}>Gemini 3.1 Flash Lite Preview</option>
+                    </select>
                     {% else %}
-                            <input class="form-control" type="text" id="model" value="{{ story.model }}" readonly>  
+                    <input class="form-control" type="text" id="model" value="{{ story.model }}" readonly>
 
                     {% endif %}
 
@@ -183,5 +211,134 @@
             </form>
         </div>
     </div>
+</div>
+{% endmacro %}
+
+{% macro table(table_id, rows, columns, id_field, print=False) %}
+<table id="{{ table_id }}" class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th class="d-none">id</th>
+
+            {% for label,key in columns %}
+            <th>{{ label }}</th>
+            {% endfor %}
+
+
+            <th class="button_col">Update</th>
+            <th class="button_col">Delete</th>
+
+            {% if print %}
+            <th class="button_col">Print</th>
+            {% endif %}
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for row in rows %}
+        <tr data-id="{{ row[id_field] }}">
+            <td class="d-none">{{ row[id_field] }}</td>
+
+            {% for label, key in columns %}
+            {% if key == 'description' %}
+            <td style="max-width: 400px;">
+                {% else %}
+            <td>
+                {% endif %}
+
+                {% if key == 'created' %}
+                {{ row[key].strftime("%b %d, %Y") }}
+                {% else %}
+                {{ row[key] }}
+                {% endif %}
+            </td>
+            {% endfor %}
+
+            <td class="button_col">
+                <form method="post">
+                    <button type="submit" name="action" value="{{ row[id_field] }}"
+                        class="btn btn-secondary update-button" data-id="{{ row[id_field] }}">
+                        <i class="bi bi-pen-fill"></i>
+                    </button>
+                </form>
+            </td>
+
+            <td class="button_col">
+                <button class="btn btn-danger delete-button" type="button" data-id="{{ row[id_field] }}">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+            </td>
+
+            {% if print %}
+            <td class="button_col">
+                <button class="btn btn-secondary print-button" type="button" data-id="{{ row[id_field] }}">
+                    <i class="bi bi-printer-fill"></i>
+                </button>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endmacro %}
+
+{% macro input(name, label, value='', type='text') %}
+<div class="mb-3">
+  <label for="{{ name }}" class="form-label">{{ label }}:</label>
+  <input type="{{ type }}"
+         name="{{ name }}"
+         id="{{ name }}"
+         value="{{ value }}"
+         class="form-control">
+</div>
+{% endmacro %}
+
+{% macro textarea(name, label, value='', rows=2) %}
+<div class="mb-3">
+  <label for="{{ name }}" class="form-label">{{ label }}:</label>
+  <textarea name="{{ name }}"
+            id="{{ name }}"
+            rows="{{ rows }}"
+            class="entry-textarea form-control">{{ value }}</textarea>
+</div>
+{% endmacro %}
+
+{% macro generic_input_field(name, label, value='', type='text', disabled=False, attrs='', feedback='') %}
+<div class="mb-3">
+  <label for="{{ name }}" class="form-label">{{ label }}</label>
+
+  <input type="{{ type }}"
+         name="{{ name }}"
+         id="{{ name }}"
+         value="{{ value }}"
+         class="form-control"
+         {% if disabled %}disabled{% endif %}
+         {{ attrs|safe }}>
+
+  {% if feedback %}
+    <div class="invalid-feedback">
+      {{ feedback }}
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro password_field(name, label, attrs='', feedback='') %}
+  {{ generic_input_field(name, label, '', 'password', False, attrs, feedback) }}
+{% endmacro %}
+
+{% macro select_field(name, label, options, selected=None) %}
+<div class="mb-3">
+  <label for="{{ name }}" class="form-label">{{ label }}</label>
+
+  <select name="{{ name }}" id="{{ name }}" class="form-select">
+    {% for value, text in options.items() %}
+      <option value="{{ value }}"
+        {% if value == selected %}selected{% endif %}>
+        {{ text }}
+      </option>
+    {% endfor %}
+  </select>
 </div>
 {% endmacro %}

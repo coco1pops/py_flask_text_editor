@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>{% block title %}{{"Update" if sysint else "Add"}} AI Guidance{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %}
+
+  <form method="POST" autocomplete="off">
+
+    {{ macros.input('name', 'Name', sysint.name if sysint else '') }}
+
+    {{ macros.textarea('description', 'Description', sysint.description if sysint else '') }}
+
+    {{ macros.textarea('instruction', 'Instruction', sysint.instruction if sysint else '') }}
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">{{ 'Update' if sysint else 'Add' }}</button>
+    </div>
+  </form>
+
+ {{ macros.flashMessages() }}
+
+{% endblock content %}
+
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='sysintsCreate.js') }}"></script>
+{% endblock scripts %}

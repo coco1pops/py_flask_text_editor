@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+  <div class="flex-grow-1 text-center">
+    <h2 class="m-0">Characters</h2>
+  </div>
+  <div class="ms-auto">
+    <a href="/create" class="btn btn-primary">Add</a>
+  </div>
+</div>
+
+{% endblock header %}
+
+{% block content %}
+{{ macros.table(
+  'storiesTable',
+  stories,
+  [
+    ('Title', 'title'),
+    ('Note', 'note'),
+    ('Created', 'created')
+    ],
+  id_field='story_id',
+  print=True
+) }}
+
+<div id="flash-container" style="margin-top: 20px;"></div>
+
+{{ macros.modal_box('confirmModal', 'Confirm Delete Story') }}
+
+{% endblock content %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='storiesList.js') }}"></script>
+{% endblock scripts %}

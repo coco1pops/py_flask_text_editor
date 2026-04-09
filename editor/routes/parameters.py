@@ -70,7 +70,7 @@ def createchar(char_id=None):
 
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
-    return render_template("parameters/create_character.html", char=char)
+    return render_template("parameters/charCreate.html", char=char)
 
 
 @bp.route("/getchar")
@@ -109,7 +109,7 @@ def chars():
         char_id = request.form.get("action")
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
-    return render_template("parameters/chars.html", chars=chars)
+    return render_template("parameters/charsList.html", chars=chars)
 
 
 @bp.route("/checkimage", methods=["POST"])
@@ -129,7 +129,7 @@ def checkimage():
 @bp.route("/createuser/<mode>/<user_id>", methods=["GET", "POST"])
 @bp.route("/createuser", methods=["GET", "POST"])
 @login_required
-def create_user(mode="Add", user_id=None):
+def createuser(mode="Add", user_id=None):
     if user_id and mode == "Update":
         if current_user.id != user_id and not current_user.is_admin:
             abort(403)
@@ -204,7 +204,7 @@ def create_user(mode="Add", user_id=None):
                     "conf_password": conf_password,
                 }
             return render_template(
-                "parameters/create_user.html", mode=mode, user=format_user
+                "parameters/userCreate.html", mode=mode, user=format_user
             )
 
         if mode == "Add":
@@ -223,10 +223,10 @@ def create_user(mode="Add", user_id=None):
                 editor.utils.db.user_reset_pass(user_id, new_password)
                 flash("Password reset", "success")
         return redirect(
-            url_for("parameters.create_user", mode="Update", user_id=user_id)
+            url_for("parameters.createuser", mode="Update", user_id=user_id)
         )
 
-    return render_template("parameters/create_user.html", mode=mode, user=user)
+    return render_template("parameters/userCreate.html", mode=mode, user=user)
 
 
 @bp.route("/deleteuser", methods=["POST"])
@@ -250,7 +250,7 @@ def users():
             url_for("parameters.create_user", mode="Update", user_id=user_id)
         )
 
-    return render_template("parameters/users.html", users=users)
+    return render_template("parameters/usersList.html", users=users)
 
 
 @bp.route("/sysints", methods=["GET", "POST"])
@@ -261,7 +261,7 @@ def sysints():
         sysint_id = request.form.get("action")
         return redirect(url_for("parameters.createsysint", sysint_id=sysint_id))
 
-    return render_template("parameters/sysints.html", sysints=sysints)
+    return render_template("parameters/sysintsList.html", sysints=sysints)
 
 
 @bp.route("/deletesysint", methods=["POST"])
@@ -303,7 +303,7 @@ def createsysint(sysint_id=None):
 
         return redirect(url_for("parameters.createsysint", sysint_id=sysint_id))
 
-    return render_template("parameters/create_sysint.html", sysint=sysint)
+    return render_template("parameters/sysintCreate.html", sysint=sysint)
 
 
 @bp.route("/getSysInt", methods=["POST"])

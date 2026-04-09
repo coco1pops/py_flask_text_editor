@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h2>{% block title %}Update Story{% endblock title %}</h2>
+{% endblock header %}
+
+{% block content %}
+
+<div id="posts-data" data-posts='{{ posts | tojson }}'></div>
+<div id="isadmin-data" data-isadmin='{{ isadmin | tojson }}'></div>
+
+<div id="top">
+    <h2 id="story-title"> Story: {{story['title']}} </h2>
+    <div class="row d-flex justify-content-between align-items-center mb-3">
+        <div class="col-md-4">
+            <h4>Author {{current_user.user_name}}</h4>
+        </div>
+        <div class="created col-md-4"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</span>
+        </div>
+    </div>
+</div>
+
+<div id="controls" class="container-fluid mb-3">
+
+    <div class="d-flex align-items-center">
+        <label for="title" class="me-2"> Title: </label>
+        <input type="text" id="title" class="story-record" value="{{story['title']}}" >
+        <div class="ms-auto">
+            <button id="gotoBottom" class="btn btn-secondary me-2">Bottom</button>
+            <button id="settings" class="btn btn-secondary" data-bs-toggle="modal"
+                    data-bs-target="#studio">Settings</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <label for="note"> Note: </label>
+            <textarea class="form-control story-record" rows="6" id="note" >{{story['note']}}</textarea>
+        </div>
+        <div class="col-md-6">
+            <label for="systeminstruction"> AI Guidance: </label>
+            <textarea class="form-control story-record" rows="6" id="systeminstruction">{{story['systeminstruction']}}</textarea>
+        </div>
+    </div>
+</div>
+
+<div id="posts">
+    <table id='postsTable' style="width:100%;">
+        <thead>
+            <th class="hide">id</th>
+            <th class="text-center">Posts and Responses</th>
+        </thead>
+
+        <tbody id="postsRows">
+        <!-- JS loads table here -->
+        </tbody>
+    </table>
+</div>
+
+
+<div id="flash-container" style="margin-top: 20px;"></div>
+
+<div class="controls-bar">
+    <div class="row" align-items-center>
+        <div class="col-2 d-flex"></div>
+        <h2 class="col-8 justify-content-between">New Prompt</h2>
+        <div id="mode" class="col-2 d-flex justify-content-end text-info"></div>
+    </div>
+    <textarea id="newprompt" class="entry-textarea mb-3 full-size-textarea border border-primary story-record">{{story['newpost']}}</textarea>
+    <br>
+
+    <div class="row" align-items-center>
+        <div class="col-6 d-flex justify-content-start gap-2">
+            <button id="submit" class="btn btn-primary actions" disabled>Submit</button> <!--In new mode it simply submits a new message. In editResp it updates the last element in the chat history. 
+                In editPost it removes the chat history from that post onwards and resubmits the chat-->
+            <button id="cancel" class="btn btn-primary actions" disabled>Cancel</button>
+            <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
+            <button type="button" class="btn btn-primary actions" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add
+                Character</button>
+        </div>
+
+        <div class="col-2 dflex"> </div>
+
+        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
+
+            <!-- Spinner (initially hidden) -->
+            <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div>
+                <button id="gotoTop" class="btn btn-secondary actions">Top</button>                
+            </div>
+            <div>
+                Character count: <span id="charCount" class="text-end">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="placeholder" style="margin-top: 30px"></div>
+
+</div>
+
+{{ macros.studioModal(story, isadmin) }}
+
+{{ macros.modal_box('confirmModal', 'Confirm dialogue') }}
+
+{{ macros.charPicker(chars)}}
+
+<div id="end-placeholder"></div>
+
+{%endblock content %}
+
+{% block scripts %}
+<script type="module" src="{{url_for('static',filename='js/controller/storiesController.js')}}"></script>
+{% endblock scripts %}   
+
+

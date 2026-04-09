@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h2> {{mode}} User</h2>
+{% endblock header %}
+
+{% block content %}
+
+  <form method="post" class="needs-validation" novalidate autocomplete="off" >
+
+{{ macros.generic_input_field(
+    'user_id',
+    'User Id',
+    user.user_id if user.user_id else '',
+    'text',
+    disabled=(mode != "Add"),
+    attrs='minlength="4" maxlength="20" required autocomplete="off"',
+    feedback='User ID must be between 4 and 20 characters.'
+) }}
+
+{% if mode == "Add" %}
+  {{ macros.password_field(
+      'user_password',
+      'User Password',
+      attrs='minlength="6" maxlength="20" required autocomplete="off"',
+      feedback='Password must be between 6 and 20 characters.'
+  ) }}
+{% endif %}
+
+{{ macros.generic_input_field(
+    'user_name',
+    'User Name',
+    user.user_name if user.user_name else '',
+    attrs='autocomplete="off"'
+) }}
+
+{{ macros.select_field(
+    'user_role',
+    'User Role',
+    {
+      'Standard': 'Standard',
+      'Admin': 'Admin'
+    } if current_user.is_admin else {
+      'Standard': 'Standard'
+    },
+    user['user_role']
+) }}
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary" name="action" value="main">Post</button>
+    </div>
+
+</form>
+
+{% if mode == "Update" %}
+<h4>Password Reset</h4>
+<form method="post" class="needs-validation" novalidate autocomplete="off">
+    {{ macros.password_field(
+      'new_password',
+      'New Password',
+      attrs='minlength="6" maxlength="20" required autocomplete="off"',
+      feedback='Password must be between 6 and 20 characters.'
+  ) }}
+
+    {{ macros.password_field(
+      'conf_password',
+      'Re-enter Password',
+      attrs='minlength="6" maxlength="20" required autocomplete="off"',
+      feedback='Password must be between 6 and 20 characters.'
+  ) }}
+
+    <div class="form-group">
+           <button class="btn btn-primary" type="submit" id="pwordReset" name="action" value="reset">Reset</button>
+    </div>
+  </form>
+  {% endif %}
+
+ {{ macros.flashMessages() }}
+
+{% endblock content %}
+
+{% block scripts %}
+
+<script>
+  (() => {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+
+{% endblock scripts %}

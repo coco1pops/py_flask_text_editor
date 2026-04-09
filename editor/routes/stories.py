@@ -59,7 +59,7 @@ def create():
 
     sysints = editor.utils.db.get_sysints()
 
-    return render_template("stories/create.html", sysints=sysints, params=params, isadmin=current_user.is_admin)
+    return render_template("stories/storyCreate.html", sysints=sysints, params=params, isadmin=current_user.is_admin)
 
 def parse_params(form, defaults, types):
     params = dict(defaults)  # start with existing params
@@ -87,7 +87,7 @@ def stories():
 
     stories = editor.utils.db.get_stories()
 
-    return render_template("stories/stories.html", stories=stories)
+    return render_template("stories/storiesList.html", stories=stories)
 
 
 #
@@ -158,9 +158,8 @@ def generate_story():
     chars = editor.utils.db.get_characters()
 
     return render_template(
-        "stories/generate_story.html", story=story, posts=posts, chars=chars, isadmin=current_user.is_admin
+        "stories/storyGenerate.html", story=story, posts=posts, chars=chars, isadmin=current_user.is_admin
     )
-
 
 @bp.route("/get_message", methods=["GET"])
 def get_message():
@@ -169,10 +168,8 @@ def get_message():
     logging.debug(f"Retrieving message for {post_id}")
     if post_id:
         message = editor.utils.db.get_message(post_id)
-        return jsonify({"message": message}), 200
+        return jsonify({"success": True, "message": message}), 200
     return jsonify({"error": "Database read failed"}), 406
-
-
 #
 # Assigns a character to a story
 #
@@ -180,7 +177,7 @@ def get_message():
 def assignChar():
     char_id = request.form["char_id"]
     resp = editor.utils.db.build_char(char_id)
-    return jsonify(resp), 200
+    return jsonify({"success": True, "details": resp}), 200
 
 #
 # Deletes posts
@@ -193,137 +190,156 @@ def deleteRows():
     editor.utils.db.delete_posts_from(story_id, post_id)
     flash("Posts deleted", "success")
     messages = get_flashed_messages(with_categories=True)
-    return jsonify({"messages": messages}),200
+    return jsonify({"success": True, "messages": messages}), 200
 
 #
 # Generates a chat line from a prompt and inserts the response into the database
 #
 @bp.route("/generate", methods=["POST"])
 def generate_text():
-    story_id = request.values.get("story_id")
-    prompt = request.values.get("prompt")
-    mode = request.values.get("mode")
-    row_id = request.values.get("row_id")
-    chars = json.loads(request.values.get("chars", []))
 
-    if not prompt:
+    data = parse_generate_request()
+
+    if not data['prompt']:
         return (jsonify({"error": "Invalid input. Please provide a JSON object with a 'prompt' key."}),400)
 
-    logging.debug(f"Received prompt: {prompt[:30]}, Mode {mode} Row {row_id} {chars} ")
+    logging.debug(f"Received prompt: {data['prompt'][:30]}, Mode {data['mode']} Row {data['row_id']} {data['chars']} ")
     #
     # If Edit then all you need to do is update the database
     #
-    if mode == "Edit Response":
-        success = editor.utils.db.update_message(row_id, prompt)
-        if success:
-            rows = editor.utils.db.get_post(row_id)
-            flash("Response updated", "success")
-            messages = get_flashed_messages(with_categories=True)
-            return jsonify({"success": "Response update succeeded", "posts" : rows, "messages" : messages}), 200
-        else:
-            return jsonify({"error": "Response update failed"}), 406
-
+    if data['mode'] == "Edit Response":
+        handle_edit_response(data['row_id'], data['prompt'])
     #
     # If editing prompt need to delete everything after the prompt
     #
-    if mode == "Edit Prompt":
-        logging.debug(f"Deleting older posts from {row_id}")
-        editor.utils.db.delete_posts_from(story_id, row_id)
+    if data['mode'] == "Edit Prompt":
+        logging.debug(f"Deleting older posts from {data['row_id']}")
+        editor.utils.db.delete_posts_from(data['story_id'], data['row_id'])
 
     # Try to generate more chat
-    # Build the chat service
-    chat = get_chat_service()
-    story = editor.utils.db.get_story(story_id)
-    # reset chat currently resets the system instruction and history. 
-    # Need to add temperature, top_p, model and safety settings
-    # temperature, seed and top_p are in generation config along with stop sequence 
-    # safety settings and model are passed separately
-    chat.reset_chat(story)
-    buildHistory(chat, story_id)
-    #
-    # Generating new content
-    #
+
     try:
-        if len(chars) == 0:
-            parsed_prompt = prompt
-            logging.debug(f"Trying to send prompt {prompt[:30]}")
-        else:
-            parsed_prompt = buildPrompt(prompt, chars)
-            logging.debug("Trying to send multiprompt")
-        # Generate content
-        # prompt here could be just a message or a multimodal structure
-        message = chat.send_message(parsed_prompt)
+        message = generate_chat_message(data['story_id'], data['prompt'], data['chars'])
 
     except Exception as e:
-    #
-    # Exception will be logged in the chat class 
-    # Field the message here and pass up the chain
-    #
-        logging.debug("Caught Error")
-        if isinstance(e,str):
-                mess=e
-        else:
-                mess=e.args[0]
-        logging.debug(f"Error message {mess}")
-
-        flash(f"{mess}", "error")
-        messages = get_flashed_messages(with_categories=True)
-        return jsonify({"error": "Generation Failed", "messages": messages}), 422
+        mess=e if isinstance(e,str) else str(e)
+        return json_response(
+            {"error": "Generation Failed"},
+            422,
+            flash_msg=mess,
+            category="error"
+        )
     #
     # Storing prompt and responses
     #
-    
     try:
-        #
-        # Insert new prompt
-        #
-        if len(chars) > 0:
-            multi = True
-        else:
-            multi = False
+        posts, flash_msg = save_prompt_and_response(
+            data["story_id"],
+            data["prompt"],
+            data["chars"],
+            message,
+            data["mode"]
+        )
 
-        logging.debug("Inserting new prompt into database")
+        return json_response(
+            {"success": "New Response Added", "posts": posts},
+            200,
+            flash_msg=flash_msg
+        )
 
-        post_id = editor.utils.db.insert_post(story_id, "user", prompt, multi)
-
-        for ix in chars:
-            part = editor.utils.db.get_character_raw(ix)
-            text_part = buildChar(
-                part["name"],
-                part["description"],
-                part["personality"],
-                part["motivation"],
-                part["image_mime_type"]
-            )
-            editor.utils.db.insert_post_text_part(story_id, post_id, text_part)
-            if part["image_mime_type"] != "":
-                editor.utils.db.insert_post_image_part(
-                    story_id, post_id, part["image_data"], part["image_mime_type"]
-                )
-        #
-        # Insert new message
-        #
-        posts = editor.utils.db.get_post(post_id)
-
-        newpost_id = editor.utils.db.insert_post(story_id, "model", message, False)
-        newpost=editor.utils.db.get_post(newpost_id)
-        posts.append(newpost[0])
-
-        flashMessage="New response added"
-        if mode == "Edit Prompt":
-            flashMessage = "Prompt updated and new response added"
-
-        flash(flashMessage, "success")
-        messages = get_flashed_messages(with_categories=True)
-
-        return jsonify({"success": "New Response Added", "posts" : posts, "messages" : messages}), 200
-    except:
-        logging.error(f"Error storing content: {e}")
-        logging.error("Exception Type:", type(e).__name__)
-        logging.error("Exception Message:", str(e))
-
+    except Exception as e:
+        logging.exception("Error storing content")
         return jsonify({"error": str(e)}), 500
 
+def parse_generate_request():
+    return {
+        "story_id": request.values.get("story_id"),
+        "prompt": request.values.get("prompt"),
+        "mode": request.values.get("mode"),
+        "row_id": request.values.get("row_id"),
+        "chars": json.loads(request.values.get("chars", "[]")),
+}
+#
+# Utility function to return a consistent json response with any flash messages included. 
+# Can be used for any endpoint that needs to return a json response and also include flash messages.
+#
+def json_response(payload, status=200, flash_msg=None, category="success"):
+    if flash_msg:
+        flash(flash_msg, category)
+    messages = get_flashed_messages(with_categories=True)
+    payload["messages"] = messages
+    return jsonify(payload), status
+
+def handle_edit_response(row_id, prompt):
+    success = editor.utils.db.update_message(row_id, prompt)
+
+    if not success:
+        return json_response({"error": "Response update failed"}, 406)
+
+    posts = editor.utils.db.get_post(row_id)
+    return json_response(
+        {"success": "Response update succeeded", "posts": posts},
+        flash_msg="Response updated"
+    )
+
+def generate_chat_message(story_id, prompt, chars):
+    chat = get_chat_service()
+    story = editor.utils.db.get_story(story_id)
+
+    chat.reset_chat(story)
+    buildHistory(chat, story_id)
+
+    parsed_prompt = prompt if not chars else buildPrompt(prompt, chars)
+
+    return chat.send_message(parsed_prompt)
+
+def save_prompt_and_response(story_id, prompt, chars, message, mode):
+    multi = len(chars) > 0
+
+    # multi determines if there are parts to add to the post. Add the post first
+    # indicating whether there are further parts
+
+    post_id = editor.utils.db.insert_post(story_id, "user", prompt, multi)
+
+    # Add a character as a part for each character
+
+    for ix in chars:
+        part = editor.utils.db.get_character_raw(ix)
+
+        text_part = buildChar(
+            part["name"],
+            part["description"],
+            part["personality"],
+            part["motivation"],
+            part["image_mime_type"]
+        )
+
+        editor.utils.db.insert_post_text_part(story_id, post_id, text_part)
+
+    # If there is an image associated with the character, add a part
+
+        if part["image_mime_type"]:
+            editor.utils.db.insert_post_image_part(
+                story_id, post_id, part["image_data"], part["image_mime_type"]
+            )
+
+    posts = editor.utils.db.get_post(post_id)
+
+    # Now add the response as a new post
+
+    newpost_id = editor.utils.db.insert_post(story_id, "model", message, False)
+    newpost = editor.utils.db.get_post(newpost_id)
+
+    # Send back the new post as part of the response so it can be added to the screen.
+    posts.append(newpost[0])
+
+    flash_msg = (
+        "Prompt updated and new response added"
+        if mode == "Edit Prompt"
+        else "New response added"
+    )
+
+    return posts, flash_msg
 
 def buildHistory(chat, story_id):
     multimodal = False
