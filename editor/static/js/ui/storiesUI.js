@@ -1,6 +1,7 @@
-export function showError(status, message, context) {
+export function showError(err) {
     // This is a very basic error display function. We can make it more sophisticated later if we want to
-    showNotifyModal(`${context}. An error occurred: ${status} - ${message}`, "Error");
+    const errorMessage = `${err.context}. An error occurred: ${err.statusCode} - ${err.message}`;
+    showNotifyModal(errorMessage, "Error")
 };
 
 export function displayMessages(messages) {
@@ -113,17 +114,34 @@ export function stopSpinner(id = "loadingSpinner") {
 }
 
 export function setMode(mode) {
-    document.getElementById("mode").textContent = mode +" Mode";
+    document.getElementById("mode").textContent = mode + " Mode";
     const target = document.getElementById("placeholder");
     target.innerHTML = "";
 }
 
 export function updateLabel(target) {
     const val = document.getElementById(target);
-    const label = target + "Val";    
+    const label = target + "Val";
     document.getElementById(label).textContent = parseFloat(val.value).toFixed(2);
-    }
+}
 
 export function updateTitle(title) {
     document.getElementById("story-title").textContent = "Story: " + title;
 };
+
+export function displaySafetySettings(isadmin) {
+    if (!isadmin) {
+        // Maps for displaying safety settings in a more user-friendly way
+        const thresholdMap = {
+            "BLOCK_LOW_AND_ABOVE": "Strict",
+            "BLOCK_MEDIUM_AND_ABOVE": "Moderate",
+            "BLOCK_ONLY_HIGH": "Relaxed",
+            "BLOCK_NONE": "Off"
+        };
+
+        document.getElementById("hate_speech_threshold").value = thresholdMap[document.getElementById("hate_speech_threshold").value];
+        document.getElementById("harassment_threshold").value = thresholdMap[document.getElementById("harassment_threshold").value];
+        document.getElementById("explicit_content_threshold").value = thresholdMap[document.getElementById("explicit_content_threshold").value];
+        document.getElementById("dangerous_content_threshold").value = thresholdMap[document.getElementById("dangerous_content_threshold").value];
+    }
+}

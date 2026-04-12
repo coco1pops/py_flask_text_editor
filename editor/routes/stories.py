@@ -15,8 +15,12 @@ from flask import (
 from flask_login import current_user
 
 from editor.models.chat_service import get_chat_service
+from editor.models.stories import Story, StoryService
+from editor.models.posts import PostPartService, PostService, UnifiedPostTimelineService 
+from editor.models.chars import CharService
+from editor.models.params import ParamsService
+from editor.models.sysints import SysIntService
 
-import editor.utils.db
 import editor.utils.docwriter
 
 bp = Blueprint("stories", __name__)
@@ -34,49 +38,46 @@ def require_login():
 @bp.route("/create", methods=["GET", "POST"])
 def create():
 
-    PARAM_TYPES = {
-        "temperature": float,
-        "top_p": float,
-        "model": str,
-        "harassment_threshold": str,
-        "explicit_content_threshold": str,
-        "hate_speech_threshold": str,
-        "dangerous_content_threshold": str
-    }
-    params = editor.utils.db.get_params()
+    params = ParamsService.get_params(1)
+    if not params:
+        raise Exception("No parameters found. Please ensure there is a record in the params table with id 1")
 
     if request.method == "POST":
         logging.debug("Creating story ")
         story = request.form["title"]
         note = request.form["note"] or ""
         systeminstruction = request.form["systeminstruction"] or ""
-        logging.debug(f"Temperature: {request.form.get('temperature')}")
-        logging.debug(f"Model: {request.form.get('model')}")
-        new_params = parse_params(request.form, params, PARAM_TYPES)
+
+
+        temperature=request.form.get('temperature')
+        top_p=request.form.get('top_p')
+        harassment_threshold=request.form.get('harassment_threshold')
+        hate_speech_threshold=request.form.get('hate_speech_threshold')
+        dangerous_content_threshold=request.form.get('dangerous_content_threshold')
+        explicit_content_threshold=request.form.get('explicit_content_threshold')
+        model=request.form.get('model')
+
         if story:
-            story_id = editor.utils.db.insert_story(story, note, systeminstruction, new_params)
+            story_id =StoryService.insert_story(story, note, systeminstruction, temperature, top_p, harassment_threshold, hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold, model)
             return redirect(url_for("stories.generate_story", story_id=story_id))
+    else:
+        story = Story(                
+            title="",
+            note="",
+            systeminstruction="",
+            temperature=params.temperature or 0.7,
+            top_p=params.top_p or 0.9,
+            harassment_threshold=params.harassment_threshold,
+            hate_speech_threshold=params.hate_speech_threshold,
+            dangerous_content_threshold=params.dangerous_content_threshold,
+            explicit_content_threshold=params.explicit_content_threshold,
+            model=params.model)
 
-    sysints = editor.utils.db.get_sysints()
+    sysints = SysIntService.get_sysints()
 
-    return render_template("stories/storyCreate.html", sysints=sysints, params=params, isadmin=current_user.is_admin)
+    return render_template("stories/storyCreate.html", story=story, sysints=sysints, isadmin=current_user.is_admin)
 
-def parse_params(form, defaults, types):
-    params = dict(defaults)  # start with existing params
 
-    for key, datatype in types.items():
-
-        if key in form:
-            value = form.get(key)
-
-            if value != "":
-                try:
-                    params[key] = datatype(value)
-                except (ValueError, TypeError):
-                    pass   # keep existing value
-        else:
-            logging.debug(f"Parameter {key} not in form")
-    return params
 
 # Returns a list of stories
 @bp.route("/stories", methods=["GET", "POST"])
@@ -85,10 +86,9 @@ def stories():
         story_id = request.form.get("action")
         return redirect(url_for("stories.generate_story", story_id=story_id))
 
-    stories = editor.utils.db.get_stories()
+    stories = StoryService.get_stories()
 
     return render_template("stories/storiesList.html", stories=stories)
-
 
 #
 # Deletes a story and related posts
@@ -98,7 +98,7 @@ def delete_story():
     story_id = request.values.get("story_id")
     logging.debug(f"Requested delete of row {story_id}")
     if story_id:
-        editor.utils.db.delete_story(story_id)
+        StoryService.delete_story(story_id)
         flash("Story deleted", "success")
         messages = get_flashed_messages(with_categories=True)
         return jsonify({"success": "Record deleted","messages": messages}),200
@@ -117,7 +117,7 @@ def update_story():
 
     logging.debug(f"Updating {story_id} {field} {value}")
     if story_id:
-        editor.utils.db.update_story(story_id, field, value)
+        StoryService.update_story(story_id, field, value)
         return jsonify({"success": "Record udpdated"}), 200
     return jsonify({"error": "Database update failed"}), 406
 
@@ -128,8 +128,8 @@ def update_story():
 @bp.route("/print_story", methods=["POST"])
 def print_story():
     story_id = request.values.get("story_id")
-    story = editor.utils.db.get_story(story_id)
-    dl_name = f"{story['title']}.docx"
+    story = StoryService.get_story(story_id)
+    dl_name = f"{story.title}.docx"
     logging.debug(f"Printing {dl_name}")
     if story_id:
         try:
@@ -153,9 +153,9 @@ def print_story():
 def generate_story():
     story_id = request.values.get("story_id")
 
-    story = editor.utils.db.get_story(story_id)
-    posts = editor.utils.db.get_all_posts(story_id)
-    chars = editor.utils.db.get_characters()
+    story = StoryService.get_story(story_id)
+    posts = UnifiedPostTimelineService.get_all_posts(story_id)
+    chars = CharService.get_characters()
 
     return render_template(
         "stories/storyGenerate.html", story=story, posts=posts, chars=chars, isadmin=current_user.is_admin
@@ -167,7 +167,7 @@ def get_message():
 
     logging.debug(f"Retrieving message for {post_id}")
     if post_id:
-        message = editor.utils.db.get_message(post_id)
+        message = PostService.get_message(post_id)
         return jsonify({"success": True, "message": message}), 200
     return jsonify({"error": "Database read failed"}), 406
 #
@@ -176,7 +176,7 @@ def get_message():
 @bp.route("/assignChar", methods=["POST"])
 def assignChar():
     char_id = request.form["char_id"]
-    resp = editor.utils.db.build_char(char_id)
+    resp = CharService.build_char(char_id)
     return jsonify({"success": True, "details": resp}), 200
 
 #
@@ -187,7 +187,7 @@ def deleteRows():
     post_id = request.values.get("post_id")
     story_id = request.values.get("story_id")
     logging.debug(f"Deleting older posts from {post_id}")
-    editor.utils.db.delete_posts_from(story_id, post_id)
+    PostService.delete_posts_from(story_id, post_id)
     flash("Posts deleted", "success")
     messages = get_flashed_messages(with_categories=True)
     return jsonify({"success": True, "messages": messages}), 200
@@ -208,13 +208,13 @@ def generate_text():
     # If Edit then all you need to do is update the database
     #
     if data['mode'] == "Edit Response":
-        handle_edit_response(data['row_id'], data['prompt'])
+        return handle_edit_response(data['row_id'], data['prompt'])
     #
     # If editing prompt need to delete everything after the prompt
     #
     if data['mode'] == "Edit Prompt":
         logging.debug(f"Deleting older posts from {data['row_id']}")
-        editor.utils.db.delete_posts_from(data['story_id'], data['row_id'])
+        PostService.delete_posts_from(data['story_id'], data['row_id'])
 
     # Try to generate more chat
 
@@ -271,12 +271,12 @@ def json_response(payload, status=200, flash_msg=None, category="success"):
     return jsonify(payload), status
 
 def handle_edit_response(row_id, prompt):
-    success = editor.utils.db.update_message(row_id, prompt)
+    success = PostService.update_message(row_id, prompt)
 
     if not success:
         return json_response({"error": "Response update failed"}, 406)
 
-    posts = editor.utils.db.get_post(row_id)
+    posts = UnifiedPostTimelineService.get_post(row_id)
     return json_response(
         {"success": "Response update succeeded", "posts": posts},
         flash_msg="Response updated"
@@ -284,7 +284,7 @@ def handle_edit_response(row_id, prompt):
 
 def generate_chat_message(story_id, prompt, chars):
     chat = get_chat_service()
-    story = editor.utils.db.get_story(story_id)
+    story = StoryService.get_story(story_id)
 
     chat.reset_chat(story)
     buildHistory(chat, story_id)
@@ -299,36 +299,36 @@ def save_prompt_and_response(story_id, prompt, chars, message, mode):
     # multi determines if there are parts to add to the post. Add the post first
     # indicating whether there are further parts
 
-    post_id = editor.utils.db.insert_post(story_id, "user", prompt, multi)
+    post_id = PostService.insert_post(story_id, "user", prompt, multi)
 
     # Add a character as a part for each character
 
     for ix in chars:
-        part = editor.utils.db.get_character_raw(ix)
+        part = CharService.get_character(ix)
 
         text_part = buildChar(
-            part["name"],
-            part["description"],
-            part["personality"],
-            part["motivation"],
-            part["image_mime_type"]
+            part.name,
+            part.description,
+            part.personality,
+            part.motivation,
+            part.image_mime_type
         )
 
-        editor.utils.db.insert_post_text_part(story_id, post_id, text_part)
+        PostPartService.insert_post_text_part(story_id, post_id, text_part)
 
     # If there is an image associated with the character, add a part
 
-        if part["image_mime_type"]:
-            editor.utils.db.insert_post_image_part(
-                story_id, post_id, part["image_data"], part["image_mime_type"]
+        if part.image_mime_type:
+            PostPartService.insert_post_image_part(
+                story_id, post_id, part.image_data, part.image_mime_type
             )
 
-    posts = editor.utils.db.get_post(post_id)
+    posts = UnifiedPostTimelineService.get_post(post_id)
 
     # Now add the response as a new post
 
-    newpost_id = editor.utils.db.insert_post(story_id, "model", message, False)
-    newpost = editor.utils.db.get_post(newpost_id)
+    newpost_id = PostService.insert_post(story_id, "model", message, False)
+    newpost = UnifiedPostTimelineService.get_post(newpost_id)
 
     # Send back the new post as part of the response so it can be added to the screen.
     posts.append(newpost[0])
@@ -344,33 +344,33 @@ def save_prompt_and_response(story_id, prompt, chars, message, mode):
 def buildHistory(chat, story_id):
     multimodal = False
     multimessage = []
-    posts = editor.utils.db.get_all_posts_raw(story_id)
+    posts = UnifiedPostTimelineService.get_all_posts_raw(story_id)
     for post in posts:
         # Tidy up outstanding messages if building multi-modal message
-        if post["source"] == "post" and multimodal:
-            chat.add_history("user", post["content"])
+        if post.source == "post" and multimodal:
+            chat.add_history("user", post.content)
             multimodal = False
             multimessage = []
         # For parts simply add to multimessage
-        if post["source"] == "part":
-            if post["part_type"] == "text":
-                multimessage.append({"text": post["part_text"]})
-            elif post["part_type"] == "image":
+        if post.source == "part":
+            if post.part_type == "text":
+                multimessage.append({"text": post.part_text})
+            elif post.part_type == "image":
                 multimessage.append(
                     {
                         "inline_data": {
-                            "mime_type": post["part_image_mime_type"],
-                            "data": post["part_image_data"],
+                            "mime_type": post.part_image_mime_type,
+                            "data": post.part_image_data,
                         }
                     }
                 )
         else:  # Getting here we have a post
-            if post["multi_modal"]:  # Create a new multimessage
+            if post.multi_modal:  # Create a new multimessage
                 multimodal = True
                 multimessage = []
-                multimessage.append({"text": post["content"]})
+                multimessage.append({"text": post.content})
             else:
-                chat.add_history(post["creator"], post["content"])  # Normal post
+                chat.add_history(post.creator, post.content)  # Normal post
 
     if multimodal:
         chat.add_history("user", multimessage)
@@ -380,18 +380,19 @@ def buildPrompt(content, chars):
     multi_modal_content = []
     multi_modal_content.append({"text": content})
     for ix in chars:
-        char = editor.utils.db.get_character_raw(ix)
+        logging.debug(f"Building prompt for char {ix}")
+        char = CharService.get_character(ix)
         txtprompt = buildChar(
-            char["name"], char["description"], char["personality"], char["motivation"], char["image_mime_type"]
+            char.name, char.description, char.personality, char.motivation, char.image_mime_type
         )
 
         multi_modal_content.append({"text": txtprompt})
-        if char["image_mime_type"]:
+        if char.image_mime_type:
             multi_modal_content.append(
                 {
                     "inline_data": {
-                        "mime_type": char["image_mime_type"],
-                        "data": char["image_data"],
+                        "mime_type": char.image_mime_type,
+                        "data": char.image_data,
                     }
                 }
             )

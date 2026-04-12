@@ -4,7 +4,9 @@ import { resizeTextarea, updateCount, gotoTop, gotoBottom, updateLabel, updateTi
 
 export function initStories() {
     bindEvents();
+    hideStudioElements();
 };
+
 function bindEvents() {
     // Add an event listener to every story field
     document.addEventListener('change', event => {
@@ -71,4 +73,9 @@ function bindEvents() {
     });
 
     window.addEventListener("load", gotoBottom());
+}
+function hideStudioElements() {
+    // Hide elements that are only relevant for the story studio page
+    const elementsToHide = document.querySelectorAll('.create-only');
+    elementsToHide.forEach(el => el.style.display = 'none');
 }

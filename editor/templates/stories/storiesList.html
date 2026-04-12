@@ -19,7 +19,8 @@
   [
     ('Title', 'title'),
     ('Note', 'note'),
-    ('Created', 'created')
+    ('Created', 'created'),
+    ('Updated', 'updated'),
     ],
   id_field='story_id',
   print=True
@@ -32,5 +33,5 @@
 {% endblock content %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='storiesList.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/storiesList.js') }}"></script>
 {% endblock scripts %}

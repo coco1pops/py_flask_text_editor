@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
 
-from editor.models import database
+import editor.models.database as database
 from editor.models import chat_service
 
 load_dotenv()

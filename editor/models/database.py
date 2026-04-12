@@ -1,61 +1,50 @@
-import sqlite3
-import click
-
-import psycopg
-from psycopg.rows import dict_row
 
 import logging
 import os
+# Successfully installed flask-sqlalchemy-3.1.1 greenlet-3.4.0 sqlalchemy-2.0.49
 
-from flask import current_app, g
+from flask_sqlalchemy import SQLAlchemy
+from flask import current_app
+
+db = SQLAlchemy()
 
 def init_app(app):
-    app.teardown_appcontext(close_db)
-    app.cli.add_command(init_db_command)
+    # Configure DB URL based on environment
+    env_value = os.getenv("ENVIRONMENT")
 
-@click.command("init-db")
-def init_db_command():
-    db = get_db()
+    if env_value and env_value.strip() == "PROD":
+        logging.debug("DB - Loading Postgres database")
 
-    with current_app.open_resource("schema.sql") as f:
-        db.executescript(f.read().decode("utf-8"))
+        instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME")
+        socket_dir = "/cloudsql"
+        host = f"{socket_dir}/{instance_connection_name}"
 
-    click.echo("You successfully initialized the database!")
+        app.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"postgresql+psycopg://{app.config['DB_USER']}:"
+            f"{app.config['DB_PASSWORD']}@/{app.config['DB_NAME']}?host={host}"
+        )
+    else:
+        logging.debug(f"DB - Loading SQLite database {app.config['DATABASE']}")
+        app.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"sqlite:///{app.config['DATABASE']}"
+        )
+        logging.debug(f"DB - SQLite database path: {os.path.abspath(app.config['DATABASE'])}")
 
-def get_db():
-    if "db" not in g:
-        try:
-            env_value = os.getenv("ENVIRONMENT")
 
-            if env_value and env_value.strip() == "PROD":
-                logging.debug("DB - Loading Postgres database")
-                instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-                socket_dir = "/cloudsql"
-                host = f"{socket_dir}/{instance_connection_name}"
+    db.init_app(app)
 
-                g.db = psycopg.connect(
-                    dbname=current_app.config['DB_NAME'],
-                    user=current_app.config['DB_USER'],
-                    password=current_app.config['DB_PASSWORD'],
-                    host=host,
-                    row_factory=dict_row)
-            else:
-                logging.debug(("DB - Loading SQLite database"))
-                g.db = sqlite3.connect(
-                    current_app.config["DATABASE"],
-                    detect_types=sqlite3.PARSE_DECLTYPES,
-                )
-                g.db.row_factory = sqlite3.Row
-        
-        except Exception as e:
-                logging.exception(f"An error occurred loading credentials: {e}")
-                return False
-    
-    return g.db
+    with app.app_context():
+        logging.debug(f"DB - Engine URL: {db.engine.url}")
 
-def close_db(e=None):
-    db = g.pop("db", None)
 
-    if db is not None:
-        db.close()
+def print_except(func, e):
+    logging.exception(f"{func} Database error: {e}")
+    logging.exception("Exception Type:", {type(e).__name__})
+
+    if isinstance(e,str):
+        mess=e;
+    else:
+        mess=str(e)
+    raise Exception(f"Error in {func}, {mess} ") from e

@@ -188,20 +188,20 @@ class ChatService:
         logging.debug("Resetting chat session...")
 
         self.safety_settings =  [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": story["harassment_threshold"]},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": story["hate_speech_threshold"]},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": story["explicit_content_threshold"]},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": story["dangerous_content_threshold"]},]
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": story.harassment_threshold},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": story.hate_speech_threshold},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": story.explicit_content_threshold},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": story.dangerous_content_threshold},]
         
         self.generation_config = GenerationConfig(
-                    temperature=story["temperature"],
-                    top_p=story["top_p"],
+                    temperature=story.temperature,
+                    top_p=story.top_p,
                     stop_sequences=[])
         
         self.chat_model = genai.GenerativeModel(
-                model_name=story["model"],
+                model_name=story.model,
                 generation_config=self.generation_config,
-                system_instruction=story["systeminstruction"],
+                system_instruction=story.systeminstruction  ,
                 safety_settings=self.safety_settings
                 )
         self.chat_session = self.chat_model.start_chat(history=[])

@@ -6,7 +6,8 @@ import logging
 import markdown
 from bs4 import BeautifulSoup
 from io import BytesIO
-import editor.utils.db
+from editor.models.posts import UnifiedPostTimelineService
+from editor.models.stories import StoryService
 from flask_login import current_user
 
 def markdown_to_docx_paragraph(doc: Document, input_text: str):
@@ -41,21 +42,21 @@ def insert_image(doc: Document, image_b64: str, mime_type: str) -> None:
         doc.add_paragraph(f"[Image failed to render: {e}]")
 
 def generate_doc_from_posts(story_id) -> BytesIO:
-    posts=editor.utils.db.get_all_posts_raw(story_id)
+    posts=UnifiedPostTimelineService.get_all_posts_raw(story_id)
     logging.debug("Entering print generation")
     doc = Document()
-    story = editor.utils.db.get_story(story_id)
-    doc.add_heading(f"Title {story['title']}", level=0)
+    story = StoryService.get_story(story_id)
+    doc.add_heading(f"Title {story.title}", level=0)
     doc.add_heading(f"Author {current_user.user_name}", level=2)
-    if story['note'] != "":
-        markdown_to_docx_paragraph(doc, story['note'])
+    if story.note != "":
+        markdown_to_docx_paragraph(doc, story.note)
 
     ix=1
     char_print=False
 
     for post in posts:
 
-        if post['source']=="post" and post['creator'] != "user":
+        if post.source=="post" and post.creator != "user":
             title = f"Chapter {ix}"
             ix +=1 
             if char_print:
@@ -63,17 +64,17 @@ def generate_doc_from_posts(story_id) -> BytesIO:
                 char_print=False
             doc.add_heading(title, level=2)
         
-        if post['creator'] == "model":
-            markdown_to_docx_paragraph(doc, post['content'])
+        if post.creator == "model":
+            markdown_to_docx_paragraph(doc, post.content)
 
-        if post['part_type'] == "text":
+        if post.part_type == "text":
             doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
             doc.add_heading("Character", level=2)
-            markdown_to_docx_paragraph(doc, post['part_text'])
+            markdown_to_docx_paragraph(doc, post.part_text)
             char_print=True
         
-        if post['part_image_mime_type'] != "" and post['part_image_mime_type'] != None :  # presence implies image exists
-            insert_image(doc, post['part_image_data'], post['part_image_mime_type'])
+        if post.part_image_mime_type != "" and post.part_image_mime_type != None :  # presence implies image exists
+            insert_image(doc, post.part_image_data, post.part_image_mime_type)
 
     buffer = BytesIO()
     doc.save(buffer)

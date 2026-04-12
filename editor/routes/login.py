@@ -1,7 +1,7 @@
 from flask import Blueprint, request, redirect, render_template, flash
 from flask_login import login_user, logout_user, login_required
 
-import editor.utils.db
+from editor.models.users import UserService
 from editor.models.auth import User
 
 bp = Blueprint("login", __name__)
@@ -10,15 +10,14 @@ bp = Blueprint("login", __name__)
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user_record = editor.utils.db.get_user(request.form["username"], allow_not_found=True)
-
+        user_record = UserService.get_user(request.form["username"], allow_not_found=True)
         if user_record:
             user = User(
-                user_record["user_id"],
-                user_record["user_password"],
-                user_record["user_name"],
-                user_record["user_role"],
-            )
+                user_record.user_id,
+                user_record.user_password,
+                user_record.user_name,
+                user_record.user_role,
+            )   
             if user.check_password(request.form["password"]):
                 login_user(user)
                 return redirect("/")

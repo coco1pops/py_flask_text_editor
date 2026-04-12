@@ -21,4 +21,17 @@
     </form>
   {% endif %}
 
+  {% if last_updated_story is defined %}
+    <h4>Last Updated Story</h4>
+    <p>Author: {{current_user.user_name}}</p>
+    <p>Title: {{last_updated_story['title']}}</p>
+    <p>Note: {{last_updated_story['note']}}</p>
+
+    <form method="post">
+      <div class="form-group">
+        <button type="submit" name="action" value="{{last_updated_story['story_id']}}" class="btn btn-primary">GoTo</button>
+      </div>
+    </form>
+  {% endif %}
+
 {% endblock content %}

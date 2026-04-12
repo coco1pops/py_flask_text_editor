@@ -86,7 +86,7 @@
 {% endmacro %}
 
 <!-- Modal Show AI Params -->
-{% macro studioModal(story, isadmin) %}
+{% macro studioModal(story, sysints, isadmin) %}
 <div class="modal fade" id="studio" tabindex="-1" aria-labelledby="studio" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -96,6 +96,16 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3 create-only">
+                        <label for="sysIntSelect" class="form-label">Choose AI Guidance</label>
+                        <select class="form-select" id="sysIntSelect" name="sysint_id" required>
+                            {% for sysint in sysints %}
+                            <option value="{{ sysint.sysint_id }}">
+                                {{ sysint.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
                     <!-- Core Controls -->
                     <h6 class="text-uppercase text-muted">Creativity</h6>
@@ -110,6 +120,26 @@
                         value={{story['top_p']}} name="top_p"  >
 
                     <hr>
+                    <div class="create-only">
+                        <!-- Advanced Controls -->
+                        <h6 class="text-uppercase text-muted">Narrative Controls</h6>
+
+                        <label>Repetition Control: <strong><span id="repetitionVal"></span></strong></label>
+                        <input type="range" class="form-range" id="repetition" min="0" max="2" step="0.1" value="1">
+
+                        <label>Pacing: <strong><span id="pacingVal">1.00</span></strong></label>
+                        <input type="range" class="form-range" id="pacing" min="0" max="2" step="0.1" value="1">
+
+                        <label>Style Strength: <strong><span id="styleVal">1.00</span></strong></label>
+                        <input type="range" class="form-range story-record" id="style" min="0" max="2" step="0.1" value="1">
+
+                        <hr>
+
+                        <div class="alert alert-info create-only" id="summaryBox">
+                            Balanced prose, steady pacing, moderate variation.
+                        </div>
+
+                    </div>
 
                     <h6 class="text-uppercase text-muted">Safety Settings</h6>
 
@@ -128,7 +158,7 @@
                             %}>Off</option>
                     </select>
                     {% else %}
-                    <input class="form-control" type="text" id="hate_speech_threshold"
+                    <input class="form-control mb-2" type="text" id="hate_speech_threshold"
                         value="{{ story.hate_speech_threshold }}" readonly>
                     {% endif %}
 
@@ -146,7 +176,7 @@
                             Off</option>
                     </select>
                     {% else %}
-                    <input class="form-control" type="text" id="harassment_threshold"
+                    <input class="form-control mb-2" type="text" id="harassment_threshold"
                         value="{{ story.harassment_threshold }}" readonly>
                     {% endif %}
 
@@ -166,7 +196,7 @@
                             endif %}>Off</option>
                     </select>
                     {% else %}
-                    <input class="form-control" type="text" id="explicit_content_threshold"
+                    <input class="form-control mb-2" type="text" id="explicit_content_threshold"
                         value="{{ story.explicit_content_threshold }}" readonly>
                     {% endif %}
 
@@ -186,7 +216,7 @@
                             endif %}>Off</option>
                     </select>
                     {% else %}
-                    <input class="form-control" type="text" id="dangerous_content_threshold"
+                    <input class="form-control mb-2" type="text" id="dangerous_content_threshold"
                         value="{{ story.dangerous_content_threshold }}" readonly>
                     {% endif %}
 
@@ -200,13 +230,14 @@
                             %}selected{% endif %}>Gemini 3.1 Flash Lite Preview</option>
                     </select>
                     {% else %}
-                    <input class="form-control" type="text" id="model" value="{{ story.model }}" readonly>
+                    <input class="form-control mb-2" type="text" id="model" value="{{ story.model }}" readonly>
 
                     {% endif %}
 
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button id = "applySysInt" type="button" class="btn btn-primary create-only" data-bs-dismiss="modal">Apply</button>
+                    <button id = "closeModal" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </form>
         </div>
@@ -246,7 +277,7 @@
             <td>
                 {% endif %}
 
-                {% if key == 'created' %}
+                {% if key in ['created','updated'] %}
                 {{ row[key].strftime("%b %d, %Y") }}
                 {% else %}
                 {{ row[key] }}

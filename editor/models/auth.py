@@ -1,6 +1,6 @@
 from flask_login import UserMixin
 from editor import login_manager
-from editor.utils import db
+from editor.models.users import UserService
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 
@@ -20,6 +20,6 @@ class User(UserMixin):
     
 @login_manager.user_loader
 def load_user(user_id):
-    user_record=db.get_user(user_id)
-    user=User(user_record['user_id'], user_record['user_password'], user_record['user_name'], user_record['user_role'])
+    user_record=UserService.get_user(user_id)
+    user=User(user_record.user_id, user_record.user_password, user_record.user_name, user_record.user_role)
     return user

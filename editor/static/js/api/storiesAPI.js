@@ -46,4 +46,14 @@ export function getChar(char_id) {
             dataType: "json"
     };
     return apiRequest(options);
-}     
+} 
+
+export function getSysInt(sysint_id) {
+    const options = {
+            url: "/getSysInt",
+            type: "post",
+            data: { 'sysint_id': sysint_id },
+            dataType: "json"
+    };
+    return apiRequest(options);
+}

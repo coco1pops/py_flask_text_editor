@@ -123,3 +123,36 @@ function escapeHtmlAttr(str) {
   .replace(/</g, '&lt;')    // Optional: escape <
   .replace(/>/g, '&gt;');   // Optional: escape >
 };
+
+
+// Utility function for handling ajax errors in a consistent way across the module. 
+
+function handleAjaxError({ err, context }) {
+    // Extract useful info
+    const statusCode = err.jqXHR?.status;
+    const responseText = err.jqXHR?.responseText;
+    const textStatus = err.textStatus;
+    const errorThrown = err.errorThrown;
+
+    // Log (centralised)
+    console.error("AJAX Error:", {
+        statusCode,
+        textStatus,
+        errorThrown,
+        responseText,
+        context
+    });
+
+    // Delegate UI update
+    showError({
+        statusCode,
+        message: errorThrown || "An unexpected error occurred",
+        context
+    });
+}
+
+function showError(err) {
+    // This is a very basic error display function. We can make it more sophisticated later if we want to
+    const errorMessage=`${err.context}. An error occurred: ${err.statusCode} - ${err.message}`;
+    showNotifyModal(errorMessage, "Error")
+};

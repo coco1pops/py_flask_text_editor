@@ -9,28 +9,15 @@ initPage();
 
 document.addEventListener("DOMContentLoaded", function () {
         setFormMode("New", -1);
-        const raw = document.getElementById('posts-data').dataset.posts;
+        let raw = document.getElementById('posts-data').dataset.posts;
         const posts = JSON.parse(raw);
+        raw = document.getElementById('isadmin-data').dataset.isadmin;
+        const isadmin = JSON.parse(raw);
 
         const tbody=document.getElementById("postsRows");
         build.buildAddNewRows(tbody,posts);
 
-        // Maps for displaying safety settings in a more user-friendly way
-        const thresholdMap = {
-            "BLOCK_LOW_AND_ABOVE": "Strict",
-            "BLOCK_MEDIUM_AND_ABOVE": "Moderate",
-            "BLOCK_ONLY_HIGH": "Relaxed",
-            "BLOCK_NONE": "Off"
-        };
-
-        const isAdmin = JSON.parse(document.getElementById('isadmin-data').dataset.isadmin);
-
-        if (!isAdmin) {
-            document.getElementById("hate_speech_threshold").value = thresholdMap[document.getElementById("hate_speech_threshold").value];
-            document.getElementById("harassment_threshold").value = thresholdMap[document.getElementById("harassment_threshold").value];
-            document.getElementById("explicit_content_threshold").value = thresholdMap[document.getElementById("explicit_content_threshold").value];
-            document.getElementById("dangerous_content_threshold").value = thresholdMap[document.getElementById("dangerous_content_threshold").value];
-        };
+        UI.displaySafetySettings(isadmin);
 
         UI.gotoBottom();
 
@@ -62,6 +49,7 @@ export async function handleInput(event) {
 
   } catch (err) {
     handleAjaxError(err, "Update Story");
+    return
 
   }
   if (response && response.success) {
@@ -77,7 +65,8 @@ export async function cancelUpdate() {
   try {
     response = await updateStory(appState.getState().story_id, "newprompt", "");
   } catch (err) {
-    handleAjaxError(err, "Cancel Update");
+    handleAjaxError({err, context: "Cancel Update"});
+    return;
   }
   if (response && response.success) {
     console.log("Story update cancelled successfully");
@@ -99,22 +88,26 @@ export async function post() {
   let response;
   try {
     response = await postStory(appState.getState().story_id, prompt, appState.getState().formMode, appState.getState().editRow, appState.getState().chars);
+    if (response && response.success) {
+      // Currently:
+      // 1. Takes the buttons off the last row (if there is one)
+      // 2. Appends the new post to the end of the table
+      // 3. Blanks out newprompt (Done)
+      // 4. Shows the message from the server in a flash message
+      console.log(response);
+      build.buildClearLastRowButtons(tbody);
+      build.buildAddNewRows(tbody, response.posts);
+      UI.clearNewPrompt();
+      UI.displayMessages(response.messages);
+    }
   } catch (err) {
-      handleAjaxError(err, "Post Prompt");
+      handleAjaxError({err, context: "Post Prompt"});
     // Currently extracts data from the error object and shows a flash message.
-  }
-  if (response && response.success) {
-    // Currently:
-    // 1. Takes the buttons off the last row (if there is one)
-    // 2. Appends the new post to the end of the table
-    // 3. Blanks out newprompt (Done)
-    // 4. Shows the message from the server in a flash message
-    console.log(response);
-    build.buildClearLastRowButtons(tbody);
-    build.buildAddNewRows(tbody, response.posts);
-    UI.clearNewPrompt();
-    UI.displayMessages(response.messages);
-  }
+      const messages = err?.jqXHR?.responseJSON?.messages
+      if (messages) {
+        UI.displayMessages(messages);
+      }        
+  } finally {
   // Even after an error we want to clear the loading state and set the form back to New mode.
 
   // Also calls resetEdit which is a multipurpose function that is either called with a row or all. In this case it is called with all. It:
@@ -126,6 +119,7 @@ export async function post() {
   UI.postPost();
   UI.stopSpinner();
   setFormMode("New", -1);
+}
 }
 
 // Update edited row
@@ -140,35 +134,39 @@ export async function updateRow(btn, mode) {
   let response;
   try {
     response = await postStory(appState.getState().story_id, prompt, appState.getState().formMode, appState.getState().editRow, appState.getState().chars);
-  } catch (err) {
-    handleAjaxError(err, "Update Post");
-    UI.stopSpinner(spinner_id);
-  }
-  if (response && response.success) {
+    if (response && response.success) {
     // Remove subsequent rows
-    if (mode == "Edit Prompt") {
-      const tbody = row.parentElement;
-      build.buildDeleteNextRows(row);
-      build.buildAddNewRows(tbody, response.posts);
+      if (mode == "Edit Prompt") {
+        const tbody = row.parentElement;
+        build.buildDeleteNextRows(row);
+        build.buildAddNewRows(tbody, response.posts);
+      }
+      else {
+        const mdiv = "message_" + id;
+        const cell = document.getElementById(mdiv);
+
+        const updpost = response.posts[0];
+        cell.innerHTML = updpost.message;
+        cell.dataset.html = updpost.message;
+        cell.dataset.markdown = updpost.message_md;
+        UI.resetTableRow(row);
+        UI.stopSpinner(spinner_id);
+      };
+      UI.clearNewPrompt();
+      UI.postPost();
+      console.log(response);
+      UI.displayMessages(response.messages);
+      setFormMode("New", -1);
     }
-    else {
-      const mdiv = "message_" + id;
-      const cell = document.getElementById(mdiv);
-
-      const updpost = response.posts[0];
-      cell.innerHTML = updpost.message;
-      cell.dataset.html = updpost.message;
-      cell.dataset.markdown = updpost.message_md;
-      UI.resetTableRow(row);
+  } catch (err) {
+      handleAjaxError({err, context: "Update Post"});
+      const messages = err?.jqXHR?.responseJSON?.messages
+      if (messages) {
+        UI.displayMessages(messages);
+      }       
       UI.stopSpinner(spinner_id);
-    };
-    UI.clearNewPrompt();
-    UI.postPost();
-    console.log(response);
-    UI.displayMessages(response.messages);
-    setFormMode("New", -1);
-  }
 
+    }
 }
 
 // delete edited row and subsequent rows 
@@ -178,7 +176,8 @@ export async function deleteRow() {
   try {
     response = await deleteStoryPosts(appState.getState().editRow, appState.getState().story_id);
   } catch (err) {
-    handleAjaxError(err, "Delete Posts");
+    handleAjaxError({err, context: "Delete Posts"});
+    return
   }
 
   if (response && response.success) {
@@ -200,7 +199,8 @@ export async function addChar(char_id) {
   try {
     response = await getChar(char_id);
   } catch (err) {
-    handleAjaxError(err, "Assign Character");
+    handleAjaxError({err, context: "Assign Character"});
+    return
   }
   console.log(response);
   if (response && response.success) {
@@ -259,28 +259,3 @@ function setFormMode(mode, id) {
 
 };
 
-// Utility function for handling ajax errors in a consistent way across the module. 
-
-function handleAjaxError({ err, context }) {
-    // Extract useful info
-    const statusCode = err.jqXHR?.status;
-    const responseText = err.jqXHR?.responseText;
-    const textStatus = err.textStatus;
-    const errorThrown = err.errorThrown;  
-
-    // Log (centralised)
-    console.error("AJAX Error:", {
-        statusCode,
-        textStatus,
-        errorThrown,
-        responseText,
-        context
-    });
-
-    // Delegate UI update
-    UI.showError({
-        statusCode,
-        message: errorThrown || "An unexpected error occurred",
-        context
-    });
-}

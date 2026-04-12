@@ -15,7 +15,10 @@
         <div class="col-md-4">
             <h4>Author {{current_user.user_name}}</h4>
         </div>
-        <div class="created col-md-4"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</span>
+        <div class="col-md-4"> 
+            <div class="created"> Created {{story['created'].strftime("%b %d, %Y at %I:%M%p")}}</span> </div>
+            <div class="created"> Updated {{story['updated'].strftime("%b %d, %Y at %I:%M%p")}}</span> </div>
+
         </div>
     </div>
 </div>
@@ -99,9 +102,11 @@
 
 </div>
 
-{{ macros.studioModal(story, isadmin) }}
+{{ macros.studioModal(story, {}, isadmin) }}
 
 {{ macros.modal_box('confirmModal', 'Confirm dialogue') }}
+
+{{ macros.modalConfirm('Notify', 'Notification') }}
 
 {{ macros.charPicker(chars)}}
 
