@@ -47,15 +47,25 @@ def create():
         story = request.form["title"]
         note = request.form["note"] or ""
         systeminstruction = request.form["systeminstruction"] or ""
+        paramsUpdated = request.form.get("paramsSaved") == "True"
 
+        if paramsUpdated:
 
-        temperature=request.form.get('temperature')
-        top_p=request.form.get('top_p')
-        harassment_threshold=request.form.get('harassment_threshold')
-        hate_speech_threshold=request.form.get('hate_speech_threshold')
-        dangerous_content_threshold=request.form.get('dangerous_content_threshold')
-        explicit_content_threshold=request.form.get('explicit_content_threshold')
-        model=request.form.get('model')
+            temperature=request.form.get('temperature')
+            top_p=request.form.get('top_p')
+            harassment_threshold=request.form.get('harassment_threshold')
+            hate_speech_threshold=request.form.get('hate_speech_threshold')
+            dangerous_content_threshold=request.form.get('dangerous_content_threshold')
+            explicit_content_threshold=request.form.get('explicit_content_threshold')
+            model=request.form.get('model')
+        else:
+            temperature=params.temperature
+            top_p=params.top_p
+            harassment_threshold=params.harassment_threshold
+            hate_speech_threshold=params.hate_speech_threshold
+            dangerous_content_threshold=params.dangerous_content_threshold
+            explicit_content_threshold=params.explicit_content_threshold
+            model=params.model
 
         if story:
             story_id =StoryService.insert_story(story, note, systeminstruction, temperature, top_p, harassment_threshold, hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold, model)

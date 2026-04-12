@@ -250,7 +250,7 @@ def users():
     if request.method == "POST":
         user_id = request.form.get("action")
         return redirect(
-            url_for("parameters.create_user", mode="Update", user_id=user_id)
+            url_for("parameters.createuser", mode="Update", user_id=user_id)
         )
 
     return render_template("parameters/usersList.html", users=users)

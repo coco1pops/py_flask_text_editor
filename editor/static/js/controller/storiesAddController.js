@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById('applySysInt').addEventListener('click', event => {
         pickSysInt();
+        document.getElementById('paramsSaved').value = "True";
     });
 
     document.addEventListener('input', event => {
