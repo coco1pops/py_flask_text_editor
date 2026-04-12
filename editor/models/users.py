@@ -6,7 +6,7 @@ from sqlalchemy import Enum
 class Usr(db.Model):
     __tablename__ = "users"
 
-    user_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(255), primary_key=True)
     user_password = db.Column(db.String(255), nullable=False)
     user_role = db.Column(db.String(50), Enum("Standard", "Admin", name="role_enum"), nullable=False)
     user_name = db.Column(db.String(255), nullable=False)
