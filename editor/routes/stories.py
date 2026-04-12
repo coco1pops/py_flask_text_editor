@@ -95,7 +95,7 @@ def stories():
 #
 @bp.route("/delete_story", methods=["POST"])
 def delete_story():
-    story_id = request.values.get("story_id")
+    story_id = int(request.values.get("story_id"))
     logging.debug(f"Requested delete of row {story_id}")
     if story_id:
         StoryService.delete_story(story_id)
@@ -111,7 +111,7 @@ def delete_story():
 #
 @bp.route("/update_story", methods=["POST"])
 def update_story():
-    story_id = request.values.get("story_id")
+    story_id = int(request.values.get("story_id"))
     field = request.values.get("field")
     value = request.values.get("new value")
 
@@ -127,7 +127,7 @@ def update_story():
 #
 @bp.route("/print_story", methods=["POST"])
 def print_story():
-    story_id = request.values.get("story_id")
+    story_id = int(request.values.get("story_id"))
     story = StoryService.get_story(story_id)
     dl_name = f"{story.title}.docx"
     logging.debug(f"Printing {dl_name}")
@@ -151,7 +151,7 @@ def print_story():
 #
 @bp.route("/generate_story")
 def generate_story():
-    story_id = request.values.get("story_id")
+    story_id = int(request.values.get("story_id"))
 
     story = StoryService.get_story(story_id)
     posts = UnifiedPostTimelineService.get_all_posts(story_id)
@@ -163,7 +163,7 @@ def generate_story():
 
 @bp.route("/get_message", methods=["GET"])
 def get_message():
-    post_id = request.values.get("post_id")
+    post_id = int(request.values.get("post_id"))
 
     logging.debug(f"Retrieving message for {post_id}")
     if post_id:
@@ -175,7 +175,7 @@ def get_message():
 #
 @bp.route("/assignChar", methods=["POST"])
 def assignChar():
-    char_id = request.form["char_id"]
+    char_id = int(request.form["char_id"])
     resp = CharService.build_char(char_id)
     return jsonify({"success": True, "details": resp}), 200
 
@@ -184,8 +184,8 @@ def assignChar():
 #
 @bp.route("/deleteRows", methods=["POST"])
 def deleteRows():
-    post_id = request.values.get("post_id")
-    story_id = request.values.get("story_id")
+    post_id = int(request.values.get("post_id"))
+    story_id = int(request.values.get("story_id"))
     logging.debug(f"Deleting older posts from {post_id}")
     PostService.delete_posts_from(story_id, post_id)
     flash("Posts deleted", "success")
@@ -253,10 +253,10 @@ def generate_text():
 
 def parse_generate_request():
     return {
-        "story_id": request.values.get("story_id"),
+        "story_id": int(request.values.get("story_id")),
         "prompt": request.values.get("prompt"),
         "mode": request.values.get("mode"),
-        "row_id": request.values.get("row_id"),
+        "row_id": int(request.values.get("row_id")),
         "chars": json.loads(request.values.get("chars", "[]")),
 }
 #

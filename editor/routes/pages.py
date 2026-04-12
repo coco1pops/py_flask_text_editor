@@ -8,7 +8,7 @@ bp = Blueprint("pages", __name__)
 @bp.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
-        story_id = request.form.get("action")
+        story_id = int(request.form.get("action"))
         return redirect(url_for("stories.generate_story", story_id=story_id))
     if current_user.is_authenticated:
         latest_story = StoryService.get_latest_story()

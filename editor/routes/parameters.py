@@ -79,7 +79,7 @@ def createchar(char_id=None):
 @bp.route("/getchar")
 @login_required
 def getchar():
-    char_id = request.values.get("char_id")
+    char_id = int(request.values.get("char_id"))
     row = CharService.get_character(char_id)
     if row.image_mime_type:
         row.image_data = (
@@ -96,7 +96,7 @@ def getchar():
 @bp.route("/deletechar", methods=["POST"])
 @login_required
 def delchar():
-    char_id = request.values.get("char_id")
+    char_id = int(request.values.get("char_id"))
     logging.debug(f"Deleting character {char_id}")
     CharService.delete_character(char_id)
     flash("Character deleted", "success")
@@ -109,7 +109,7 @@ def delchar():
 def chars():
     chars = CharService.get_characters()
     if request.method == "POST":
-        char_id = request.form.get("action")
+        char_id = int(request.form.get("action"))
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
     return render_template("parameters/charsList.html", chars=chars)
@@ -270,7 +270,7 @@ def sysints():
 @bp.route("/deletesysint", methods=["POST"])
 @admin_required
 def delsysint():
-    sysint_id = request.values.get("sysint_id")
+    sysint_id = int(request.values.get("sysint_id"))
     logging.debug(f"Deleting sysint {sysint_id}")
     SysIntService.delete_sysint(sysint_id)
     flash("AI Guidance deleted", "success")
@@ -312,6 +312,6 @@ def createsysint(sysint_id=None):
 @bp.route("/getSysInt", methods=["POST"])
 @login_required
 def getsysint():
-    sysint_id = request.values.get("sysint_id")
+    sysint_id = int(request.values.get("sysint_id"))
     row = SysIntService.get_sysint(sysint_id)
     return ({"success": True, "instruction": row.instruction}), 200
