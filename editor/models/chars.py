@@ -18,7 +18,7 @@ class Char(db.Model):
     motivation = db.Column(db.Text)
     image_data = db.Column(db.LargeBinary)
     image_mime_type = db.Column(db.Text)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(255), db.ForeignKey('users.user_id'), nullable=False)
 
 class CharService:
     @staticmethod

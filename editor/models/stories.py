@@ -20,7 +20,7 @@ class Story(db.Model):
     dangerous_content_threshold = db.Column(db.String(255), nullable=True)
     explicit_content_threshold = db.Column(db.String(255), nullable=True)
     model = db.Column(db.String(255), nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.String(255), db.ForeignKey('users.user_id'), nullable=False)
 
 
 class StoryService:
