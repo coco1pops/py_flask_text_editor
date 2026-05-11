@@ -6,6 +6,8 @@ from flask_login import LoginManager
 
 import editor.models.database as database
 from editor.models import chat_service
+from editor.models.users import UserService
+from editor.models.params import ParamsService
 
 load_dotenv()
 login_manager = LoginManager()
@@ -31,6 +33,7 @@ def create_app():
 
     logging.info("Startup-Initialising database")
     database.init_app(app)
+    
     logging.info("Startup-Initialising chat")
     chat_service.initialize_global_chat_service();
     
@@ -38,13 +41,24 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view="login.login"
     from .models import auth 
-    from editor.routes import login, pages, parameters, stories
+    from editor.routes import login, pages, parameters, stories, storyCharacters, storyGenerate, chapters
     
     logging.info("Startup-registering blueprints")
     app.register_blueprint(login.bp)
     app.register_blueprint(pages.bp)
     app.register_blueprint(stories.bp)
     app.register_blueprint(parameters.bp)
+    app.register_blueprint(storyCharacters.bp)
+    app.register_blueprint(storyGenerate.bp)
+    app.register_blueprint(chapters.bp)
+
+    with app.app_context():
+        logging.info("Startup-Checking for superuser")
+        UserService.check_admin_user()
+        params = ParamsService.get_params(1)
+        if not params:
+            logging.info("Startup-Inserting default parameters")
+            ParamsService.insert_base_params() 
 
     return app
 

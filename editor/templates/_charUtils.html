@@ -1,0 +1,115 @@
+{% import '_components.html' as macros %}
+
+<!-- Modal Add Character -->
+{% macro charPicker(chars) %}
+<div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="assignCharForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignCharLabel">Assign Character</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="charSelect" class="form-label">Choose a Character</label>
+                        <select class="form-select" id="charSelect" name="char_id" required>
+                            {% for char in chars %}
+                            <option value="{{ char.char_id }}">
+                                {{ char.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro charsPicker(story, chars, mode="Add") %}
+<div class="modal fade" id="charPicker" tabindex="-1" aria-labelledby="charPickerLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="charsForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="charPickerLabel">{% if mode == "Add" %}Add Characters{% else %}Edit Character{% endif %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="charSelect" class="form-label">Choose Character</label>
+                        <select class="form-select mb-3" id="charSelect" name="char_id" required {% if mode == "Edit" %}disabled{% endif %}>
+                            <option value="" selected disabled>-- Select an option --</option>
+                            {% for char in chars %}
+                            <option value="{{ char.char_id }}">
+                                {{ char.name }} {{ char.description }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        
+                        {{macros.textarea(name='charNotes', label='Story Notes', value= "" if mode =="Add" else char.note)}}
+
+                    <div class="modal-footer">
+                        <button id = "addChar" type="button" class="btn btn-primary" data-id="{{ story.story_id }}">Apply</button>
+                        <button id = "closeModal" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>  
+</div>
+{% endmacro %}
+
+{% macro charsList(storyChars) %}
+<div class="modal fade" id="charsList" tabindex="-1" aria-labelledby="charsListLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="charsListLabel">Story Characters</h5>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Details</th>
+                                <th>Picture</th>
+                            </tr>                
+                        </thead>
+                        <tbody>
+                            {% for storyChar in storyChars %}
+                                <tr>
+                                    <td>
+                                        {{storyChar.textBundle | safe}}
+                                    </td>
+                                    <td>
+                                        <img style="display:none; max-width:300px;" />
+                                        {% if storyChar.image_data %}
+                                            <img id="currentImage" name="currentImage" src="{{ storyChar.image_data }}" style="max-width:300px;" />
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            
+                            {% endfor %}
+                        </tbody>
+                    </table>                    
+                <div class="modal-footer">
+                    <button id = "closeModal" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+
+                </div>
+            </div>
+        </div>
+    </div>  
+</div>
+{% endmacro %}

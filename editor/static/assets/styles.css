@@ -82,3 +82,8 @@ th {
   box-sizing: border-box;
   overflow: hidden;
 }
+
+#summary-box-display li p {
+ margin-top: 1rem;
+ margin-bottom: 0rem; 
+}

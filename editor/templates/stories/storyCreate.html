@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h2>{% block title %}Add Story{% endblock title %}</h2>
+<h2>{% block title %}{{ 'Update' if story.story_id else 'Add' }} Story{% endblock title %}</h2>
 {% endblock header %}
 
 {% block content %}
@@ -18,11 +18,46 @@
 
     {{ macros.textarea('systeminstruction', 'AI Guidance', story.systeminstruction) }}
 
-    <input type="hidden" name="paramsSaved" value="False">
+    {{ macros.textarea('world_rules', 'World Rules', story.world_rules) }}
 
+    <div class="form-check mb-3">
+      <input class="form-check-input"
+         type="checkbox"
+         id="bookCheck"
+         name="book"
+         {% if story.book %}checked{% endif %}
+         {% if story.story_id %}disabled{% endif %}>
+
+      <label class="form-check-label form-label" for="bookCheck">
+        Book
+      </label>
+    </div>
+
+    <input type="hidden" name="paramsSaved" id="paramsSaved" value="False">
+    <input type="hidden" name="studio_temperature" id="studio_temperature" value="{{story['temperature']}}">
+    <input type="hidden" name="studio_top_p" id="studio_top_p" value="{{story['top_p']}}">
+    <input type="hidden" name="studio_harassment_threshold" id="studio_harassment_threshold" value="{{story['harassment_threshold']}}">
+    <input type="hidden" name="studio_dangerous_content_threshold" id="studio_dangerous_content_threshold" value="{{story['dangerous_content_threshold']}}">
+    <input type="hidden" name="studio_hate_speech_threshold" id="studio_hate_speech_threshold" value="{{story['hate_speech_threshold']}}">
+    <input type="hidden" name="studio_explicit_content_threshold" id="studio_explicit_content_threshold" value="{{story['explicit_content_threshold']}}">
+    <input type="hidden" name="studio_model" id="studio_model" value="{{story['model']}}">
+    
     <div class="d-flex justify-content-between">
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary">Add</button>
+        <div class="col-md-4 d-flex gap-2">
+            <div class="form-group">
+                <button type="submit" name="action" value="Save" class="btn btn-primary">{% if story.story_id %}Update{% else %}Add{% endif %}</button>
+            </div>
+            {% if story.story_id %}
+              {% if not story.book %}
+                <div class="form-group">
+                    <button type="submit" name="action" value="Generate" class="btn btn-primary">Generate</button>
+                </div>
+              {% else %}
+                <div class="form-group">
+                    <button type="submit" name="action" value="Chapters" class="btn btn-primary">Chapters</button>
+                </div>
+              {% endif %}
+            {% endif %}
         </div>
         <div>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
@@ -32,7 +67,60 @@
 
 </form>
 
-{{ macros.studioModal(story, sysints, isadmin) }}
+{% if story.story_id %} 
+
+<br>
+<h4 class="mb-3">Associated Characters</h4>
+
+{{ macros.table('storyCharsTable', 
+    storyChars,
+    [('Name', 'name'), 
+    ('Description', 'description'), 
+    ('Notes', 'note') 
+    ],
+    id_field="id",
+    print=False) 
+}}
+
+<button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
+     data-bs-target="#charPicker">Add Character</button>
+
+{% endif %}
+
+<!-- Edit Character Modal. Not defined as macro as rendered client-side -->
+<div class="modal fade" id="editCharModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTitle">Edit Character Notes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="editCharId">
+
+        <div class="mb-3">
+          <label for="editCharNotes" class="form-label">Notes</label>
+          <textarea class="form-control" id="editCharNotes" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" id="saveCharBtn">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{{ macros.flashMessages() }}
+{% import '_studio.html' as studio %}
+{{ studio.studioModal(story, sysints, isadmin) }}
+
+{% import '_charUtils.html' as charUtils %}
+{{ charUtils.charsPicker(story, chars) }}
 
 {{ macros.modalConfirm('Notify', 'Notification') }}
 
@@ -40,4 +128,5 @@
 
 {% block scripts %}
 <script type="module" defer src="{{url_for('static',filename='js/controller/storiesAddController.js')}}"></script>
+
 {% endblock scripts %}

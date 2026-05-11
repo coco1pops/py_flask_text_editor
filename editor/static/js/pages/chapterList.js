@@ -3,28 +3,33 @@ document.querySelectorAll('.delete-button').forEach(button => {
     var id = button.dataset.id;
     const row = button.closest("tr");
     const title = row?.cells[2]?.textContent.trim();
-    deleteClicked(id, deleteStory, title);
+    deleteClicked(id, deleteChapter, title);
   });
 });
 
-function deleteStory(id) {
+function deleteChapter(id) {
+  story_id=document.getElementById("form-data").dataset.storyId;
+  let response;
   $.ajax({
-    url: "/delete_story",
+    url: "/delete_chapter",
     type: "post",
-    data: { 'story_id': id },
+    data: { 'story_id': id, 'chapter_id' : id },
     dataType: 'json'
   }
   ).done(function (response) {
     console.log(response);
+    if (response.success){
+      const table = document.getElementById("chaptersTable");
+      var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
+      table.deleteRow(i);
+    }
 
-    const table = document.getElementById("storiesTable");
-    var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
-    table.deleteRow(i);
     if (response.messages) {
       response.messages.forEach(([category, message]) => {
-        showFlashMessage(category, message);
+      showFlashMessage(category, message);
       });
     }
+
   }).fail(function (error) {
     console.log(error);
   })
@@ -43,39 +48,52 @@ document.querySelectorAll('.print-button').forEach(button => {
 //
 function printClicked(id) {
 
-  const table = document.getElementById("storiesTable");
+  story_id=document.getElementById("form-data").dataset.storyId;
+  story_title=document.getElementById("form-data").dataset.storyTitle;
+
+  const table = document.getElementById("chaptersTable");
   const row = table.querySelector('tr[data-id="' + id + '"]');
   const title = row.cells[2].textContent.trim();
   showBootstrapConfirm((confirmed, opts) => {
     if (confirmed) {
-      printStory(id);
+      printChapter(story_id, id, story_title);
     }
     else {
       console.log("Print Cancelled.");
     };
   }, {
     mode: 'print',
-    title: title
+    title: story_title + " " + title
   });
 };
 //
 // Process print story
 //
-function printStory(id) {
+function printChapter(story_id ,id, story_title) {
   $.ajax({
-    url: "/print_story",
+    url: "/print_chapter",
     type: "post",
-    data: { 'story_id': id },
+    data: { 'story_id': story_id, 'chapter_id' : id},
     xhrFields: {
       responseType: 'blob'  // Expect binary data
     }
-  }).done(function (blob) {
+  }).done(function (blob, status, xhr) {
+      if (xhr.status !== 200) {
+        // Try to read error text from blob
+        const reader = new FileReader();
+        reader.onload = function () {
+          console.error("Server error:", reader.result);
+          showNotifyModal("Server error: " + reader.result, "Error");
+        };
+        reader.readAsText(blob);
+        return;
+    }
     // Create a temporary URL for the blob
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
 
-    const table = document.getElementById("storiesTable");
+    const table = document.getElementById("chaptersTable");
     const title = table.querySelector('tr[data-id="' + id + '"]').cells[2].textContent.trim();
     a.download = title + ".docx";
 

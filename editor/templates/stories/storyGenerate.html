@@ -6,11 +6,12 @@
 
 {% block content %}
 
+<div id="form-data" data-story-id='{{ story.story_id }}' data-chapter-id='{{chapter.chapter_id}}'></div>
 <div id="posts-data" data-posts='{{ posts | tojson }}'></div>
 <div id="isadmin-data" data-isadmin='{{ isadmin | tojson }}'></div>
 
-<div id="top">
-    <h2 id="story-title"> Story: {{story['title']}} </h2>
+<div>
+    <h2 id="story-title">Story: {{story['title']}}{%if story.book %} Chapter {{chapter.position}}: {{chapter.title}}{% endif %}</h2>
     <div class="row d-flex justify-content-between align-items-center mb-3">
         <div class="col-md-4">
             <h4>Author {{current_user.user_name}}</h4>
@@ -25,24 +26,38 @@
 
 <div id="controls" class="container-fluid mb-3">
 
-    <div class="d-flex align-items-center">
-        <label for="title" class="me-2"> Title: </label>
-        <input type="text" id="title" class="story-record" value="{{story['title']}}" >
-        <div class="ms-auto">
+    <div class="d-flex align-items-center mb-3">
+        <label for="title" class="form-label me-2"> Title: </label>
+        <input type="text" id="title" class="story-record" value="{{story['title']}}" style="margin-bottom: .5rem;" {%if story.book %}disabled{% endif %}>
+        <div class="ms-auto gap-2 d-flex flex-column flex-md-row">
+            {% if story.book %}
+                <a href="/story/{{story.story_id}}/chapter/{{chapter.chapter_id}}" class="btn btn-primary me-2">Chapter</a>
+                <a href="/story/{{story.story_id}}/chapters" class="btn btn-primary me-2">Chapters</a>
+            {% endif %}
             <button id="gotoBottom" class="btn btn-secondary me-2">Bottom</button>
+            <button id="settings" class="btn btn-secondary me-2" data-bs-toggle="modal"
+                    data-bs-target="#charsList">Characters</button>
             <button id="settings" class="btn btn-secondary" data-bs-toggle="modal"
                     data-bs-target="#studio">Settings</button>
         </div>
     </div>
     <div class="row">
+    {% if story.book %}
         <div class="col-md-6">
-            <label for="note"> Note: </label>
-            <textarea class="form-control story-record" rows="6" id="note" >{{story['note']}}</textarea>
+            {{ macros.textarea('introduction', 'Introduction', chapter.introduction, classes="chapter-record") }}
+            {{ macros.textarea('goal', 'Goal', chapter.goal, classes="chapter-record") }}
         </div>
         <div class="col-md-6">
-            <label for="systeminstruction"> AI Guidance: </label>
-            <textarea class="form-control story-record" rows="6" id="systeminstruction">{{story['systeminstruction']}}</textarea>
+             {{ macros.textarea('memory', 'Memory', chapter.memory, classes="chapter-record") }}
         </div>
+    {% else %}
+        <div class="col-md-6">
+            {{ macros.textarea('note', 'Note', story.note, classes="story-record") }}
+        </div>
+        <div class="col-md-6">
+            {{ macros.textarea('systemInstruction', 'AI Guidance', story.systeminstruction, classes="story-record") }}
+        </div>
+    {% endif %}
     </div>
 </div>
 
@@ -81,7 +96,7 @@
                 Character</button>
         </div>
 
-        <div class="col-2 dflex"> </div>
+        <div class="col-2 d-flex"> </div>
 
         <div class="col-4 d-flex justify-content-end align-items-center gap-2">
 
@@ -102,13 +117,17 @@
 
 </div>
 
-{{ macros.studioModal(story, {}, isadmin) }}
+{% import '_studio.html' as studio %}
+{{ studio.studioModal(story, {}, isadmin) }}
 
 {{ macros.modal_box('confirmModal', 'Confirm dialogue') }}
 
 {{ macros.modalConfirm('Notify', 'Notification') }}
 
-{{ macros.charPicker(chars)}}
+{% import '_charUtils.html' as charUtils %}
+{{ charUtils.charPicker(chars)}}
+
+{{ charUtils.charsList(storyChars) }}
 
 <div id="end-placeholder"></div>
 

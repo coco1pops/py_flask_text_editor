@@ -9,7 +9,11 @@ bp = Blueprint("pages", __name__)
 def home():
     if request.method == "POST":
         story_id = int(request.form.get("action"))
-        return redirect(url_for("stories.generate_story", story_id=story_id))
+        story=StoryService.get_story(story_id)
+        if story.book:
+            return redirect(url_for("chapters.chapters", story_id=story_id))
+        else:
+            return redirect(url_for("storyGenerate.generate_story", story_id=story_id))
     if current_user.is_authenticated:
         latest_story = StoryService.get_latest_story()
         last_updated_story = StoryService.get_last_updated_story()

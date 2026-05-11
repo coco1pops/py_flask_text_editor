@@ -3,6 +3,8 @@ from editor.models.database import db, print_except
 from werkzeug.security import generate_password_hash
 from sqlalchemy import Enum
 
+import logging
+
 class Usr(db.Model):
     __tablename__ = "users"
 
@@ -52,15 +54,6 @@ class UserService:
             print_except("insert_user", e)
 
     @classmethod
-    def insert_base_user(cls):
-        try:
-            row=cls.get_user("john",allow_not_found=True)
-            if not row:
-                cls.insert_user("john", "supauser", "John Admin Role", "Admin")
-        except Exception as e:
-            print_except("insert_base_user", e)
-
-    @classmethod
     def update_user(cls, user_id, user_name, user_role):
         try:
             user = cls.get_user(user_id)
@@ -107,3 +100,30 @@ class UserService:
         except Exception as e:
             db.session.rollback()
             print_except("delete_user", e)  
+
+    @classmethod
+    def check_admin_user(cls):
+        try:
+            admin_user = Usr.query.filter_by(user_role="Admin").first()
+            if not admin_user:
+                logging.debug("No admin user found, creating default admin user")
+                cls.insert_user("admin", "admin123", "Admin User", "Admin")
+                cls.user_reset_pass("admin", "admin123")
+                logging.debug("Default admin user created successfully")
+            else:
+                logging.debug(f"Admin user found: {admin_user.user_name}")
+        except Exception as e:
+            print_except("check_admin_user", e)
+
+    @staticmethod
+    def checkSU():
+        try:
+            su_user = Usr.query.filter_by(user_role="Admin").first()
+            if su_user:
+                logging.debug(f"DB - Superuser found: {su_user.user_name}")
+                return True
+            else:
+                logging.debug("DB - No superuser found")
+                return False
+        except Exception as e:
+            print_except("checkSU", e)

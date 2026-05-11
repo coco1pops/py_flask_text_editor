@@ -28,6 +28,12 @@ function showBootstrapConfirm(callback, options={}) {
     button.classList.toggle('btn-secondary', true);
     button.classList.toggle('btn-danger', false);
   }
+  else if (options.mode == "complete") {
+    title.innerHTML = "Confirm Complete"
+    txt.innerHTML = "Are you sure you want to complete " + options.title + " ? This will prevent further edits"
+    button.classList.toggle('btn-secondary', true);
+    button.classList.toggle('btn-danger', false);  
+  }
   else {
     title.innerHTML = "Confirm Delete"
     txt.innerHTML = "Are you sure you want to delete " + options.title + "?"

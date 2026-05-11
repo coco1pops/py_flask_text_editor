@@ -1,0 +1,23 @@
+You are summarising a story chapter for continuity in a longer narrative. The story is {{story.title}}. The chapter is {{chapter.title}}
+
+Summarise the chapter clearly and concisely using the following structure:
+
+1. Key Events (bullet points)
+2. Character Developments (per character)
+3. Important Facts / World Details
+4. Open Questions / Unresolved Threads
+
+Rules:
+- Keep it under 300 words
+- Be precise (no fluff)
+- Only include information relevant for future chapters
+
+{% if previous %}{previous}{% endif %}
+
+[Characters]
+{% for char in chars %}
+{{char.name}} {{char.note}}
+{% endfor %}
+
+[Chapter]
+{% for post in posts %}{{post.message}}{% endfor %}

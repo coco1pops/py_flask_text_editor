@@ -1,4 +1,4 @@
-import { handleInput, post, cancelUpdate, editRow, updateRow, cancelEditRow, deleteEditRow, addChar, clearChar } from "../controller/storiesController.js";
+import { handleInput, updateChapterField, post, cancelUpdate, editRow, updateRow, cancelEditRow, deleteEditRow, addChar, clearChar } from "../controller/storiesController.js";
 import { resizeTextarea, updateCount, gotoTop, gotoBottom, updateLabel, updateTitle } from "../ui/storiesUI.js";
 
 
@@ -8,19 +8,31 @@ export function initStories() {
 };
 
 function bindEvents() {
+
+
+    document.addEventListener('input', event => {
+        if (event.target.classList.contains('edit-row') || 
+            event.target.classList.contains('chapter-record') ||  
+            event.target.classList.contains('story-record')) {
+            resizeTextarea(event.target);
+        }
+        else if (event.target.classList.contains('form-range')) {
+            updateLabel(event.target.id);
+        }
+    });
+
+    document.querySelectorAll(".chapter-record, .story-record").forEach(el => {
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+        
     // Add an event listener to every story field
     document.addEventListener('change', event => {
         if (event.target.classList.contains('story-record')) {
             handleInput(event);
         }
-    });
-
-    document.addEventListener('input', event => {
-        if (event.target.classList.contains('edit-row')) {
-            resizeTextarea(event.target);
-        }
-        else if (event.target.classList.contains('form-range')) {
-            updateLabel(event.target.id);
+        else if (event.target.classList.contains('chapter-record')) {
+            updateChapterField(event);
         }
     });
 

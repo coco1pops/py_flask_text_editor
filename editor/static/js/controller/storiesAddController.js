@@ -1,33 +1,23 @@
-import { resizeTextarea, updateLabel, displaySafetySettings } from "../ui/storiesUI.js";
-import { getSysInt } from "../api/storiesAPI.js";
+import { getSysInt, addStoryCharacter, updateStoryCharacter, deleteStoryCharacter, getStoryCharacter } from "../api/storiesAPI.js";
+import { initStoriesAdd } from "../pages/storiesCreate.js";
 
 document.addEventListener("DOMContentLoaded", function () {
-    const raw = document.getElementById('isadmin-data').dataset.isadmin;
-    const isadmin = JSON.parse(raw);
-
-    displaySafetySettings(isadmin);
-
-    document.getElementById('applySysInt').addEventListener('click', event => {
-        pickSysInt();
-        document.getElementById('paramsSaved').value = "True";
-    });
-
-    document.addEventListener('input', event => {
-        if (event.target.classList.contains('entry-textarea')) {
-            resizeTextarea(event.target);
-        }
-        else if (event.target.classList.contains('form-range')) {
-            updateLabel(event.target.id);
-            generateSummary();
-        }
-    });
-
-    document.getElementById('closeModal').addEventListener('click', event => {
-        buildSysIntOptions();
-    });
+    initStoriesAdd();
 });
 
-function buildSysIntOptions(sysInt) {
+$(".entry-textarea").on("input change", function () {
+    this.style.height = "auto";
+    this.style.height = (this.scrollHeight) + "px";
+});
+
+$(document).ready(function () {
+    $(".entry-textarea").trigger("input");
+});
+
+//
+// Takes data from the studio settings and builds a system instruction that incorporates the various settings in a human-readable way, to guide the model's output.
+//
+export function buildSysIntOptions(sysInt) {
     const repetition = parseFloat(document.getElementById("repetition").value);
     const pacing = parseFloat(document.getElementById("pacing").value);
     const style = parseFloat(document.getElementById("style").value);  
@@ -57,7 +47,9 @@ function buildSysIntOptions(sysInt) {
     }
     return sysInt;
 }
-
+//
+// Generates a summary of the current studio settings to provide user feedback on how the model's output may be influenced by the current settings.
+//
 export function generateSummary() {
     const temp = parseFloat(document.getElementById("temperature").value);
     const rep = parseFloat(document.getElementById("repetition").value);
@@ -81,22 +73,168 @@ export function generateSummary() {
     summaryBox.textContent =
         `${creativity} prose, ${pacingText}, ${repText}.`;
 }
-
+//
+// This function applies the studio settings to the SysInt selected, raises an event to update the filed and sets a flag to indicate that the settings have been applied, 
+// so that the user is aware that the SysInt and defaults have been modified from the defaults will not be applied when the story is added. 
+//
 export async function pickSysInt() {
     const id = document.getElementById("sysIntSelect").value;
+    let sysInt;
+    if (!id) {
+        sysInt="";
+    }
+    else {
+        let response;
+        try {
+            response = await getSysInt(id);
+            if (response && response.success) {  
+                sysInt = response.instruction;
+            }
+        } catch (err) {
+            handleAjaxError({err, context: "Get System Instruction"});
+        }
+    }
+    document.getElementById("studio_temperature").value = document.getElementById("temperature").value;
+    document.getElementById("studio_top_p").value = document.getElementById("top_p").value;
+    document.getElementById("studio_harassment_threshold").value = document.getElementById("harassment_threshold").value;
+    document.getElementById("studio_hate_speech_threshold").value = document.getElementById("hate_speech_threshold").value;
+    document.getElementById("studio_dangerous_content_threshold").value = document.getElementById("dangerous_content_threshold").value;
+    document.getElementById("studio_explicit_content_threshold").value = document.getElementById("explicit_content_threshold").value;
+    document.getElementById("studio_model").value = document.getElementById("model").value;
+
+    const updatedSysInt = buildSysIntOptions(sysInt);
+    const systemInstructionField = document.getElementById("systeminstruction");
+    systemInstructionField.value = updatedSysInt;
+    systemInstructionField.dispatchEvent(new Event('input', { bubbles: true }));
+
+    document.getElementById('paramsSaved').value = "True";      
+
+}
+//
+// This function adds a character to the story based on the character selected in the add character dropdown also adds the notes provided, then clears the form fields.
+//
+export async function addStoryChar(story_id) {
+    const charId = document.getElementById("charSelect").value;
+    if (!charId) {
+        return
+    }
+    const charNotes = document.getElementById("charNotes").value;
     let response;
     try {
-        response = await getSysInt(id);
+        response= await addStoryCharacter(story_id, charId, charNotes);
+    }
+    catch (err) {
+        handleAjaxError({err, context: "Add Story Character"});
+    }
+    finally{
         if (response && response.success) {
-            const sysInt = response.instruction;
-            const updatedSysInt = buildSysIntOptions(sysInt);
-            const systemInstructionField = document.getElementById("systeminstruction");
-            systemInstructionField.value = updatedSysInt;
-            systemInstructionField.dispatchEvent(new Event('input', { bubbles: true }));
+            // Clear form fields
+            document.getElementById('charSelect').value = ""; 
+            document.getElementById('charNotes').value = ""; 
+            
+            const id = response.id;
+            const name = response.storyChar.name;
+            const description = response.storyChar.description;
+            const charNotes = response.storyChar.note;
+            addStoryCharsRow(id, name, description, charNotes);   
         }
-    } catch (err) {
-        handleAjaxError({err, context: "Get System Instruction"});
-
-
-    };
+    }
 }
+
+export async function openEditModal(id) {
+    const modalElement = document.getElementById('editCharModal');
+    let modal = bootstrap.Modal.getInstance(modalElement);
+
+    if (!modal) {
+        modal = new bootstrap.Modal(modalElement);
+    }
+
+    let response;
+    try{
+            response= await getStoryCharacter(id);
+
+        if (response && response.success) {
+            const saveButton = document.getElementById('saveCharBtn')
+            saveButton.setAttribute('data-id', id);
+            document.getElementById('editTitle').textContent = `Edit Notes for Character: ${response.storyChar.name} ${response.storyChar.description}`;
+            document.getElementById('editCharNotes').value = response.storyChar.note;
+            modal.show();
+        }
+
+    } catch (err) {
+        handleAjaxError({err, context: "Get Story Character"});
+    }  
+}   
+
+export async function updateCharNotes(id) {
+    const newNotes = document.getElementById('editCharNotes').value;
+    let response;
+    try{
+        response= await updateStoryCharacter(id, newNotes);
+    } catch (err) {
+        handleAjaxError({err, context: "Update Story Character"});
+    } finally {
+        if (response && response.success) {
+            const table = document.getElementById("storyCharsTable");
+            const row = table.querySelector('tr[data-id="' + id + '"]');
+            row.cells[3].textContent = newNotes;
+  
+            const modalElement = document.getElementById('editCharModal');
+            let modal = bootstrap.Modal.getInstance(modalElement);
+            modal.hide();
+        }
+    }
+}
+
+export async function deleteStoryChar(id) {
+    const modal = document.getElementById('editCharModal');
+    console.log("Attempting to delete story char with id:", id);
+
+    let response;
+    try{
+        response= await deleteStoryCharacter(id)
+
+        if (response && response.success) {
+            const table = document.getElementById("storyCharsTable");
+            var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
+            table.deleteRow(i);
+        }
+
+    } catch (err) {
+        handleAjaxError({err, context: "Get Story Character"});
+    }  
+}   
+function addStoryCharsRow(id, name, description, notes) {
+    const table = document.getElementById('storyCharsTable');
+    const tbody = table.querySelector('tbody');
+    const row = document.createElement('tr');
+    row.setAttribute('data-id', id);
+    const html = buildRow(id, name, description, notes);
+    row.innerHTML = html;
+    tbody.appendChild(row);
+}
+
+function buildRow(id, name, description, notes) {
+
+    const html = `
+        <td class="d-none" id="${id}>"</td>
+        <td>${name}</td>
+        <td style="max-width: 400px;">${description}</td>
+        <td>${notes}</td>
+        <td class="button_col">
+            <form method="post">
+                <button type="submit" name="action" value="${id}"                    
+                    class="btn btn-secondary update-button" data-id="${id}">
+                    <i class="bi bi-pen-fill"></i>
+                </button>
+            </form>
+        </td>
+        <td class="button_col">
+            <button class="btn btn-danger delete-button" type="button" data-id="${id}">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </td>
+    </tr>   `;
+    return html;
+
+}   

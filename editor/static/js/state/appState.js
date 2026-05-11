@@ -1,5 +1,6 @@
 let state = {
         story_id: null,
+        chapter_id : null,
         formMode: "New",
         editRow: -1,
         chars: []
@@ -11,6 +12,10 @@ export function getState() {
 
 export function setStory(story_id) {
     state.story_id = story_id ;
+}  
+
+export function setChapter(chapter_id) {
+    state.chapter_id = chapter_id ;
 }  
 
 export function setFormMode(mode) {

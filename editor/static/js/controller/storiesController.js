@@ -1,4 +1,4 @@
-import { updateStory, postStory, deleteStoryPosts, getChar } from '../api/storiesAPI.js';
+import { updateStory, updateChapter, postStory, deleteStoryPosts, getChar } from '../api/storiesAPI.js';
 import * as UI from '../ui/storiesUI.js';
 import * as build from '../ui/storiesBuildTable.js';
 import * as appState from '../state/appState.js';
@@ -27,9 +27,13 @@ document.addEventListener("DOMContentLoaded", function () {
 export function initPage() {
   //setFormMode("New", -1);
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const story_id = urlParams.get('story_id');
+    // Get the parent row details
+  const formData=document.getElementById("form-data")
+  const story_id=formData.dataset.storyId;
+  const chapter_id=formData.dataset.chapterId;
+
   appState.setStory(story_id);
+  appState.setChapter(chapter_id);
 
   initStories();
 }
@@ -42,10 +46,8 @@ export async function handleInput(event) {
   //No loading state for now, but we can add one if we want to
   let response;
   try {
+    
     response = await updateStory(appState.getState().story_id, event.target.id, event.target.value);
-
-    // No need to update the UI with the new value, since it's already there. But we can check if the update 
-    // was successful and show an error if it wasn't
 
   } catch (err) {
     handleAjaxError(err, "Update Story");
@@ -57,12 +59,28 @@ export async function handleInput(event) {
     console.log("Story updated successfully");
   }
 
-  // No end loading state to clear, but we could do that here if we had one
+}
+
+export async function updateChapterField(event) {
+
+  let response;
+  try {
+    response = await updateChapter(appState.getState().story_id, appState.getState().chapter_id, event.target.id, event.target.value);
+
+  } catch (err) {
+    handleAjaxError(err, "Update Chapter");
+    return
+
+  }
+  if (response && response.success) {
+    console.log("Story updated successfully");
+  }
 }
 
 export async function cancelUpdate() {
   let response;
   try {
+
     response = await updateStory(appState.getState().story_id, "newprompt", "");
   } catch (err) {
     handleAjaxError({err, context: "Cancel Update"});
@@ -87,12 +105,20 @@ export async function post() {
 
   let response;
   try {
-    response = await postStory(appState.getState().story_id, prompt, appState.getState().formMode, appState.getState().editRow, appState.getState().chars);
+
+    response = await postStory(
+      appState.getState().story_id,
+      appState.getState().chapter_id, 
+      prompt, 
+      appState.getState().formMode, 
+      appState.getState().editRow, 
+      appState.getState().chars);
+
     if (response && response.success) {
-      // Currently:
+      // Process:
       // 1. Takes the buttons off the last row (if there is one)
       // 2. Appends the new post to the end of the table
-      // 3. Blanks out newprompt (Done)
+      // 3. Blanks out newprompt 
       // 4. Shows the message from the server in a flash message
       console.log(response);
       build.buildClearLastRowButtons(tbody);
@@ -133,7 +159,14 @@ export async function updateRow(btn, mode) {
   const prompt = document.getElementById("editBox").value;
   let response;
   try {
-    response = await postStory(appState.getState().story_id, prompt, appState.getState().formMode, appState.getState().editRow, appState.getState().chars);
+    response = await postStory(
+        appState.getState().story_id,
+        appState.getState().chapter_id, 
+        prompt, 
+        appState.getState().formMode, 
+        appState.getState().editRow, 
+        appState.getState().chars);
+
     if (response && response.success) {
     // Remove subsequent rows
       if (mode == "Edit Prompt") {
@@ -172,9 +205,14 @@ export async function updateRow(btn, mode) {
 // delete edited row and subsequent rows 
 
 export async function deleteRow() {
+
   let response;
   try {
-    response = await deleteStoryPosts(appState.getState().editRow, appState.getState().story_id);
+    response = await deleteStoryPosts(
+      appState.getState().editRow, 
+      appState.getState().story_id,
+      appState.getState().chapter_id);
+
   } catch (err) {
     handleAjaxError({err, context: "Delete Posts"});
     return
@@ -258,4 +296,3 @@ function setFormMode(mode, id) {
   UI.setMode(mode);
 
 };
-

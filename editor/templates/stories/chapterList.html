@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<div class="d-flex justify-content-between align-items-center py-3 px-4 border-bottom">
+  <div class="flex-grow-1 text-center">
+    <h2 class="m-0">Chapters for Story {{story.title}}</h2>
+  </div>
+  <div class="ms-auto">
+    <a href="/create/{{story.story_id}}" class="btn btn-primary">Story</a>
+    <a href="/story/{{story.story_id}}/chapter/create" class="btn btn-primary">Add</a>
+  </div>
+</div>
+
+{% endblock header %}
+
+{% block content %}
+<div id="form-data" data-story-id="{{story.story_id}}", data-story-title="{{story.title}}"></div>
+{{ macros.table(
+  'chaptersTable',
+  chapters,
+  [
+    ('No.', 'position'),
+    ('Title', 'title'),
+    ('Introduction', 'introduction'),
+    ('Created', 'created'),
+    ('Status', 'status'),
+    ],
+  id_field='chapter_id',
+  print=True,
+  generate=True
+) }}
+
+<div id="flash-container" style="margin-top: 20px;"></div>
+
+{{ macros.modal_box('confirmModal', 'Confirm Delete Chapter') }}
+
+{{ macros.modalConfirm('Notify', 'Notification') }}
+
+{% endblock content %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pages/chapterList.js') }}"></script>
+{% endblock scripts %}

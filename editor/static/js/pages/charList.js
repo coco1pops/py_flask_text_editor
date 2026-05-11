@@ -17,9 +17,12 @@
     ).done(function (response) {
       console.log(response);
  
-      const table = document.getElementById("charTable");
-      var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
-      table.deleteRow(i);
+      if (response.success) {
+        const table = document.getElementById("charTable");
+        var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
+        table.deleteRow(i);
+      }
+      
       if (response.messages) {
         response.messages.forEach(([category, message]) => {
           showFlashMessage(category, message);

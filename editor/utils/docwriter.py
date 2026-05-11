@@ -6,8 +6,14 @@ import logging
 import markdown
 from bs4 import BeautifulSoup
 from io import BytesIO
+
 from editor.models.posts import UnifiedPostTimelineService
 from editor.models.stories import StoryService
+from editor.models.storyChars import StoryCharsService, StoryWithCharactersService
+from editor.models.chapters import ChapterService, ChapterCharService
+from editor.models.chars import CharService
+from editor.utils.formatCharacter import buildChar
+
 from flask_login import current_user
 
 def markdown_to_docx_paragraph(doc: Document, input_text: str):
@@ -41,23 +47,59 @@ def insert_image(doc: Document, image_b64: str, mime_type: str) -> None:
     except Exception as e:
         doc.add_paragraph(f"[Image failed to render: {e}]")
 
-def generate_doc_from_posts(story_id) -> BytesIO:
-    posts=UnifiedPostTimelineService.get_all_posts_raw(story_id)
+def generate_doc_from_posts(story_id, chapter_id=None) -> BytesIO:
+    if chapter_id:
+        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id)
+    else:
+        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id)
     logging.debug("Entering print generation")
     doc = Document()
     story = StoryService.get_story(story_id)
-    doc.add_heading(f"Title {story.title}", level=0)
-    doc.add_heading(f"Author {current_user.user_name}", level=2)
+
+    if chapter_id:
+        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id)
+        chapter = ChapterService.get_chapter(chapter_id)
+        doc.add_heading(f"Book: {story.title}", level=0)
+        print_chapter_intro(doc, story, chapter)
+        print_posts(doc, posts)
+        print_chapter_summary(doc, chapter)
+
+    elif story.book:
+        chapters=ChapterService.get_chapters(story_id)
+        doc.add_heading(f"Title {story.title}", level=0)
+        doc.add_heading(f"Author {current_user.user_name}", level=2)
+        print_story_chars(doc, story)
+        for chapter in chapters:
+            posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter.chapter_id)
+            print_chapter_intro(doc, story, chapter)
+            print_posts(doc, posts)
+            print_chapter_summary(doc, chapter)
+    else:
+        doc.add_heading(f"Title {story.title}", level=0)
+        doc.add_heading(f"Author {current_user.user_name}", level=2)
+        print_story_chars(doc, story)
+
+        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id)
+        print_posts(doc, posts)
+
     if story.note != "":
+        doc.add_heading("Story Notes:", level=2)
         markdown_to_docx_paragraph(doc, story.note)
 
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def print_posts(doc, posts):
+    # Print posts will work for both stories and chapters
     ix=1
     char_print=False
-
     for post in posts:
-
+        logging.debug(f"Printing post {ix}")
         if post.source=="post" and post.creator != "user":
-            title = f"Chapter {ix}"
+            title = f"Post {ix}"
             ix +=1 
             if char_print:
                 doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
@@ -76,7 +118,63 @@ def generate_doc_from_posts(story_id) -> BytesIO:
         if post.part_image_mime_type != "" and post.part_image_mime_type != None :  # presence implies image exists
             insert_image(doc, post.part_image_data, post.part_image_mime_type)
 
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
+    return
+
+def print_chapter_intro(doc, story, chapter):
+
+    doc.add_heading(f"Chapter {chapter.position}: {chapter.title}", level=1)
+    doc.add_heading(f"Author {current_user.user_name}", level=2)
+    
+    doc.add_heading("Introduction", level=2)
+    markdown_to_docx_paragraph(doc, chapter.introduction)
+    
+    firstTime=True
+    chapter_chars=ChapterCharService.get_chapter_chars(story.story_id, chapter.chapter_id)
+    for chapter_char in chapter_chars:
+        if firstTime:
+            doc.add_heading("Characters", level=2)
+            firstTime=False
+        char=CharService.get_character(chapter_char.char_id)
+        if chapter_char.override:
+            note=chapter_char.note
+        else:
+            base_note=StoryCharsService.get_story_chars_base(story.story_id,chapter_char.char_id)
+            note=base_note.note
+
+        if story.book:
+            char_title=f"**Character:** {char.name}"
+            markdown_to_docx_paragraph(doc, char_title)
+            if chapter_char.override:
+                note=chapter_char.note
+            else:
+                base_note=StoryCharsService.get_story_chars_base(story.story_id,chapter_char.char_id)
+                note=base_note.note
+            
+            char_title=f"**Note:** {note}"
+            markdown_to_docx_paragraph(doc, char_title)
+
+        else:
+            characterBundle=buildChar(char.name, char.description, char.personality, char.motivation, char.image_mime_type, note=note)
+            markdown_to_docx_paragraph(doc, characterBundle)
+            if char.image_mime_type != "":
+                insert_image(doc, char.image_data, char.image_mime_type)
+    return
+
+def print_chapter_summary(doc, chapter):
+    doc.add_heading("Chapter Status", level=2)
+    doc.add_paragraph(f"{chapter.status}")
+    if chapter.status != "in_progress":
+        doc.add_heading("Summary", level=2)
+        markdown_to_docx_paragraph(doc, chapter.summary)
+
+def print_story_chars(doc, story):
+    story_chars = StoryWithCharactersService.get_story_with_characters(story.story_id)
+    firstTime=True
+    for story_char in story_chars:
+        if firstTime:
+            doc.add_heading(f"Characters", level=2)
+            firstTime=False
+        characterBundle=buildChar(story_char.name, story_char.description, story_char.personality, story_char.motivation, story_char.image_mime_type, note=story_char.note)
+        markdown_to_docx_paragraph(doc, characterBundle)
+        if story_char.image_mime_type != "":
+            insert_image(doc, story_char.image_data, story_char.image_mime_type)  

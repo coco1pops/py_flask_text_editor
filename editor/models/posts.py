@@ -12,10 +12,16 @@ class Post(db.Model):
 
     post_id = db.Column(db.Integer, primary_key=True)
     story_id = db.Column(db.Integer, db.ForeignKey('stories.story_id'), nullable=False)
+    chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.chapter_id'), nullable=True)
     message = db.Column(db.Text, nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     creator = db.Column(db.String(255), nullable=False)
     multi_modal = db.Column(db.Boolean, default=False)
+    post_parts = db.relationship(
+        'PostPart',
+        backref='post',
+        cascade='all, delete-orphan'
+    )
 
 class UnifiedPostTimeline(db.Model):
     __tablename__ = "unified_post_timeline"
@@ -23,6 +29,7 @@ class UnifiedPostTimeline(db.Model):
     post_id = db.Column(db.Integer, primary_key=True)
     part_id= db.Column(db.Integer, primary_key=True)
     story_id = db.Column(db.Integer, nullable=False)
+    chapter_id =db.Column(db.Integer, nullable=True)
     content = db.Column(db.Text, nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     creator = db.Column(db.String(255), nullable=False)
@@ -39,11 +46,13 @@ class PostPart(db.Model):
     part_id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('posts.post_id'), nullable=False)
     story_id = db.Column(db.Integer, nullable=False)
+    chapter_id = db.Column(db.Integer, nullable=True)
     part_type = db.Column(db.String(50), nullable=False)  # 'text' or 'image'
     part_text = db.Column(db.Text)  # For text parts
     part_image_data = db.Column(db.LargeBinary)  # For image parts
     part_image_mime_type = db.Column(db.String(255))  # MIME type for image parts
     created = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class UnifiedPostTimelineService:
     @classmethod
@@ -61,16 +70,22 @@ class UnifiedPostTimelineService:
             print_except("get_post", e)
     
     @staticmethod
-    def get_all_posts_raw(story_id):
+    def get_all_posts_raw(story_id, chapter_id=None):
         try:
-            return UnifiedPostTimeline.query.filter_by(story_id=story_id).all()
+            if chapter_id:
+                return UnifiedPostTimeline.query.filter_by(story_id=story_id, chapter_id=chapter_id).all()
+            else:
+                return UnifiedPostTimeline.query.filter_by(story_id=story_id).all()
         except Exception as e:
             print_except("get_timeline", e)
 
     @classmethod
-    def get_all_posts(cls, story_id):
+    def get_all_posts(cls, story_id, chapter_id=None):
         try:
-            posts = cls.get_all_posts_raw(story_id)
+            if chapter_id:
+                posts = cls.get_all_posts_raw(story_id, chapter_id=chapter_id)
+            else:
+                posts = cls.get_all_posts_raw(story_id)
             format_posts = cls.parse_timeline(posts)
 
             return format_posts
@@ -130,6 +145,13 @@ class PostService:
         except Exception as e:
             print_except("get_message", e)
 
+    @staticmethod
+    def get_chapter_posts(story_id,chapter_id):
+        try:
+            return Post.query.filter_by(story_id=story_id, chapter_id=chapter_id).all()
+        except Exception as e:
+            print_except("get_chapter_posts", e)
+
     @classmethod
     def update_message(cls,post_id, value):
         try:
@@ -145,17 +167,30 @@ class PostService:
             print_except("update_message",e)
 
     @staticmethod
-    def delete_posts_from(story_id, post_id):
+    def delete_posts_from(story_id, post_id, chapter_id=None):
         try:
-            db.session.query(PostPart).filter(
-                PostPart.story_id == story_id,
-                PostPart.post_id >= post_id
-                ).delete(synchronize_session=False)
+            if chapter_id:
+                db.session.query(PostPart).filter(
+                    PostPart.story_id == story_id,
+                    PostPart.chapter_id == chapter_id,
+                    PostPart.post_id >= post_id
+                    ).delete(synchronize_session=False)
 
-            db.session.query(Post).filter(
-                Post.story_id == story_id,
-                Post.post_id >= post_id
-            ).delete(synchronize_session=False)
+                db.session.query(Post).filter(
+                    Post.story_id == story_id,
+                    Post.chapter_id == chapter_id,
+                    Post.post_id >= post_id
+                ).delete(synchronize_session=False)
+            else:
+                db.session.query(PostPart).filter(
+                    PostPart.story_id == story_id,
+                    PostPart.post_id >= post_id
+                    ).delete(synchronize_session=False)
+
+                db.session.query(Post).filter(
+                    Post.story_id == story_id,
+                    Post.post_id >= post_id
+                ).delete(synchronize_session=False)
 
             StoryService.touch_story(story_id)
             db.session.commit()
@@ -165,10 +200,11 @@ class PostService:
             print_except("delete_posts_from",e)
           
     @staticmethod
-    def insert_post(story_id, creator, prompt, multi):
+    def insert_post(story_id, creator, prompt, multi, chapter_id=None):
         try:            
             post = Post(
                 story_id=story_id,
+                chapter_id=chapter_id,
                 creator=creator,
                 message=prompt,
                 multi_modal=multi
@@ -184,11 +220,12 @@ class PostService:
 
 class PostPartService:
     @staticmethod
-    def insert_post_text_part(story_id, post_id, part_text):
+    def insert_post_text_part(story_id, post_id, part_text, chapter_id=None):
         try:
             post_part = PostPart(
                 post_id=post_id,
                 story_id=story_id,
+                chapter_id=chapter_id,
                 part_type="text",
                 part_text=part_text
             )
@@ -201,11 +238,12 @@ class PostPartService:
             print_except("insert_post_part", e)
 
     @staticmethod
-    def insert_post_image_part(story_id, post_id, image_data, image_mime_type):
+    def insert_post_image_part(story_id, post_id, image_data, image_mime_type, chapter_id=None):
         try:
             post_part = PostPart(
                 post_id=post_id,
                 story_id=story_id,
+                chapter_id=chapter_id,
                 part_type="image",
                 part_image_data=image_data,
                 part_image_mime_type=image_mime_type

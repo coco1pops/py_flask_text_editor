@@ -181,11 +181,19 @@ class ChatService:
             return []
         return self.chat_session.history
 
-    def reset_chat(self, story):
+    def reset_chat(self, story, override=None):
         """
         Clears the current chat session and starts a new one.
         """
         logging.debug("Resetting chat session...")
+
+        if override:
+            instruction=override
+        else:
+            instruction=story.systeminstruction
+
+        if instruction == "" or instruction == None:
+            instruction="None"
 
         self.safety_settings =  [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": story.harassment_threshold},
@@ -201,7 +209,7 @@ class ChatService:
         self.chat_model = genai.GenerativeModel(
                 model_name=story.model,
                 generation_config=self.generation_config,
-                system_instruction=story.systeminstruction  ,
+                system_instruction=instruction,
                 safety_settings=self.safety_settings
                 )
         self.chat_session = self.chat_model.start_chat(history=[])
@@ -211,10 +219,12 @@ class ChatService:
         """
         Adds a record to the chat history   
         """
-        content=[]
-        content.append(message)
-        logging.debug("Adding message to history")
+        if isinstance(message, list):
+            parts = message
+        else:
+            parts = [{"text": message}]
+  
         try:
-            self.chat_session.history.append ({'role': creator, 'parts' : content})
+            self.chat_session.history.append ({'role': creator, 'parts' : parts})
         except Exception as e:
             logging.error (f"Failed to append to chat history {e}")

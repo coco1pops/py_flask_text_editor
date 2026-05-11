@@ -18,6 +18,8 @@ from editor.utils.decorators import admin_required
 from editor.models.chars import CharService
 from editor.models.users import UserService
 from editor.models.sysints import SysIntService
+from editor.models.storyChars import StoryCharsService
+from editor.utils.processImage import process_image
 
 import os
 import logging
@@ -48,8 +50,7 @@ def createchar(char_id=None):
         motivation = request.form["motivation"] or ""
         image_file = request.files.get("image")
         if image_file:
-            image_bytes = image_file.read()
-            mimeType = image_file.mimetype
+            image_bytes, mimeType = process_image(image_file)
 
         if char_id == None:
             logging.debug("Inserting new character")
@@ -98,10 +99,18 @@ def getchar():
 def delchar():
     char_id = int(request.values.get("char_id"))
     logging.debug(f"Deleting character {char_id}")
-    CharService.delete_character(char_id)
-    flash("Character deleted", "success")
+    
+    if StoryCharsService.get_story_chars_for_char(char_id):
+        flash("Cannot delete - character linked to story", "error")
+        success=False
+        
+    else:
+        CharService.delete_character(char_id)
+        flash("Character deleted", "success")
+        success=True
+
     messages = get_flashed_messages(with_categories=True)
-    return jsonify({"messages": messages})
+    return jsonify({"success" : success, "messages": messages}), 200
 
 
 @bp.route("/chars", methods=["GET", "POST"])

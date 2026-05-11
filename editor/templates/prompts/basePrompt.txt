@@ -1,0 +1,47 @@
+{% set canon_text -%}
+[Story Canon]
+The following are rules that apply to the whole story:
+{{ story.world_rules }}
+{% if characters -%}
+[Canon Characters]
+[The following are characters that appear in the story]
+{%- endif %}
+{%- endset %}
+[
+  {
+    "type": "text",
+    "text": {{ canon_text | tojson }}
+  }
+  {% for char in characters -%}
+  {%- set char_text -%}
+Character: {{ char.name }}
+{% if char.personality %}Personality: {{ char.personality }}{% endif %}
+{% if char.motivation %}Motivation: {{ char.motivation }}{% endif %}
+{% if char.note %}Story Traits: {{ char.note }}{% endif -%}
+{%- if char.image_mime_type %}
+Visual description: Use the next attached image for physical appearance of {{char.name}}.
+{% endif -%}
+  {%- endset -%}
+,{
+    "type": "text",
+    "text": {{ char_text | trim | tojson }}
+  }
+  {%- if char.image_mime_type -%}
+,{
+    "type": "image",
+    "mime_type": "{{ char.image_mime_type }}",
+    "data": "{{ char.image_data }}"
+  }
+  {%- endif -%}
+  {%- endfor -%}
+  {%- set instruction_text -%}
+  All character and world information provided above must be treated as the source of truth.
+  Maintain consistency in tone and character behaviour.
+  [Prompt]
+  {{prompt}}
+  {%- endset -%}
+,{
+  "type": "text",
+  "text": {{ instruction_text | tojson }}
+}
+]
