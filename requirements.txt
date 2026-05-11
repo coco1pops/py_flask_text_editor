@@ -13,3 +13,4 @@ docopt
 python-docx
 beautifulsoup4
 flask_login==0.6.3
+pillow==11.2.1
