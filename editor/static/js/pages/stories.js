@@ -28,7 +28,7 @@ function bindEvents() {
         
     // Add an event listener to every story field
     document.addEventListener('change', event => {
-        if (event.target.classList.contains('story-record')) {
+        if (event.target.classList.contains('story-record') || event.target.classList.contains('story-select')) {
             handleInput(event);
         }
         else if (event.target.classList.contains('chapter-record')) {
