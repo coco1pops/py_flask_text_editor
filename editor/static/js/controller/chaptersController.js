@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
     addEventHandlers();
 });
 
-async function involvedHandler(chk){
+export async function involvedHandler(chk){
     // Get the parent row details
     const formData=document.getElementById("form-data")
     const story_id=formData.dataset.storyId;
@@ -58,7 +58,7 @@ async function involvedHandler(chk){
     }
 }
 
-async function overrideHandler(chk){
+export async function overrideHandler(chk){
 
     const row = chk.closest("tr");
     const id = row.dataset.chapterCharId;
@@ -87,7 +87,7 @@ async function overrideHandler(chk){
     }   
 }
 
-async function noteHandler(txt){
+export async function noteHandler(txt){
     const note=txt.value
     const row = txt.closest("tr");
     const id = row.dataset.chapterCharId;
@@ -101,7 +101,7 @@ async function noteHandler(txt){
     }
 }
 
-async function summaryHandler(newStatus){
+export async function summaryHandler(newStatus){
 
     const formData=document.getElementById("form-data")
     const story_id=formData.dataset.storyId;
@@ -128,7 +128,7 @@ async function summaryHandler(newStatus){
     }
 } 
 
-function completeHandler(){
+export function completeHandler(){
     const title=document.getElementById("title").value;
     const options={'mode': 'complete', 'title': title};
     showBootstrapConfirm((confirmed) => {
@@ -142,7 +142,7 @@ function completeHandler(){
     );
 };
 
-async function updateSummaryHandler() {
+export async function updateSummaryHandler() {
     const formData=document.getElementById("form-data")
     const story_id=formData.dataset.storyId;
     const chapter_id=formData.dataset.chapterId;

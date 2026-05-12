@@ -252,7 +252,7 @@ def summarise_chapter():
     story_id = int(request.values.get("story_id"))
     chapter_id = int(request.values.get("chapter_id"))
     status=request.values.get("status")
-    ChapterService.update_chapter(chapter.chapter_id, "status", status)
+    ChapterService.update_chapter(chapter_id, "status", status)
 
     story = StoryService.get_story(story_id)
     chapter= ChapterService.get_chapter(chapter_id)

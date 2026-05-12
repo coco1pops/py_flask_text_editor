@@ -135,11 +135,11 @@
               </div>
 
               <div id="summarise-button">
-                  <button name="action" value="Summarise" id="summarise" class="btn btn-primary">Summarise</button>
+                  <button type="button" name="action" value="Summarise" id="summarise" class="btn btn-primary">Summarise</button>
               </div>
 
               <div id="complete-button">
-                  <button name="action" value="Complete" id="complete" class="btn btn-primary">Complete</button>
+                  <button type="button" name="action" value="Complete" id="complete" class="btn btn-primary">Complete</button>
               </div>
 
               <div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none;">
@@ -163,6 +163,6 @@
 {% endblock content %} 
 
 {% block scripts %}
-<script type="module" defer src="{{url_for('static',filename='js/pages/chapterAdd.js')}}"></script>
+<script type="module" defer src="{{url_for('static',filename='js/controller/chaptersController.js')}}"></script>
 
 {% endblock scripts %}

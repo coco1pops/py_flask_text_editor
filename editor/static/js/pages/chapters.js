@@ -2,7 +2,7 @@ import { involvedHandler, overrideHandler, noteHandler, summaryHandler, complete
 import * as UI from "../ui/chaptersUI.js";
 import { gotoTop, gotoBottom } from "../ui/storiesUI.js";
 
-export function addElementHandlers() {
+export function addEventHandlers() {
     document.addEventListener('change', (event) => {
         const target=event.target;
         if (target.classList.contains('involved')) {
