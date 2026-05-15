@@ -3,12 +3,20 @@ import logging
 from flask import (
     Blueprint,
     request,
-    jsonify
+    jsonify,
+    url_for,
+    redirect
 )
+from flask_login import current_user
 
 from editor.models.storyChars import StoryCharsService, StoryWithCharactersService
 
 bp = Blueprint("storyCharacters", __name__)
+@bp.before_request
+def require_login():
+    if not current_user.is_authenticated:
+        logging.debug("Not authenticated")
+        return redirect(url_for("login.login"))  # Redirect to your login route
 
 @bp.route("/addStoryCharacter", methods=["POST"])
 def add_story_character():
@@ -49,11 +57,13 @@ def update_story_character():
 @bp.route("/deleteStoryCharacter", methods=["POST"])
 def delete_story_character():
     story_char_id = int(request.values["id"])
+    story_char=StoryWithCharactersService.get_story_with_character(story_char_id)
+    char_id=story_char.char_id
 
     logging.debug(f"Deleting story char {story_char_id}")
     if story_char_id:
         StoryCharsService.delete_story_char(story_char_id)
-        return jsonify({"success": True}), 200
+        return jsonify({"success": True, "char_id": char_id}), 200
 
     return jsonify({"error": "Missing story character id"}), 406
 

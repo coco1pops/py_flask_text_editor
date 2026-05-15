@@ -1,6 +1,7 @@
 {% import '_components.html' as macros %}
+{% import '_charDropdownItem.html' as charDropdownItem %}
 
-<!-- Modal Add Character -->
+<!-- Modal Add Character 
 {% macro charPicker(chars) %}
 <div class="modal fade" id="assignCharModal" tabindex="-1" aria-labelledby="assignCharLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -30,7 +31,7 @@
         </div>
     </div>
 </div>
-{% endmacro %}
+{% endmacro %} -->
 
 {% macro charsPicker(story, chars, mode="Add") %}
 <div class="modal fade" id="charPicker" tabindex="-1" aria-labelledby="charPickerLabel" aria-hidden="true">
@@ -44,17 +45,12 @@
 
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="charSelect" class="form-label">Choose Character</label>
-                        <select class="form-select mb-3" id="charSelect" name="char_id" required {% if mode == "Edit" %}disabled{% endif %}>
-                            <option value="" selected disabled>-- Select an option --</option>
-                            {% for char in chars %}
-                            <option value="{{ char.char_id }}">
-                                {{ char.name }} {{ char.description }}
-                            </option>
-                            {% endfor %}
-                        </select>
+
+                        {{char_dropdown(chars, selected_id=char.char_id if mode == "Edit" else '', input_name='charSelect', button_text='-- Select a character --')}}
                         
-                        {{macros.textarea(name='charNotes', label='Story Notes', value= "" if mode =="Add" else char.note)}}
+                        {% if mode != "Pick" %}                     
+                            {{macros.textarea(name='charNotes', label='Story Notes', value= "" if mode =="Add" else char.note)}}
+                        {% endif %}
 
                     <div class="modal-footer">
                         <button id = "addChar" type="button" class="btn btn-primary" data-id="{{ story.story_id }}">Apply</button>
@@ -111,5 +107,77 @@
             </div>
         </div>
     </div>  
+</div>
+{% endmacro %}
+
+{% macro char_dropdown(
+    chars,
+    selected_id='',
+    dropdown_id='charDropdown',
+    input_name='char_id',
+    button_text='-- Select a character --'
+) %}
+
+<div class="dropdown mb-3">
+
+    <input type="hidden"
+           name="{{ input_name }}"
+           id="{{ input_name }}"
+           value="{{ selected_id }}">
+
+    <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+            type="button"
+            id="{{ dropdown_id }}"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+
+        {{ button_text }}
+
+    </button>
+
+    <ul class="dropdown-menu w-100"
+        id="ul-{{dropdown_id}}"
+        aria-labelledby="{{ dropdown_id }}"
+        style="max-height: 300px; overflow-y: auto;">
+
+        {% for char in chars %}
+            {{ charDropdownItem.char_dropdown_item(char, input_name, dropdown_id) }}
+        {% endfor %}
+
+    </ul>
+
+</div>
+
+{% endmacro %}
+
+{% macro editCharModal() %}
+<!-- Edit Character Modal. Not defined as macro as rendered client-side -->
+<div class="modal fade" id="editCharModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTitle">Edit Character Notes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="editCharId"></input>
+
+        <div class="mb-3" id="editCharDescription" class="border rounded p-2" style="background-color: #f8f9fa;"></div>
+
+        <div class="mb-3">
+          <label for="editCharNotes" class="form-label">Notes</label>
+          <textarea class="form-control" id="editCharNotes" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" id="saveCharBtn">Save</button>
+      </div>
+
+    </div>
+  </div>
 </div>
 {% endmacro %}

@@ -144,7 +144,9 @@ export function buildAddChar(id, mime_type, img, text) {
     let target = document.getElementById("placeholder");
     target.innerHTML += outHTML;
 
-    const modal = bootstrap.Modal.getInstance(document.getElementById('assignCharModal'));
+    document.getElementById("charSelect").value="";
+    document.getElementById("charDropdown").innerText="-- Select a character --";
+    const modal = bootstrap.Modal.getInstance(document.getElementById('charPicker'));
     modal.hide();
 };
 

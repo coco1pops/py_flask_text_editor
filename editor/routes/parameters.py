@@ -137,6 +137,22 @@ def checkimage():
 
     return jsonify({"status": "success", "message": "File valid"})
 
+@bp.route("/build_char_list_item", methods=["POST"])
+@login_required
+def build_char_list_item():
+    char_id = int(request.values["char_id"])
+    input_name = request.values.get("input_name")
+    dropdown_id = request.values.get("dropdown_id")
+
+    logging.debug(f"Building char list for character {char_id}, input name {input_name} and dropdown {dropdown_id}")
+    if char_id:
+        char = CharService.get_character(char_id)
+        list_item = render_template("parameters/charDropdownItemStub.html", char=char, input_name=input_name, dropdown_id=dropdown_id)
+        logging.debug(f"Built list item {list_item}")
+        return jsonify({"success": True, "listItem": list_item}), 200
+
+    return jsonify({"error": "Missing character id"}), 406
+
 
 @bp.route("/createuser/<mode>/<user_id>", methods=["GET", "POST"])
 @bp.route("/createuser", methods=["GET", "POST"])

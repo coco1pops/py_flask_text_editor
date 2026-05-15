@@ -1,4 +1,6 @@
 from editor.models.database import db, print_except
+from editor.models.storyChars import StoryCharsService
+from editor.models.chapters import ChapterCharService
 
 from datetime import datetime
 from flask_login import current_user
@@ -65,7 +67,30 @@ class CharService:
             }
 
         except Exception as e:
-            print_except("get_character_formatted",e)    
+            print_except("get_character_formatted",e)   
+
+    @staticmethod
+    def get_characters_outside_story(story_id):
+        assigned_ids = StoryCharsService.get_assigned_char_subquery(story_id)
+        try:
+           available_chars = Char.query.filter(Char.user_id == current_user.id, ~Char.char_id.in_(assigned_ids)).all()
+           return available_chars
+        
+        except Exception as e:
+            print_except("get_characters_outside_story",e)
+            return False
+
+    @staticmethod
+    def get_characters_outside_chapter(story_id, chapter_id):
+        assigned_ids = ChapterCharService.get_assigned_char_subquery(story_id, chapter_id)
+        try:
+           available_chars = Char.query.filter(Char.user_id == current_user.id, ~Char.char_id.in_(assigned_ids)).all()
+           return available_chars
+        
+        except Exception as e:
+            print_except("get_characters_outside_chapter",e)
+            return False
+
 
     @staticmethod
     def insert_character(name, description, personality, motivation):

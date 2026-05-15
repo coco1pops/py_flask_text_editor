@@ -92,7 +92,7 @@
                 In editPost it removes the chat history from that post onwards and resubmits the chat-->
             <button id="cancel" class="btn btn-primary actions" disabled>Cancel</button>
             <!--Available in new and edit mode. In new mode it blanks out the prompt in edit it returns to new mode as well -->
-            <button type="button" class="btn btn-primary actions" data-bs-toggle="modal" data-bs-target="#assignCharModal">Add
+            <button type="button" class="btn btn-primary actions" data-bs-toggle="modal" data-bs-target="#charPicker">Add
                 Character</button>
         </div>
 
@@ -125,7 +125,7 @@
 {{ macros.modalConfirm('Notify', 'Notification') }}
 
 {% import '_charUtils.html' as charUtils %}
-{{ charUtils.charPicker(chars)}}
+{{ charUtils.charsPicker(story, chars, mode="Pick") }}
 
 {{ charUtils.charsList(storyChars) }}
 

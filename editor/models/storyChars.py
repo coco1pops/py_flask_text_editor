@@ -103,6 +103,13 @@ class StoryCharsService:
             db.session.rollback()
             print_except("update_story_char", e)
 
+    @staticmethod
+    def get_assigned_char_subquery(story_id):
+
+        return db.session.query(StoryChars.char_id)\
+            .filter_by(story_id=story_id)
+
+
 class StoryWithCharactersService:
     @staticmethod
     def get_story_with_characters(story_id):

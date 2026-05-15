@@ -73,7 +73,7 @@ function bindEvents() {
         gotoBottom();
     });
 
-    document.getElementById('assignCharForm').addEventListener('submit', function (e) {
+    document.getElementById('addChar').addEventListener('click', function (e) {
         e.preventDefault();
         clearFlashMessage();
         const id = document.getElementById("charSelect").value;

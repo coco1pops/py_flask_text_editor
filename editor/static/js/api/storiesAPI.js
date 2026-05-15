@@ -147,3 +147,13 @@ export function generateChapterSummary(story_id, chapter_id, status) {
     };
     return apiRequest(options);
 }
+
+export function getListItem(char_id, input_name, dropdown_id) {
+    const options = {
+            url: "/build_char_list_item",
+            type: "post",
+            data: { 'char_id': char_id, 'input_name': input_name, 'dropdown_id': dropdown_id },
+            dataType: "json"
+    };
+    return apiRequest(options);
+}

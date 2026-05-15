@@ -1,4 +1,4 @@
-import { getSysInt, addStoryCharacter, updateStoryCharacter, deleteStoryCharacter, getStoryCharacter } from "../api/storiesAPI.js";
+import { getSysInt, addStoryCharacter, updateStoryCharacter, deleteStoryCharacter, getStoryCharacter, getListItem } from "../api/storiesAPI.js";
 import { initStoriesAdd } from "../pages/storiesCreate.js";
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -130,12 +130,19 @@ export async function addStoryChar(story_id) {
         if (response && response.success) {
             // Clear form fields
             document.getElementById('charSelect').value = ""; 
+            document.getElementById('charDropdown').innerText = "-- Select a character --";
             document.getElementById('charNotes').value = ""; 
             
             const id = response.id;
             const name = response.storyChar.name;
             const description = response.storyChar.description;
             const charNotes = response.storyChar.note;
+            // Remove the character from the dropdown
+            const li_id=`pick-${charId}`;
+            const optionToRemove = document.getElementById(li_id);
+            if (optionToRemove) {
+                optionToRemove.remove();
+            }
             addStoryCharsRow(id, name, description, charNotes);   
         }
     }
@@ -156,7 +163,8 @@ export async function openEditModal(id) {
         if (response && response.success) {
             const saveButton = document.getElementById('saveCharBtn')
             saveButton.setAttribute('data-id', id);
-            document.getElementById('editTitle').textContent = `Edit Notes for Character: ${response.storyChar.name} ${response.storyChar.description}`;
+            document.getElementById('editTitle').textContent = `Edit Notes for Character: ${response.storyChar.name}`;
+            document.getElementById('editCharDescription').innerText = response.storyChar.description;
             document.getElementById('editCharNotes').value = response.storyChar.note;
             modal.show();
         }
@@ -193,16 +201,18 @@ export async function deleteStoryChar(id) {
     let response;
     try{
         response= await deleteStoryCharacter(id)
+    } catch (err) {
+        handleAjaxError({err, context: "Get Story Character"});
+    } finally {  
 
         if (response && response.success) {
             const table = document.getElementById("storyCharsTable");
             var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
             table.deleteRow(i);
+            addBackToDropdown(response.char_id);
         }
+    }
 
-    } catch (err) {
-        handleAjaxError({err, context: "Get Story Character"});
-    }  
 }   
 function addStoryCharsRow(id, name, description, notes) {
     const table = document.getElementById('storyCharsTable');
@@ -238,3 +248,18 @@ function buildRow(id, name, description, notes) {
     return html;
 
 }   
+async function addBackToDropdown(charId,  input_name="charSelect", dropdownId="charDropdown") {
+    let response;
+    try {
+        response = await getListItem(charId, input_name, dropdownId);
+
+    } catch (err) {
+        handleAjaxError({err, context: "Get Character for Dropdown"});
+    } finally {
+        if (response && response.success) {
+            dropdownId = `ul-${dropdownId}`;
+            const ul=document.getElementById(dropdownId);
+            ul.insertAdjacentHTML('beforeend', response.listItem);
+        }
+    }
+}

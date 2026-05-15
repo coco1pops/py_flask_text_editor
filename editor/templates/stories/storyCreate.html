@@ -87,40 +87,13 @@
 
 {% endif %}
 
-<!-- Edit Character Modal. Not defined as macro as rendered client-side -->
-<div class="modal fade" id="editCharModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      
-      <div class="modal-header">
-        <h5 class="modal-title" id="editTitle">Edit Character Notes</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <input type="hidden" id="editCharId">
-
-        <div class="mb-3">
-          <label for="editCharNotes" class="form-label">Notes</label>
-          <textarea class="form-control" id="editCharNotes" rows="4"></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary" id="saveCharBtn">Save</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 {{ macros.flashMessages() }}
 {% import '_studio.html' as studio %}
 {{ studio.studioModal(story, sysints, isadmin) }}
 
 {% import '_charUtils.html' as charUtils %}
 {{ charUtils.charsPicker(story, chars) }}
+{{ charUtils.editCharModal() }}
 
 {{ macros.modalConfirm('Notify', 'Notification') }}
 

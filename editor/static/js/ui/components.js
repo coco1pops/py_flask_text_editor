@@ -162,3 +162,10 @@ function showError(err) {
     const errorMessage=`${err.context}. An error occurred: ${err.statusCode} - ${err.message}`;
     showNotifyModal(errorMessage, "Error")
 };
+
+function selectDropdownValue(inputId, buttonId, value, text) {
+
+    document.getElementById(inputId).value = value;
+
+    document.getElementById(buttonId).innerText = text;
+}

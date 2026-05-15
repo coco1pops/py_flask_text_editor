@@ -1,0 +1,22 @@
+{% macro char_dropdown_item(char, input_name, dropdown_id) %}
+<li id="pick-{{char.char_id}}">
+    <button type="button"
+            class="dropdown-item text-wrap py-2"
+            onclick="selectDropdownValue(
+                '{{ input_name }}',
+                '{{ dropdown_id }}',
+                '{{ char.char_id }}',
+                '{{ char.name|escape }}'
+            )">
+
+        <div class="fw-bold">
+            {{ char.name }}
+        </div>
+
+        <div class="small text-muted">
+            {{ char.description }}
+        </div>
+
+    </button>
+</li>
+{% endmacro %}

@@ -119,7 +119,7 @@ def create(story_id=None):
             storyChars = StoryWithCharactersService.get_story_with_characters(story_id)
 
     sysints = SysIntService.get_sysints()
-    chars = CharService.get_characters()
+    chars = CharService.get_characters_outside_story(story_id)
     return render_template("stories/storyCreate.html", 
         story=story, 
         storyChars=storyChars, 
@@ -202,3 +202,5 @@ def print_story():
             logging.debug(f"Error {e}")
             return jsonify({"error": "Print generation failed"}), 406
     return jsonify({"error": "Missing story id"}), 406
+
+

@@ -9,7 +9,9 @@ from flask import (
     jsonify,
     flash,
     render_template,
-    get_flashed_messages
+    get_flashed_messages,
+    url_for,
+    redirect
 )
 from flask_login import current_user
 
@@ -22,6 +24,11 @@ from editor.models.chars import CharService
 from editor.utils.formatCharacter import buildChar
 
 bp = Blueprint("storyGenerate", __name__)
+@bp.before_request
+def require_login():
+    if not current_user.is_authenticated:
+        logging.debug("Not authenticated")
+        return redirect(url_for("login.login"))  # Redirect to your login route
 #
 # Used to display an individual story and the chat. Behind the scenes it also populates the chat with previous messages
 #
@@ -33,10 +40,10 @@ def generate_story():
     if story.book:
         chapter_id = int(request.values.get("chapter_id"))
         chapter = ChapterService.get_chapter(chapter_id)
+        chars = CharService.get_characters_outside_chapter(story_id, chapter_id)
     else:
         chapter=None
-
-    chars = CharService.get_characters()
+        chars = CharService.get_characters_outside_story(story_id)
 
     sCOutput=[]
     storyChars = StoryWithCharactersService.get_story_with_characters(story_id)

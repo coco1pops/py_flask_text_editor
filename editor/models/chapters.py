@@ -268,3 +268,9 @@ class ChapterCharService:
             db.session.commit()
         except Exception as e:
             print_except("delete_chapter_char", e)
+
+    @staticmethod
+    def get_assigned_char_subquery(story_id, chapter_id):
+
+        return db.session.query(ChapterChar.char_id)\
+            .filter_by(story_id=story_id, chapter_id=chapter_id)
