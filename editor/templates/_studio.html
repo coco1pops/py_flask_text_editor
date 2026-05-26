@@ -140,8 +140,8 @@
                     <select class="form-select mb-3 story-select" id="model" name="model" >
                         <option value="gemini-2.5-flash-lite" {% if story.model=='gemini-2.5-flash-lite' %}selected{%
                             endif %}>Gemini 2.5 Flash Lite</option>
-                        <option value="gemini-3.1-flash-lite-preview" {% if story.model=='gemini-3.1-flash-lite-preview'
-                            %}selected{% endif %}>Gemini 3.1 Flash Lite Preview</option>
+                        <option value="gemini-3.1-flash-lite" {% if story.model=='gemini-3.1-flash-lite'
+                            %}selected{% endif %}>Gemini 3.1 Flash Lite</option>
                     </select>
                     {% else %}
                     <input class="form-control mb-2" type="text" id="model" value="{{ story.model }}" readonly>
