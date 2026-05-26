@@ -1,6 +1,12 @@
+import {logger} from "../utils/logger.js";
+import { handleAjaxError } from "../utils/errors.js";
+import { showFlashMessage, clearFlashMessage } from "./flashMessages.js";
+import { showNotifyModal } from "./modals.js";
+
 export function showError(err) {
     // This is a very basic error display function. We can make it more sophisticated later if we want to
     const errorMessage = `${err.context}. An error occurred: ${err.statusCode} - ${err.message}`;
+    logger.error(errorMessage);
     showNotifyModal(errorMessage, "Error")
 };
 
@@ -70,7 +76,7 @@ export function setRowInEditMode(row) {
     const id = row.cells[0].textContent;
     const mdiv = "message_" + id;
     const cell = document.getElementById(mdiv);
-    const celldata = cell.dataset.markdown;
+    const celldata = JSON.parse(cell.dataset.markdown);
     const md = "<textarea class='full-size-textarea edit-row' height='auto' id='editBox'>" + celldata + "</textarea>";
 
     cell.innerHTML = md;
@@ -94,7 +100,7 @@ export function resetTableRow(row) {
 export function resetEdit(row, id) {
     const mdiv = "message_" + id;
     const cell = document.getElementById(mdiv);
-    cell.innerHTML = cell.dataset.html;
+    cell.innerHTML = JSON.parse(cell.dataset.html);
 
     row.classList.remove("highlighted");
     document.querySelectorAll('#' + row.id + ' .row-button').forEach(btn => {

@@ -33,11 +33,13 @@
 
  {{ macros.modalConfirm('Invalid File', 'Error message') }}
 
+ {{ macros.modalConfirm('Notify', 'Notification') }}
+
  {{ macros.flashMessages() }}
 
 {% endblock content %}
 
 {% block scripts %}
-<script defer src="{{ url_for('static', filename='js/pages/charCreate.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/pages/charCreate.js') }}"></script>
 {% endblock scripts %}
 

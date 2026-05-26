@@ -156,12 +156,16 @@ def delete_story():
     story_id = int(request.values.get("story_id"))
     logging.debug(f"Requested delete of row {story_id}")
     if story_id:
-        StoryService.delete_story(story_id)
-        flash("Story deleted", "success")
-        messages = get_flashed_messages(with_categories=True)
-        return jsonify({"success": "Record deleted","messages": messages}),200
+        try:
+            StoryService.delete_story(story_id)
+            flash("Story deleted", "success")
+            messages = get_flashed_messages(with_categories=True)
+            return jsonify({"success": True,"messages": messages}),200
+        except Exception as e:
+            logging.exception(f"Error deleting story {story_id}: {e}")
+            return jsonify({"success": False, "message": "Database delete failed"}), 406    
 
-    return jsonify({"error": "Database delete failed"}), 406
+    return jsonify({"success": False, "message": "Delete story failed"}), 406
 
 
 #
@@ -175,9 +179,14 @@ def update_story():
 
     logging.debug(f"Updating {story_id} {field} {value}")
     if story_id:
-        StoryService.update_story(story_id, field, value)
-        return jsonify({"success": "Record udpdated"}), 200
-    return jsonify({"error": "Database update failed"}), 406
+        try:
+            StoryService.update_story(story_id, field, value)
+            return jsonify({"success": True, "message": "Record updated successfully"}), 200
+        except Exception as e:
+            logging.error(f"Error updating story: {e}")
+            return jsonify({"success": False, "message": "Database update failed"}), 406
+    
+    return jsonify({"success": False, "message": "Missing story id"}), 406
 
 
 #
@@ -185,7 +194,8 @@ def update_story():
 #
 @bp.route("/print_story", methods=["POST"])
 def print_story():
-    story_id = int(request.values.get("story_id"))
+    data=request.get_json()
+    story_id = int(data.get("story_id"))
     story = StoryService.get_story(story_id)
     dl_name = f"{story.title}.docx"
     logging.debug(f"Printing {dl_name}")
@@ -200,7 +210,7 @@ def print_story():
             )
         except Exception as e:
             logging.debug(f"Error {e}")
-            return jsonify({"error": "Print generation failed"}), 406
-    return jsonify({"error": "Missing story id"}), 406
+            return jsonify({"success": False, "message": "Print generation failed"}), 406
+    return jsonify({"success": False, "message": "Missing story id"}), 406
 
 

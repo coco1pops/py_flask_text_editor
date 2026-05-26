@@ -1,3 +1,9 @@
+import { showFlashMessage } from "../ui/flashMessages.js";
+import { showBootstrapConfirm, showNotifyModal, deleteClicked } from "../ui/modals.js";
+import { handleAjaxError } from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
+import { delChapter, prtChapter } from "../api/listsAPI.js";
+
 document.querySelectorAll('.delete-button').forEach(button => {
   button.addEventListener('click', event => {
     var id = button.dataset.id;
@@ -6,34 +12,6 @@ document.querySelectorAll('.delete-button').forEach(button => {
     deleteClicked(id, deleteChapter, title);
   });
 });
-
-function deleteChapter(id) {
-  story_id=document.getElementById("form-data").dataset.storyId;
-  let response;
-  $.ajax({
-    url: "/delete_chapter",
-    type: "post",
-    data: { 'story_id': id, 'chapter_id' : id },
-    dataType: 'json'
-  }
-  ).done(function (response) {
-    console.log(response);
-    if (response.success){
-      const table = document.getElementById("chaptersTable");
-      var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
-      table.deleteRow(i);
-    }
-
-    if (response.messages) {
-      response.messages.forEach(([category, message]) => {
-      showFlashMessage(category, message);
-      });
-    }
-
-  }).fail(function (error) {
-    console.log(error);
-  })
-};
 //
 // Add print functionality to print button
 //
@@ -43,13 +21,36 @@ document.querySelectorAll('.print-button').forEach(button => {
     printClicked(id);
   });
 });
+
+async function deleteChapter(id) {
+  const story_id=document.getElementById("form-data").dataset.storyId;
+  let response;
+  try {
+    response = await delChapter(story_id, id );
+  }
+  catch (err) {
+    handleAjaxError({err, context: "Delete Chapter"});
+  } finally {
+    if (response && response.success){
+      logger.log("Chapter deleted successfully!");
+      const table = document.getElementById("chaptersTable");
+      var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
+      table.deleteRow(i);
+      if (response.messages) {
+        response.messages.forEach(([category, message]) => {
+          showFlashMessage(category, message);
+        });
+      }
+    }
+  }
+};
 //
 // Catch the user pressing print
 //
 function printClicked(id) {
-
-  story_id=document.getElementById("form-data").dataset.storyId;
-  story_title=document.getElementById("form-data").dataset.storyTitle;
+  logger.log("Print clicked for chapter id " + id);
+  const story_id=document.getElementById("form-data").dataset.storyId;
+  const story_title=document.getElementById("form-data").dataset.storyTitle;
 
   const table = document.getElementById("chaptersTable");
   const row = table.querySelector('tr[data-id="' + id + '"]');
@@ -59,7 +60,7 @@ function printClicked(id) {
       printChapter(story_id, id, story_title);
     }
     else {
-      console.log("Print Cancelled.");
+      logger.log("Print Cancelled.");
     };
   }, {
     mode: 'print',
@@ -67,45 +68,32 @@ function printClicked(id) {
   });
 };
 //
-// Process print story
+// Process print chapter
 //
-function printChapter(story_id ,id, story_title) {
-  $.ajax({
-    url: "/print_chapter",
-    type: "post",
-    data: { 'story_id': story_id, 'chapter_id' : id},
-    xhrFields: {
-      responseType: 'blob'  // Expect binary data
-    }
-  }).done(function (blob, status, xhr) {
-      if (xhr.status !== 200) {
-        // Try to read error text from blob
-        const reader = new FileReader();
-        reader.onload = function () {
-          console.error("Server error:", reader.result);
-          showNotifyModal("Server error: " + reader.result, "Error");
-        };
-        reader.readAsText(blob);
-        return;
-    }
-    // Create a temporary URL for the blob
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+async function printChapter(story_id ,id, story_title) {
+  let response;
+  try {
+    response = await prtChapter(story_id, id, story_title);
+
+    const url = window.URL.createObjectURL(response.blob);
+    const a = document.createElement("a");
     a.href = url;
 
-    const table = document.getElementById("chaptersTable");
-    const title = table.querySelector('tr[data-id="' + id + '"]').cells[2].textContent.trim();
-    a.download = title + ".docx";
+    a.download = response.filename;
 
     document.body.appendChild(a);
     a.click();
     a.remove();
-    window.URL.revokeObjectURL(url);  // Clean up
+    window.URL.revokeObjectURL(url);
+
     showNotifyModal("File created in Download folder", "Success");
-
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    showNotifyModal("Print - Something went wrong: " + errorThrown, "Error");
-    console.log("AJAX Error", textStatus, errorThrown);
-  });
-
-}
+  }
+  catch (err) {
+    logger.error("Error occurred while printing chapter");
+    logger.error(err);
+    showNotifyModal(
+      `Server error printing chapter: ${err}`,
+      "Error"
+      );
+  }
+} 

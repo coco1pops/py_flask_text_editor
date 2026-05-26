@@ -1,0 +1,1 @@
+find . -name logger.js -exec sed -i 's/DEBUG: true/DEBUG: false/' {} > tmp.js \;

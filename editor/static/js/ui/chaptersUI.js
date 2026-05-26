@@ -11,7 +11,7 @@ export function editSummaryHandler(but) {
     const summary=document.getElementById("summary");
     summary.classList.remove("d-none");
     disableForSummary(true);
-    $("#summary").trigger("input");
+    summary.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 export function cancelEditSummaryHandler(but) {
@@ -31,7 +31,7 @@ export function cancelEditSummaryHandler(but) {
     updateSummaryButton.classList.add("d-none");
 
     disableForSummary(false);
-    $("#summary").trigger("input");
+    summary.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 export function disableForm(flag){

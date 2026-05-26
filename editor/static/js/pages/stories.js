@@ -1,6 +1,7 @@
 import { handleInput, updateChapterField, post, cancelUpdate, editRow, updateRow, cancelEditRow, deleteEditRow, addChar, clearChar } from "../controller/storiesController.js";
 import { resizeTextarea, updateCount, gotoTop, gotoBottom, updateLabel, updateTitle } from "../ui/storiesUI.js";
-
+import { selectDropdownValue } from '../ui/utils.js';
+import { clearFlashMessage } from "../ui/flashMessages.js";
 
 export function initStories() {
     bindEvents();
@@ -8,7 +9,6 @@ export function initStories() {
 };
 
 function bindEvents() {
-
 
     document.addEventListener('input', event => {
         if (event.target.classList.contains('edit-row') || 
@@ -85,6 +85,7 @@ function bindEvents() {
     });
 
     window.addEventListener("load", gotoBottom());
+    window.selectDropdownValue = selectDropdownValue;
 }
 function hideStudioElements() {
     // Hide elements that are only relevant for the story studio page

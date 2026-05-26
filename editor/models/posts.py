@@ -70,12 +70,18 @@ class UnifiedPostTimelineService:
             print_except("get_post", e)
     
     @staticmethod
-    def get_all_posts_raw(story_id, chapter_id=None):
+    def get_all_posts_raw(story_id, chapter_id=None, limit=None):
         try:
-            if chapter_id:
-                return UnifiedPostTimeline.query.filter_by(story_id=story_id, chapter_id=chapter_id).all()
-            else:
-                return UnifiedPostTimeline.query.filter_by(story_id=story_id).all()
+            query = db.session.query(UnifiedPostTimeline).filter(UnifiedPostTimeline.story_id == story_id)
+            if chapter_id is not None:
+                query = query.filter(UnifiedPostTimeline.chapter_id == chapter_id)
+            if limit is not None:
+                query = query.filter(UnifiedPostTimeline.post_id < limit)
+
+            query= query.order_by(UnifiedPostTimeline.created.asc())
+
+            return query.all() 
+
         except Exception as e:
             print_except("get_timeline", e)
 

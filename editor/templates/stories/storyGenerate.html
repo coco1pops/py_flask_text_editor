@@ -7,7 +7,6 @@
 {% block content %}
 
 <div id="form-data" data-story-id='{{ story.story_id }}' data-chapter-id='{{chapter.chapter_id}}'></div>
-<div id="posts-data" data-posts='{{ posts | tojson }}'></div>
 <div id="isadmin-data" data-isadmin='{{ isadmin | tojson }}'></div>
 
 <div>
@@ -70,6 +69,7 @@
 
         <tbody id="postsRows">
         <!-- JS loads table here -->
+         {{ posts | safe }}
         </tbody>
     </table>
 </div>

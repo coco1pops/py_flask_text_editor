@@ -1,0 +1,88 @@
+{% macro addNewRow(tbody, post, is_last) %}
+
+<tr id="row_{{post.post_id}}">
+    <td class="hide">{% if post.part_type!="text" %}{{post.post_id}}{% endif %}</td>
+    {% if post.part_type=="text" %}
+        {{charArea(post) }}
+    {% else %}
+        <td>
+            <div id="message_{{post.post_id}}"
+                class="{{'model' if post.creator == 'model' else 'user'}} border-top border-secondary" data-markdown='{{post.message_md | tojson}}' 
+                        data-html='{{post.message | tojson}}'>
+                    {{post.message | safe}}
+            </div>
+
+            <div class="row" align-items-center>
+                {% if post.creator=="user" or (post.creator=="model" and is_last) %}
+                    <div class="col-6 d-flex justify-content-start gap-2" id="buttons_{{post.post_id}}">
+                        {{addRowButtons(post.post_id, post.creator)}}
+                    </div>
+                {% else %}
+                    <div class="col-6 dflex" id="buttons_{{post.post_id}}"></div>
+                {% endif %}
+                
+                <div class="col-2 dflex"> </div>
+
+                <div class="col-4 d-flex justify-content-end align-items-center gap-2">
+                    <div id="loadingSpinner_{{post.post_id}}" class="spinner-border text-primary" role="status" style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+
+                <span class="created">Created {{post.created.strftime('%d/%m/%Y %H:%M')}}</span>
+                </div>
+            </div>  
+        </td>
+
+    {% endif %}
+</tr>
+
+{% endmacro %}
+
+{% macro addRowButtons(post_id, creator) %}
+
+    <button class='btn btn-primary actions edit-button' type="button" 
+        data-id="{{post_id}}" data-mode="{{'Edit Prompt' if creator == 'user' else 'Edit Response'}}" id="edit_{{post_id}}">
+                Edit</button>
+    <button class='btn btn-primary d-none row-button update-button' type="button" 
+        data-id="{{post_id}}" data-mode="{{'Edit Prompt' if creator == 'user' else 'Edit Response'}}" id="update_{{post_id}}">Update</button>
+    <button class='btn btn-primary d-none row-button cancel-button' type="button" 
+        data-id="{{post_id}}" data-mode="{{'Edit Prompt' if creator == 'user' else 'Edit Response'}}" id="cancel_{{post_id}}">Cancel</button>
+    {% if creator == 'user' %}
+        <button class='btn btn-primary d-none row-button delete-button' type="button" id="delete_{{post_id}}">Delete</button>
+    {% endif %}
+
+{% endmacro %}
+
+{% macro charArea(post) %}
+    <td>
+        <div class="row border p-3 mb-3 align-items-start">
+            {% if post.image_mime_type != "" %}
+                <div class="col-auto">
+                    <img src="{{post.image_data}}" class="img-fluid"
+                        style="max-width:300px; vertical-align: middle;" />
+                    </div>
+                <div class="col d-flex flex-column h-100 justify-content-between" data-markdown="{{post.message_md | tojson}}" data-html="{{post.message | tojson}}">
+                    {{post.message | safe}}
+                </div>
+            {% endif %}
+        </div>
+    </td>
+{% endmacro %}
+
+{% macro newCharArea(id, mime_type, image_data, text) %}
+    <div id="Container_${id}" class="row border p-3 mb-3 align-items-start characters">
+        {% if mime_type != "" %}
+            <div class="col-auto">
+                    <img src={{image_data}} alt="Preview" style="max-width: 300px; vertical-align: middle;" class="img-fluid" />
+            </div>
+        {% endif %}
+        <div class="col">
+            <div class="d-flex flex-column h-100 justify-content-between">
+                <p class="mt-2 text-muted">${text}</p>
+                <div class="text-end">
+                    <button class="btn btn-secondary clear-char" type="button" data-id="${id}" id="clear_${id}">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}

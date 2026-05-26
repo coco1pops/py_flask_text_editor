@@ -56,10 +56,10 @@
   </div>
 
   {% if chapter.chapter_id %}
-    <div id="summary-box" data-disp-summary='{{chapter.disp_summary | tojson }}' data-summary="{{chapter.summary}}" data-class={{'d-none' if chapter.status == 'in_progress' else '' }}>
+    <div id="summary-box" data-disp-summary='{{chapter.disp_summary | tojson }}' data-summary="{{chapter.summary}}" class="{{'d-none mb-3' if chapter.status == 'in_progress' else 'mb-3' }}">
       {{ macros.textarea('summary', 'Summary', chapter.summary, classes='d-none') }}
       <span id="summary-box-display">{{chapter.disp_summary | safe}}</span>
-      <div id="edit-summary-bar" class="row gap-2"></div>
+      <div id="edit-summary-bar" class="d-flex gap-2">
         <button id="edit-summary" class="btn btn-primary">Edit</button>
         <button id="cancel-edit-summary" class="btn btn-primary d-none">Cancel</button>
         <button id="update-summary" class="btn btn-primary d-none">Update</button>
@@ -68,7 +68,7 @@
 
   {% endif %}
   
-   {{ macros.flashMessages() }}
+  {{ macros.flashMessages() }}
 
   <div id="flash-container" style="margin-top: 20px;"></div>
 

@@ -21,6 +21,7 @@ def markdown_to_docx_paragraph(doc: Document, input_text: str):
     html=markdown.markdown(input_text)
     soup = BeautifulSoup(html, 'html.parser')
 
+    para=None
     for p in soup.find_all(["p"]):
 
         para=doc.add_paragraph()
@@ -95,6 +96,10 @@ def generate_doc_from_posts(story_id, chapter_id=None) -> BytesIO:
 def print_posts(doc, posts):
     # Print posts will work for both stories and chapters
     ix=1
+    if not posts:
+        doc.add_paragraph("No content yet.")
+        return
+    
     char_print=False
     for post in posts:
         logging.debug(f"Printing post {ix}")

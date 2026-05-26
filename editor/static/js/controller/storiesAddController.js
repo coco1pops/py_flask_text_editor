@@ -1,17 +1,11 @@
 import { getSysInt, addStoryCharacter, updateStoryCharacter, deleteStoryCharacter, getStoryCharacter, getListItem } from "../api/storiesAPI.js";
 import { initStoriesAdd } from "../pages/storiesCreate.js";
+import { handleAjaxError } from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
+import "../ui/textarearesize.js";
 
 document.addEventListener("DOMContentLoaded", function () {
     initStoriesAdd();
-});
-
-$(".entry-textarea").on("input change", function () {
-    this.style.height = "auto";
-    this.style.height = (this.scrollHeight) + "px";
-});
-
-$(document).ready(function () {
-    $(".entry-textarea").trigger("input");
 });
 
 //
@@ -196,7 +190,7 @@ export async function updateCharNotes(id) {
 
 export async function deleteStoryChar(id) {
     const modal = document.getElementById('editCharModal');
-    console.log("Attempting to delete story char with id:", id);
+    logger.log("Attempting to delete story char with id:", id);
 
     let response;
     try{

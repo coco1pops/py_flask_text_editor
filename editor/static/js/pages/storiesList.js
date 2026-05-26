@@ -1,3 +1,9 @@
+import { showFlashMessage } from "../ui/flashMessages.js";
+import { showBootstrapConfirm, showNotifyModal, deleteClicked } from "../ui/modals.js";
+import { handleAjaxError } from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
+import { delStory, prtStory } from "../api/listsAPI.js";
+
 document.querySelectorAll('.delete-button').forEach(button => {
   button.addEventListener('click', event => {
     var id = button.dataset.id;
@@ -7,28 +13,6 @@ document.querySelectorAll('.delete-button').forEach(button => {
   });
 });
 
-function deleteStory(id) {
-  $.ajax({
-    url: "/delete_story",
-    type: "post",
-    data: { 'story_id': id },
-    dataType: 'json'
-  }
-  ).done(function (response) {
-    console.log(response);
-
-    const table = document.getElementById("storiesTable");
-    var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
-    table.deleteRow(i);
-    if (response.messages) {
-      response.messages.forEach(([category, message]) => {
-        showFlashMessage(category, message);
-      });
-    }
-  }).fail(function (error) {
-    console.log(error);
-  })
-};
 //
 // Add print functionality to print button
 //
@@ -38,6 +22,29 @@ document.querySelectorAll('.print-button').forEach(button => {
     printClicked(id);
   });
 });
+
+async function deleteStory(id) {
+
+  let response;
+  try {
+    response = await delStory(id);
+  }
+  catch (err) {
+    handleAjaxError({err, context: "Delete Story"});
+  } finally {
+    if (response && response.success){
+      const table = document.getElementById("storiesTable");
+      var i = table.querySelector('tr[data-id="' + id + '"]').rowIndex;
+      table.deleteRow(i);
+      if (response.messages) {
+        response.messages.forEach(([category, message]) => {
+        showFlashMessage(category, message);
+      });
+      }
+      logger.log("Story deleted successfully!");
+    }
+  }
+};  
 //
 // Catch the user pressing print
 //
@@ -48,10 +55,10 @@ function printClicked(id) {
   const title = row.cells[2].textContent.trim();
   showBootstrapConfirm((confirmed, opts) => {
     if (confirmed) {
-      printStory(id);
+      printStory(id, title);
     }
     else {
-      console.log("Print Cancelled.");
+      logger.log("Print Cancelled.");
     };
   }, {
     mode: 'print',
@@ -61,33 +68,30 @@ function printClicked(id) {
 //
 // Process print story
 //
-function printStory(id) {
-  $.ajax({
-    url: "/print_story",
-    type: "post",
-    data: { 'story_id': id },
-    xhrFields: {
-      responseType: 'blob'  // Expect binary data
-    }
-  }).done(function (blob) {
-    // Create a temporary URL for the blob
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+async function printStory(story_id, story_title) {
+  let response;
+  try {
+    response = await prtStory(story_id, story_title);
+
+    const url = window.URL.createObjectURL(response.blob);
+    const a = document.createElement("a");
     a.href = url;
 
-    const table = document.getElementById("storiesTable");
-    const title = table.querySelector('tr[data-id="' + id + '"]').cells[2].textContent.trim();
-    a.download = title + ".docx";
+    a.download = response.filename;
 
     document.body.appendChild(a);
     a.click();
     a.remove();
-    window.URL.revokeObjectURL(url);  // Clean up
+    window.URL.revokeObjectURL(url);
+
     showNotifyModal("File created in Download folder", "Success");
-
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    showNotifyModal("Print - Something went wrong: " + errorThrown, "Error");
-    console.log("AJAX Error", textStatus, errorThrown);
-  });
-
-}
+  }
+  catch (err) {
+    logger.error("Error occurred while printing story");
+    logger.error(err);
+    showNotifyModal(
+      `Server error printing story: ${err}`,
+      "Error"
+      );
+  }
+} 

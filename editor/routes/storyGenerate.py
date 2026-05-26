@@ -15,6 +15,7 @@ from flask import (
 )
 from flask_login import current_user
 
+from editor.models import posts
 from editor.models.chat_service import get_chat_service
 from editor.models.stories import StoryService
 from editor.models.storyChars import StoryCharsService, StoryWithCharactersService
@@ -68,8 +69,14 @@ def generate_story():
     else:
         posts = UnifiedPostTimelineService.get_all_posts(story_id)
 
+    formatted_posts=""
+    for ix, post in enumerate(posts):
+        is_last = (ix == len(posts) - 1)
+        formatted_post = render_template("stories/storyAddNewRowStub.html", post=post, is_last=is_last)
+        formatted_posts += formatted_post
+
     return render_template(
-        "stories/storyGenerate.html", story=story, chapter=chapter, posts=posts, chars=chars, storyChars=sCOutput, isadmin=current_user.is_admin
+        "stories/storyGenerate.html", story=story, chapter=chapter, posts=formatted_posts, chars=chars, storyChars=sCOutput, isadmin=current_user.is_admin
     )
 
 def formatStoryChar(storyChar, note):
@@ -97,8 +104,10 @@ def get_message():
 @bp.route("/assignChar", methods=["POST"])
 def assignChar():
     char_id = int(request.form["char_id"])
+    char = CharService.get_character(char_id);
     resp = CharService.build_char(char_id)
-    return jsonify({"success": True, "details": resp}), 200
+    html = render_template("stories/storyAddCharStub.html",id=char_id, image_mime_type=char.image_mime_type, image_data=char.image_data, text=resp['text'])
+    return jsonify({"success": True, "message": "Character assigned successfully", "details": resp, "html": html}), 200
 
 #
 # Deletes posts
@@ -113,12 +122,32 @@ def deleteRows():
     story = StoryService.get_story(story_id)
     if story.book:
         chapter_id= int(request.values.get("chapter_id"))
-        PostService.delete_posts_from(story_id, post_id, chapter_id=chapter_id)
+        try:
+            PostService.delete_posts_from(story_id, post_id, chapter_id=chapter_id)
+        except Exception as e:
+            logging.debug(f"Error deleting posts {e}")
+            return jsonify({"success": False, "message": "Database delete failed"}), 406
     else:
-        PostService.delete_posts_from(story_id, post_id)
+        try:
+            PostService.delete_posts_from(story_id, post_id)
+        except Exception as e:
+            logging.debug(f"Error deleting posts {e}")
+            return jsonify({"success": False, "message": "Database delete failed"}), 406
+        
     flash("Posts deleted", "success")
     messages = get_flashed_messages(with_categories=True)
-    return jsonify({"success": True, "messages": messages}), 200
+    return jsonify({"success": True, "message": "Posts deleted successfully", "messages": messages}), 200
+
+@bp.route("/addButtons", methods=["POST"])
+def addButtons():
+    post_id = int(request.values.get("post_id"))
+    logging.debug(f"Adding buttons for {post_id}")
+    if post_id:
+        html = render_template("stories/storyAddButtonsStub.html", post_id=post_id, creator="model")
+        return jsonify({"success": True, "message": "Buttons added successfully", "html": html}), 200
+    
+    return jsonify({"success": False, "message": "Generating buttons failed"}), 406
+
 #
 # Generates a chat line from a prompt and inserts the response into the database
 #
@@ -128,7 +157,7 @@ def generate_text():
     data = parse_generate_request()
 
     if not data['prompt']:
-        return (jsonify({"error": "Invalid input. Please provide a JSON object with a 'prompt' key."}),400)
+        return (jsonify({"success": False, "message": "Invalid input. Please provide a JSON object with a 'prompt' key."}),400)
 
     logging.debug(f"Received prompt: {data['prompt'][:30]}, Mode {data['mode']} Row {data['row_id']} {data['chars']} ")
     #
@@ -140,26 +169,26 @@ def generate_text():
     # If editing prompt need to delete everything after the prompt
     #
     story=StoryService.get_story(data['story_id'])
-
+    #
+    # TODO: Generating chat can return an error in which case we don't want to have deleted the posts. 
+    # TODO: In which case we don't want to delete the posts; however we need to make sure they don't get added to the chat_history before generation   
+    # 
+    limit=None
     if data['mode'] == "Edit Prompt":
-        logging.debug(f"Deleting older posts from {data['row_id']}")
-        if story.book:
-            PostService.delete_posts_from(data['story_id'], data['row_id'], chapter_id=data['chapter_id'])
-        else:
-            PostService.delete_posts_from(data['story_id'], data['row_id'])
+        limit=data['row_id']
 
     # Try to generate more chat
 
     try:
         if story.book:
-            message = generate_chat_message(data['story_id'], data['prompt'], data['chars'], chapter_id=data['chapter_id'])
+            message = generate_chat_message(data['story_id'], data['prompt'], data['chars'], chapter_id=data['chapter_id'], limit=limit)
         else:
-            message = generate_chat_message(data['story_id'], data['prompt'], data['chars'])
+            message = generate_chat_message(data['story_id'], data['prompt'], data['chars'], limit=limit)
 
     except Exception as e:
         mess=e if isinstance(e,str) else str(e)
         return json_response(
-            {"error": "Generation Failed"},
+            {"success": False, "message": "Generation Failed"},
             422,
             flash_msg=mess,
             category="error"
@@ -168,6 +197,9 @@ def generate_text():
     # Storing prompt and responses
     #
     try:
+        if data['mode'] == "Edit Prompt":
+            delete_posts(data['story_id'], limit, chapter_id=data['chapter_id'] if story.book else None)
+        
         posts, flash_msg = save_prompt_and_response(
             data["story_id"],
             data["chapter_id"],
@@ -178,14 +210,14 @@ def generate_text():
         )
 
         return json_response(
-            {"success": "New Response Added", "posts": posts},
+            {"success": True, "message": "New Response Added", "posts": posts},
             200,
             flash_msg=flash_msg
         )
 
     except Exception as e:
         logging.exception("Error storing content")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
 
 def parse_generate_request():
     chapter_id_raw = request.values.get("chapter_id")
@@ -202,6 +234,19 @@ def parse_generate_request():
 # Utility function to return a consistent json response with any flash messages included. 
 # Can be used for any endpoint that needs to return a json response and also include flash messages.
 #
+def delete_posts(story_id, row_id, chapter_id=None):
+    try:
+        if chapter_id:
+            logging.debug(f"Deleting newer posts from {row_id} for story {story_id} chapter {chapter_id}")
+            PostService.delete_posts_from(story_id, row_id, chapter_id=chapter_id)
+        else:
+            logging.debug(f"Deleting newer posts from {row_id} for story {story_id}")
+            PostService.delete_posts_from(story_id, row_id)
+        return
+    except Exception as e:
+        logging.debug(f"Error deleting posts {e}")
+        raise Exception("Posts delete failed")
+
 def json_response(payload, status=200, flash_msg=None, category="success"):
     if flash_msg:
         flash(flash_msg, category)
@@ -214,15 +259,15 @@ def handle_edit_response(row_id, prompt):
     success = PostService.update_message(row_id, prompt)
 
     if not success:
-        return json_response({"error": "Response update failed"}, 406)
+        return json_response({"success": False, "message": "Response update failed"}, 406)
 
     posts = UnifiedPostTimelineService.get_post(row_id)
     return json_response(
-        {"success": "Response update succeeded", "posts": posts},
+        {"success": True, "message": "Response update succeeded", "posts": posts},
         flash_msg="Response updated"
     )
 
-def generate_chat_message(story_id, prompt, chars, chapter_id=None):
+def generate_chat_message(story_id, prompt, chars, chapter_id=None, limit=None):
     chat = get_chat_service()
     story = StoryService.get_story(story_id)
     if story.book:
@@ -233,9 +278,9 @@ def generate_chat_message(story_id, prompt, chars, chapter_id=None):
     # The first prompt needs to be built as a combination of the base and the new prompt
     #
     if story.book:
-        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id=chapter_id)
+        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id=chapter_id, limit=limit)
     else:
-        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id)
+        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, limit=limit)
 
     parsed_prompt = prompt if not chars else buildPrompt(prompt, chars)
     if posts:
@@ -314,7 +359,13 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
         else "New response added"
     )
 
-    return posts, flash_msg
+    formatted_posts=""
+    for ix, post in enumerate(posts):
+        is_last = (ix == len(posts) - 1)
+        formatted_post = render_template("stories/storyAddNewRowStub.html", post=post, is_last=is_last)
+        formatted_posts += formatted_post
+
+    return formatted_posts, flash_msg
 
 def buildHistory(chat, story, posts, chapter=None):
     multimodal = False
@@ -323,6 +374,7 @@ def buildHistory(chat, story, posts, chapter=None):
 
     logging.debug(f"Building History for Story {story.title}")
     for post in posts:
+        logging.debug(f"Processing post: {post.post_id}")
         # Tidy up outstanding messages if building multi-modal message
         if post.source == "post" and multimodal:
             if firstTime:
@@ -376,7 +428,7 @@ def buildPrompt(content, chars):
         txtprompt = buildChar(
             char.name, char.description, char.personality, char.motivation, char.image_mime_type
         )
-
+  
         multi_modal_content.append({"text": txtprompt})
         if char.image_mime_type:
             multi_modal_content.append(

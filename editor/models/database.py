@@ -41,7 +41,7 @@ def init_app(app):
 
 def print_except(func, e):
     logging.exception(f"{func} Database error: {e}")
-    logging.exception("Exception Type:", {type(e).__name__})
+    logging.exception(f"Exception Type: {type(e).__name__}")
 
     if isinstance(e,str):
         mess=e;

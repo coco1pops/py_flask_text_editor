@@ -105,9 +105,13 @@ def delchar():
         success=False
         
     else:
-        CharService.delete_character(char_id)
-        flash("Character deleted", "success")
-        success=True
+        try:
+            CharService.delete_character(char_id)
+            flash("Character deleted", "success")
+            success=True
+        except Exception as e:
+            logging.debug(f"Error {e}")
+            return jsonify({"success": False, "message": "Database delete failed"}), 462
 
     messages = get_flashed_messages(with_categories=True)
     return jsonify({"success" : success, "messages": messages}), 200
@@ -135,7 +139,7 @@ def checkimage():
     if ext not in current_app.config["UPLOAD_EXTENSIONS"]:
         return "Unsupported file type", 400
 
-    return jsonify({"status": "success", "message": "File valid"})
+    return jsonify({"status": "success", "message": "File valid"}), 200
 
 @bp.route("/build_char_list_item", methods=["POST"])
 @login_required
@@ -148,10 +152,9 @@ def build_char_list_item():
     if char_id:
         char = CharService.get_character(char_id)
         list_item = render_template("parameters/charDropdownItemStub.html", char=char, input_name=input_name, dropdown_id=dropdown_id)
-        logging.debug(f"Built list item {list_item}")
-        return jsonify({"success": True, "listItem": list_item}), 200
+        return jsonify({"success": True, "message" : "List item built", "listItem": list_item}), 200
 
-    return jsonify({"error": "Missing character id"}), 406
+    return jsonify({"success": False, "message": "Missing character id"}), 406
 
 
 @bp.route("/createuser/<mode>/<user_id>", methods=["GET", "POST"])
@@ -262,10 +265,16 @@ def createuser(mode="Add", user_id=None):
 def deluser():
     user_id = request.values.get("user_id")
     logging.debug(f"Deleting user {user_id}")
-    UserService.delete_user(user_id)
-    flash("User deleted", "success")
-    messages = get_flashed_messages(with_categories=True)
-    return jsonify({"messages": messages})
+
+    try:
+        UserService.delete_user(user_id)
+        flash("User deleted", "success")
+        messages = get_flashed_messages(with_categories=True)
+        return jsonify({"success": True, "messages": messages}), 200
+    
+    except Exception as e:
+        logging.error(f"Error deleting user {user_id}: {e}")
+        return jsonify({"success": False, "message": "Database delete failed"}), 462
 
 
 @bp.route("/users", methods=["GET", "POST"])
@@ -297,10 +306,14 @@ def sysints():
 def delsysint():
     sysint_id = int(request.values.get("sysint_id"))
     logging.debug(f"Deleting sysint {sysint_id}")
-    SysIntService.delete_sysint(sysint_id)
-    flash("AI Guidance deleted", "success")
-    messages = get_flashed_messages(with_categories=True)
-    return jsonify({"messages": messages})
+    try:
+        SysIntService.delete_sysint(sysint_id)
+        flash("AI Guidance deleted", "success")
+        messages = get_flashed_messages(with_categories=True)
+        return jsonify({"success": True, "messages": messages}), 200
+    except Exception as e:
+        logging.error(f"Error deleting sysint {sysint_id}: {e}")
+        return jsonify({"success": False, "message": "Database delete failed"}), 462
 
 
 @bp.route("/createsysint/<int:sysint_id>", methods=["GET", "POST"])
@@ -320,14 +333,21 @@ def createsysint(sysint_id=None):
 
         if sysint_id == None:
             logging.debug("Inserting new sysint")
-            sysint_id = SysIntService.insert_sysint(name, description, instruction)
-            logging.debug(f"Inserted sysint {sysint_id}")
-            flash("AI Guidance added", "success")
+            try:
+                sysint_id = SysIntService.insert_sysint(name, description, instruction)
+                logging.debug(f"Inserted sysint {sysint_id}")
+                flash("AI Guidance added", "success")
+            except Exception as e:
+                logging.error(f"Error inserting sysint: {e}")
+                flash("Failed to add AI Guidance", "error")
         else:
-            logging.debug(f"Updated sysint {sysint_id}")
-            SysIntService.update_sysint(sysint_id, name, description, instruction)
-            sysint = SysIntService.get_sysint(sysint_id)
-            flash("AI Guidance updated", "success")
+            logging.debug(f"Updating sysint {sysint_id}")
+            try:
+                SysIntService.update_sysint(sysint_id, name, description, instruction)
+                flash("AI Guidance updated", "success")
+            except Exception as e:
+                logging.error(f"Error updating sysint {sysint_id}: {e}")
+                flash("Failed to update AI Guidance", "error")
 
         return redirect(url_for("parameters.createsysint", sysint_id=sysint_id))
 

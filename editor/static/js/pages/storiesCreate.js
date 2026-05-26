@@ -1,5 +1,7 @@
 import { resizeTextarea, updateLabel, displaySafetySettings } from "../ui/storiesUI.js";
 import { pickSysInt, buildSysIntOptions, addStoryChar, openEditModal, deleteStoryChar, updateCharNotes, generateSummary } from "../controller/storiesAddController.js";
+import { logger } from "../utils/logger.js";
+import { selectDropdownValue } from '../ui/utils.js';
 
 export function initStoriesAdd() {
     // Initialization logic for stories add page
@@ -30,7 +32,7 @@ export function initStoriesAdd() {
             event.preventDefault();
         }
         else if (deleteBtn) {
-            console.log("Delete button clicked with id:", deleteBtn.dataset.id);
+            logger.log("Delete button clicked with id:", deleteBtn.dataset.id);
             deleteStoryChar(deleteBtn.dataset.id);
             // Handle delete button click
         }   
@@ -52,5 +54,7 @@ export function initStoriesAdd() {
     document.getElementById('closeModal').addEventListener('click', event => {
         buildSysIntOptions();
     });
+
+    window.selectDropdownValue = selectDropdownValue;
 
 }   

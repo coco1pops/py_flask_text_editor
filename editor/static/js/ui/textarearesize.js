@@ -9,4 +9,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.querySelectorAll(".entry-textarea")
         .forEach( el => el.dispatchEvent(new Event("input", { bubbles: true })));
-    })
+})

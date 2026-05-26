@@ -1,32 +1,28 @@
-import { updateStory, updateChapter, postStory, deleteStoryPosts, getChar } from '../api/storiesAPI.js';
+import { updateStory, postStory, deleteStoryPosts, getChar, addButtons } from '../api/storiesAPI.js';
+import { updateChapter } from '../api/chaptersAPI.js';
 import * as UI from '../ui/storiesUI.js';
 import * as build from '../ui/storiesBuildTable.js';
 import * as appState from '../state/appState.js';
 import { initStories } from "../pages/stories.js";
+import { logger } from '../utils/logger.js';
+import { handleAjaxError } from '../utils/errors.js';
+import { deleteClicked } from '../ui/modals.js';
 
 // Startup Modules 
 initPage();
 
 document.addEventListener("DOMContentLoaded", function () {
         setFormMode("New", -1);
-        let raw = document.getElementById('posts-data').dataset.posts;
-        const posts = JSON.parse(raw);
-        raw = document.getElementById('isadmin-data').dataset.isadmin;
+
+        const raw = document.getElementById('isadmin-data').dataset.isadmin;
         const isadmin = JSON.parse(raw);
 
-        const tbody=document.getElementById("postsRows");
-        build.buildAddNewRows(tbody,posts);
-
         UI.displaySafetySettings(isadmin);
-
         UI.gotoBottom();
-
     });
 
 
 export function initPage() {
-  //setFormMode("New", -1);
-
     // Get the parent row details
   const formData=document.getElementById("form-data")
   const story_id=formData.dataset.storyId;
@@ -37,8 +33,6 @@ export function initPage() {
 
   initStories();
 }
-
-// Wrappers for API calls
 
 // Update story record
 
@@ -56,7 +50,7 @@ export async function handleInput(event) {
   }
   if (response && response.success) {
     // We could show a success message here if we wanted to, but for now we'll just log the response
-    console.log("Story updated successfully");
+    logger.log("Story updated successfully");
   }
 
 }
@@ -73,7 +67,7 @@ export async function updateChapterField(event) {
 
   }
   if (response && response.success) {
-    console.log("Story updated successfully");
+    logger.log("Story updated successfully");
   }
 }
 
@@ -87,7 +81,7 @@ export async function cancelUpdate() {
     return;
   }
   if (response && response.success) {
-    console.log("Story update cancelled successfully");
+    logger.log("Story update cancelled successfully");
     appState.setFormMode("New");
     appState.setEditRow(-1);
     UI.clearNewPrompt();
@@ -114,37 +108,27 @@ export async function post() {
       appState.getState().editRow, 
       appState.getState().chars);
 
-    if (response && response.success) {
-      // Process:
-      // 1. Takes the buttons off the last row (if there is one)
-      // 2. Appends the new post to the end of the table
-      // 3. Blanks out newprompt 
-      // 4. Shows the message from the server in a flash message
-      console.log(response);
-      build.buildClearLastRowButtons(tbody);
-      build.buildAddNewRows(tbody, response.posts);
-      UI.clearNewPrompt();
-      UI.displayMessages(response.messages);
-    }
   } catch (err) {
       handleAjaxError({err, context: "Post Prompt"});
+      logger.error(err);
     // Currently extracts data from the error object and shows a flash message.
-      const messages = err?.jqXHR?.responseJSON?.messages
+      const messages = JSON.parse(err?.jqXHR?.responseText)?.messages;
       if (messages) {
         UI.displayMessages(messages);
       }        
   } finally {
-  // Even after an error we want to clear the loading state and set the form back to New mode.
 
-  // Also calls resetEdit which is a multipurpose function that is either called with a row or all. In this case it is called with all. It:
-  // 1. Enables all the action buttons (Done)
-  // 2. Enables the prompt field (Done)
-  // 3. Resets the form mode to New and row to -1 in the app state (Done)
-  // 4. Updates the counts (Done)
-  // 5. Scrolls to the bottom of the page (Done)
-  UI.postPost();
-  UI.stopSpinner();
-  setFormMode("New", -1);
+    if (response && response.success) {
+      logger.log(response);
+      build.buildClearLastRowButtons(tbody);
+      tbody.insertAdjacentHTML('beforeend', response.posts);
+     
+      UI.clearNewPrompt();
+      UI.displayMessages(response.messages);
+    }
+    UI.postPost();
+    UI.stopSpinner();
+    setFormMode("New", -1);
 }
 }
 
@@ -167,12 +151,22 @@ export async function updateRow(btn, mode) {
         appState.getState().editRow, 
         appState.getState().chars);
 
+
+  } catch (err) {
+      handleAjaxError({err, context: "Update Post"});
+      const messages = JSON.parse(err?.jqXHR?.responseText)?.messages;
+      if (messages) {
+        UI.displayMessages(messages);
+      }       
+      UI.stopSpinner(spinner_id);
+
+    } finally {
     if (response && response.success) {
     // Remove subsequent rows
       if (mode == "Edit Prompt") {
         const tbody = row.parentElement;
         build.buildDeleteNextRows(row);
-        build.buildAddNewRows(tbody, response.posts);
+        tbody.insertAdjacentHTML('beforeend', response.posts);
       }
       else {
         const mdiv = "message_" + id;
@@ -180,26 +174,18 @@ export async function updateRow(btn, mode) {
 
         const updpost = response.posts[0];
         cell.innerHTML = updpost.message;
-        cell.dataset.html = updpost.message;
-        cell.dataset.markdown = updpost.message_md;
+        cell.dataset.html = JSON.stringify(updpost.message);
+        cell.dataset.markdown = JSON.stringify(updpost.message_md);
         UI.resetTableRow(row);
         UI.stopSpinner(spinner_id);
       };
       UI.clearNewPrompt();
       UI.postPost();
-      console.log(response);
+      logger.log(response);
       UI.displayMessages(response.messages);
       setFormMode("New", -1);
     }
-  } catch (err) {
-      handleAjaxError({err, context: "Update Post"});
-      const messages = err?.jqXHR?.responseJSON?.messages
-      if (messages) {
-        UI.displayMessages(messages);
-      }       
-      UI.stopSpinner(spinner_id);
-
-    }
+  }
 }
 
 // delete edited row and subsequent rows 
@@ -214,23 +200,54 @@ export async function deleteRow() {
       appState.getState().chapter_id);
 
   } catch (err) {
-    handleAjaxError({err, context: "Delete Posts"});
-    return
-  }
+      handleAjaxError({err, context: "Delete Posts"});
 
-  if (response && response.success) {
-    console.log("Posts deleted successfully");
-    const row_div = "row_" + appState.getState().editRow;
-    const row = document.getElementById(row_div);
-    build.buildDeleteNextRows(row);
-    row.remove();
-    build.buildResetLastRowButtons();
-    UI.postPost();
-    UI.clearNewPrompt();
-    UI.displayMessages(response.messages);
-  }
+  } finally {
+    if (response && response.success) {
+      logger.log("Posts deleted successfully");
+      const row_div = "row_" + appState.getState().editRow;
+      const row = document.getElementById(row_div);
+      build.buildDeleteNextRows(row);
+      row.remove();
+      addButtonsToLast();
+      UI.postPost();
+      UI.clearNewPrompt();
+      UI.displayMessages(response.messages);
+    }
+  
   setFormMode("New", -1);
+  }
 }
+
+async function addButtonsToLast() {
+    const tbody = document.getElementById("postsRows");
+    if (!tbody.rows.length) return; // No data rows
+
+    const rows = tbody.rows;
+    const row = rows[rows.length - 1]; // This is the last row. It should always be a 'model' row
+
+    const id = row.cells[0].textContent;
+    const message_id = "message_" + id;
+    if (!document.getElementById(message_id).classList.contains("model")) {
+        logger.error("Error - invalid table format");
+        return false
+    };
+
+    const sel = "buttons_" + id;
+    const target_div = document.getElementById(sel);
+
+    let response;
+    try {
+        response = await addButtons(id);
+    } catch (err) {
+        handleAjaxError({err, context: "Add Buttons"});
+        return;
+    } finally{
+      if (response && response.success) {
+        target_div.innerHTML = response.html;
+      }
+    }
+  }
 
 export async function addChar(char_id) {
   let response;
@@ -240,7 +257,7 @@ export async function addChar(char_id) {
     handleAjaxError({err, context: "Assign Character"});
     return
   }
-  console.log(response);
+  logger.log(response);
   if (response && response.success) {
     appState.addChar(char_id)
     build.buildAddChar(char_id, response.details['image_mime_type'], response.details['img'], response.details['text']);
@@ -280,7 +297,7 @@ export function deleteEditRow() {
     };
 
 export function clearChar(id) {
-    console.log("Clearing char " + id);
+    logger.log("Clearing char " + id);
       build.buildRemoveChar(id);
       appState.removeCharId(id); 
     };
