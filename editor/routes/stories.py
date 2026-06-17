@@ -141,14 +141,14 @@ def stories():
         action = request.form.get("action")
         
         if action.startswith("Generate:"):
-            story_id = action.split(":")[1]
+            story_id = int(action.split(":")[1])
             story=StoryService.get_user_story(story_id, current_user.id)
             if story.book:
                 return redirect(url_for("chapters.chapters", story_id=story_id))
             else:
                 return redirect(url_for("storyGenerate.generate_story", story_id=story_id))
         else:
-            story_id = action
+            story_id = int(action)
             return redirect(url_for("stories.create", story_id=story_id))
 
     stories = StoryService.get_user_stories(current_user.id)
