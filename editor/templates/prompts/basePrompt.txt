@@ -18,9 +18,6 @@ Character: {{ char.name }}
 {% if char.personality %}Personality: {{ char.personality }}{% endif %}
 {% if char.motivation %}Motivation: {{ char.motivation }}{% endif %}
 {% if char.note %}Story Traits: {{ char.note }}{% endif -%}
-{%- if char.image_mime_type %}
-Visual description: Use the next attached image for physical appearance of {{char.name}}.
-{% endif -%}
   {%- endset -%}
 ,{
     "type": "text",
@@ -28,9 +25,8 @@ Visual description: Use the next attached image for physical appearance of {{cha
   }
   {%- if char.image_mime_type -%}
 ,{
-    "type": "image",
-    "mime_type": "{{ char.image_mime_type }}",
-    "data": "{{ char.image_data }}"
+    "type": "text",
+    "data": "Use the following text to describe the physical appearance of {{char.name}}: {{ char.image_description | trim | tojson }}"
   }
   {%- endif -%}
   {%- endfor -%}

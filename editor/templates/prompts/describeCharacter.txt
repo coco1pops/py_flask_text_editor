@@ -1,0 +1,7 @@
+You are describing character {{name}} from an image. The character's text description is {{desc}}. The image description will be used
+alongside the text description.
+
+The character image follows as the second part of this prompt.
+
+Describe this character image in a detailed but structured way.
+Include appearance, clothing, distinguishing features and style.

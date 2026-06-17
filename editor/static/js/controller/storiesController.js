@@ -77,7 +77,7 @@ export async function cancelUpdate() {
 
     response = await updateStory(appState.getState().story_id, "newprompt", "");
   } catch (err) {
-    handleAjaxError({err, context: "Cancel Update"});
+    handleAjaxError(err, "Cancel Update");
     return;
   }
   if (response && response.success) {
@@ -109,7 +109,7 @@ export async function post() {
       appState.getState().chars);
 
   } catch (err) {
-      handleAjaxError({err, context: "Post Prompt"});
+      handleAjaxError(err, "Post Prompt");
       logger.error(err);
     // Currently extracts data from the error object and shows a flash message.
       const messages = JSON.parse(err?.jqXHR?.responseText)?.messages;
@@ -153,7 +153,7 @@ export async function updateRow(btn, mode) {
 
 
   } catch (err) {
-      handleAjaxError({err, context: "Update Post"});
+      handleAjaxError(err, "Update Post");
       const messages = JSON.parse(err?.jqXHR?.responseText)?.messages;
       if (messages) {
         UI.displayMessages(messages);
@@ -165,10 +165,12 @@ export async function updateRow(btn, mode) {
     // Remove subsequent rows
       if (mode == "Edit Prompt") {
         const tbody = row.parentElement;
+        // if successful then the current row is delete along with all subsequent rows and replaced with the updated rows from the response
         build.buildDeleteNextRows(row);
         tbody.insertAdjacentHTML('beforeend', response.posts);
       }
       else {
+        // if unsuccessful then the current row is reset to the original value and buttons are removed. The inner html is replaced, erasing the editbox
         const mdiv = "message_" + id;
         const cell = document.getElementById(mdiv);
 
@@ -200,7 +202,7 @@ export async function deleteRow() {
       appState.getState().chapter_id);
 
   } catch (err) {
-      handleAjaxError({err, context: "Delete Posts"});
+      handleAjaxError(err, "Delete Posts");
 
   } finally {
     if (response && response.success) {
@@ -240,7 +242,7 @@ async function addButtonsToLast() {
     try {
         response = await addButtons(id);
     } catch (err) {
-        handleAjaxError({err, context: "Add Buttons"});
+        handleAjaxError(err, "Add Buttons");
         return;
     } finally{
       if (response && response.success) {
@@ -254,7 +256,7 @@ export async function addChar(char_id) {
   try {
     response = await getChar(char_id);
   } catch (err) {
-    handleAjaxError({err, context: "Assign Character"});
+    handleAjaxError(err, "Assign Character");
     return
   }
   logger.log(response);

@@ -161,6 +161,7 @@ class ChatService:
             response = self.chat_session.send_message({"role": "user", "parts": message})
             response_text = response.text
             logging.debug(f"Received model response: {response_text[:30]}")
+            logging.debug(f"Metadata response: {response.usage_metadata}")
             return response_text
         except Exception as e:
             logging.error(f"Exception type: {type(e).__name__}")

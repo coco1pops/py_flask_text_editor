@@ -30,7 +30,7 @@ async function deleteStory(id) {
     response = await delStory(id);
   }
   catch (err) {
-    handleAjaxError({err, context: "Delete Story"});
+    handleAjaxError(err, "Delete Story");
   } finally {
     if (response && response.success){
       const table = document.getElementById("storiesTable");

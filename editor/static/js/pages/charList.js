@@ -19,8 +19,7 @@
     response = await deleteChar(id);
 
   } catch (err) {
-      handleAjaxError({err, context: "Delete Character"});
-
+      handleAjaxError(err, "Delete Character");
   } finally {
     if (response && response.success) {
       logger.log(response.messages[0][0] + ": " + response.messages[0][1]);

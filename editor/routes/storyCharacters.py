@@ -10,6 +10,7 @@ from flask import (
 from flask_login import current_user
 
 from editor.models.storyChars import StoryCharsService, StoryWithCharactersService
+from editor.models.stories import StoryService
 
 bp = Blueprint("storyCharacters", __name__)
 @bp.before_request
@@ -22,6 +23,11 @@ def require_login():
 def add_story_character():
     logging.debug(f"Adding story character with values {request.values["story_id"]} {request.values["char_id"]} {request.values["char_notes"]}")
     story_id = int(request.values["story_id"])
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+    
     char_id = int(request.values["char_id"])
     char_notes = request.values["char_notes"]
 
@@ -50,6 +56,12 @@ def add_story_character():
 @bp.route("/updateStoryCharacter", methods=["POST"])    
 def update_story_character():
     id = int(request.values["id"])
+    record = StoryWithCharactersService.get_story_with_character(id)
+    story=StoryService.get_user_story(record.story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+
     char_notes = request.values["note"]
 
     logging.debug(f"Updating story char {id} with notes {char_notes}")
@@ -67,6 +79,10 @@ def update_story_character():
 def delete_story_character():
     story_char_id = int(request.values["id"])
     story_char=StoryWithCharactersService.get_story_with_character(story_char_id)
+    story=StoryService.get_user_story(story_char.story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
     char_id=story_char.char_id
 
     logging.debug(f"Deleting story char {story_char_id}")
@@ -87,6 +103,11 @@ def get_story_character():
     logging.debug(f"Getting story char {story_char_id}")
     if story_char_id:
         storyChar = StoryWithCharactersService.get_story_with_character(story_char_id)
+        story = StoryService.get_user_story(storyChar.story_id, current_user.id)
+        if not story:
+            logging.error(f"Error occurred while fetching story")
+            return jsonify({"success": False, "message": "Story not found or access denied"}), 404  
+        
         if storyChar:
             return jsonify({"success": True, "message": "Character found", "storyChar": {
                     "name": storyChar.name,

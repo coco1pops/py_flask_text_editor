@@ -1,5 +1,6 @@
 from editor.models.database import db, print_except
 from editor.models.stories import StoryService
+from flask_login import current_user
 
 from datetime import datetime
 
@@ -137,7 +138,7 @@ class ChapterService:
             chapter = cls.get_chapter(chapter_id)
             if not chapter:
                 return False
-            StoryService.touch_story(chapter.story_id)
+            StoryService.touch_story(chapter.story_id, current_user.id)
             setattr(chapter, field, value)
             db.session.commit()
             return True
@@ -146,18 +147,17 @@ class ChapterService:
             print_except("update_chapter",e)
     
     @classmethod
-    def update_chapter_all(cls, chapter_id, title, position, introduction, goal, memory, status):
+    def update_chapter_all(cls, chapter_id, title, position, introduction, goal, memory):
         try:
             chapter = cls.get_chapter(chapter_id)
             if not chapter:
                 return False
-            StoryService.touch_story(chapter.story_id)
+            StoryService.touch_story(chapter.story_id, current_user.id)
             chapter.title=title
             chapter.position=position
             chapter.introduction=introduction
             chapter.goal=goal
             chapter.memory=memory
-            chapter.status=status
             
             db.session.commit()
             return True
@@ -178,7 +178,7 @@ class ChapterService:
                 memory=memory
             )
             db.session.add(chapter)
-            StoryService.touch_story(story_id)
+            StoryService.touch_story(story_id, current_user.id)
             db.session.commit()
             return chapter.chapter_id
         
@@ -240,7 +240,7 @@ class ChapterCharService:
         try:
             chapter_char=ChapterChar(story_id=story_id, chapter_id=chapter_id, char_id=char_id, note=note)
             db.session.add(chapter_char)
-            StoryService.touch_story(story_id)
+            StoryService.touch_story(story_id, current_user.id)
             db.session.commit()
             return chapter_char.id
         

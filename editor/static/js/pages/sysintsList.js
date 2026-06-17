@@ -20,7 +20,7 @@
         response = await deleteSysInt(id);
 
     } catch (err) {
-        handleAjaxError({err, context: "Delete System Instruction"});
+        handleAjaxError(err, "Delete System Instruction");
     } finally {
         if (response && response.messages) {
         logger.log(response.messages[0][0] + ": " + response.messages[0][1]);

@@ -1,5 +1,4 @@
 import {logger} from "../utils/logger.js";
-import { handleAjaxError } from "../utils/errors.js";
 import { showFlashMessage, clearFlashMessage } from "./flashMessages.js";
 import { showNotifyModal } from "./modals.js";
 
@@ -100,6 +99,7 @@ export function resetTableRow(row) {
 export function resetEdit(row, id) {
     const mdiv = "message_" + id;
     const cell = document.getElementById(mdiv);
+    // This statement erases the edit box and replaces it with the original html, effectively resetting the row to its original state
     cell.innerHTML = JSON.parse(cell.dataset.html);
 
     row.classList.remove("highlighted");

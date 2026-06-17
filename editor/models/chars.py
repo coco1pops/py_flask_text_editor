@@ -20,24 +20,25 @@ class Char(db.Model):
     motivation = db.Column(db.Text)
     image_data = db.Column(db.LargeBinary)
     image_mime_type = db.Column(db.Text)
+    image_description = db.Column(db.Text)
     user_id = db.Column(db.String(255), db.ForeignKey('users.user_id'), nullable=False)
 
 class CharService:
     @staticmethod
-    def get_characters():
+    def get_characters(user_id):
         try:
-            return Char.query.filter_by(user_id=current_user.id).all()
+            return Char.query.filter_by(user_id=user_id).order_by(Char.name.asc()).all()
         except Exception as e:
             print_except("get_characters",e)
             return False
         
     @staticmethod
-    def get_character(char_id, allow_not_found=False):
+    def get_character(char_id, user_id, allow_not_found=False):
         try:
-            char = Char.query.filter_by(char_id=char_id, user_id=current_user.id).first()
+            char = Char.query.filter_by(char_id=char_id, user_id=user_id).first()
 
             if not char and not allow_not_found:
-                print_except("get_character","Record not found")
+                return None
 
             return char
         
@@ -45,12 +46,12 @@ class CharService:
             print_except("get_character",e)
 
     @staticmethod
-    def get_character_formatted(char_id, allow_not_found=False):
+    def get_character_formatted(char_id, user_id, allow_not_found=False):
         try:
-            char = Char.query.filter_by(char_id=char_id, user_id=current_user.id).first()
+            char = Char.query.filter_by(char_id=char_id, user_id=user_id).first()
 
             if not char and not allow_not_found:
-                print_except("get_character","Record not found")
+                return None
 
             format_image_data=None
             if char.image_mime_type and char.image_data:
@@ -70,10 +71,10 @@ class CharService:
             print_except("get_character_formatted",e)   
 
     @staticmethod
-    def get_characters_outside_story(story_id):
+    def get_characters_outside_story(story_id, user_id):
         assigned_ids = StoryCharsService.get_assigned_char_subquery(story_id)
         try:
-           available_chars = Char.query.filter(Char.user_id == current_user.id, ~Char.char_id.in_(assigned_ids)).all()
+           available_chars = Char.query.filter(Char.user_id == user_id, ~Char.char_id.in_(assigned_ids)).all()
            return available_chars
         
         except Exception as e:
@@ -81,10 +82,10 @@ class CharService:
             return False
 
     @staticmethod
-    def get_characters_outside_chapter(story_id, chapter_id):
+    def get_characters_outside_chapter(story_id, chapter_id, user_id):
         assigned_ids = ChapterCharService.get_assigned_char_subquery(story_id, chapter_id)
         try:
-           available_chars = Char.query.filter(Char.user_id == current_user.id, ~Char.char_id.in_(assigned_ids)).all()
+           available_chars = Char.query.filter(Char.user_id == user_id, ~Char.char_id.in_(assigned_ids)).all()
            return available_chars
         
         except Exception as e:
@@ -93,14 +94,14 @@ class CharService:
 
 
     @staticmethod
-    def insert_character(name, description, personality, motivation):
+    def insert_character(name, description, personality, motivation, user_id):
         try:
             char = Char(
                 name=name,
                 description=description,
                 personality=personality,
                 motivation=motivation,
-                user_id=current_user.id
+                user_id=user_id
             )
 
             db.session.add(char)
@@ -113,12 +114,12 @@ class CharService:
             print_except("insert_character",e)
 
     @classmethod
-    def update_character_field(cls, char_id, field, value):
+    def update_character_field(cls, char_id, user_id, field, value):
         try:
-            char = cls.get_character(char_id, allow_not_found=False)
+            char = cls.get_character(char_id, user_id, allow_not_found=False)
 
             if not char:
-                return False
+                return None
 
             setattr(char, field, value)
             db.session.commit()
@@ -129,12 +130,12 @@ class CharService:
             print_except("update_character_field",e)
 
     @classmethod
-    def update_character_all(cls, char_id, name, description, personality, motivation):
+    def update_character_all(cls, char_id, user_id, name, description, personality, motivation):
         try:
-            char = cls.get_character(char_id, allow_not_found=False)
+            char = cls.get_character(char_id, user_id, allow_not_found=False)
 
             if not char:
-                return False
+                return None
 
             char.name = name
             char.description = description
@@ -149,16 +150,16 @@ class CharService:
             print_except("update_character_all",e)
 
     @classmethod
-    def update_character_image(cls, char_id, image_data, image_mime_type):
+    def update_character_image(cls, char_id, user_id, image_data, image_mime_type, image_description):
         try:
-            char = cls.get_character(char_id, allow_not_found=False)
+            char = cls.get_character(char_id, user_id, allow_not_found=False)
 
             if not char:
-                return False
+                return None
 
             char.image_data = image_data
             char.image_mime_type = image_mime_type
-
+            char.image_description = image_description
             db.session.commit()
             return True
         
@@ -167,12 +168,12 @@ class CharService:
             print_except("update_character_image",e)
 
     @classmethod
-    def delete_character(cls, char_id):
+    def delete_character(cls, char_id, user_id):
         try:
-            char = cls.get_character(char_id, allow_not_found=False)
+            char = cls.get_character(char_id, user_id, allow_not_found=False)
 
             if not char:
-                return False
+                return None
 
             db.session.delete(char)
             db.session.commit()
@@ -184,8 +185,8 @@ class CharService:
 
 
     @classmethod
-    def build_char(cls,char_id):
-        char = cls.get_character_formatted(char_id, allow_not_found=False)
+    def build_char(cls,char_id, user_id):
+        char = cls.get_character_formatted(char_id, user_id, allow_not_found=False)
 
         resp={"img": "", "image_mime_type" : "", "text" : ""}
         if char['image_mime_type']:

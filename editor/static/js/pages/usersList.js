@@ -19,7 +19,7 @@
       response = await deleteUser(id);
   
     } catch (err) {
-        handleAjaxError({err, context: "Delete User"});
+        handleAjaxError(err, "Delete User");
   
     } finally {
       if (response && response.success) {

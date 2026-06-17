@@ -27,7 +27,7 @@ def create_app():
 
     env_value = os.getenv("ENVIRONMENT")
     if env_value and env_value.strip() == "PROD":
-        logging.info (f"Startup-DB Credentials: Name {app.config['DB_NAME']} User {app.config['DB_USER']} Password {app.config['DB_PASSWORD']}")
+        logging.info (f"Startup-DB Credentials: Name {app.config['DB_NAME']} User {app.config['DB_USER']}")
     else:
         logging.info (f"Startup-DB Credentials {app.config['DATABASE']}")
 

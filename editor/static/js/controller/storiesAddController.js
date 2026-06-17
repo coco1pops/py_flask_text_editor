@@ -85,7 +85,7 @@ export async function pickSysInt() {
                 sysInt = response.instruction;
             }
         } catch (err) {
-            handleAjaxError({err, context: "Get System Instruction"});
+            handleAjaxError(err, "Get System Instruction");
         }
     }
     document.getElementById("studio_temperature").value = document.getElementById("temperature").value;
@@ -118,7 +118,7 @@ export async function addStoryChar(story_id) {
         response= await addStoryCharacter(story_id, charId, charNotes);
     }
     catch (err) {
-        handleAjaxError({err, context: "Add Story Character"});
+        handleAjaxError(err, "Add Story Character");
     }
     finally{
         if (response && response.success) {
@@ -164,7 +164,7 @@ export async function openEditModal(id) {
         }
 
     } catch (err) {
-        handleAjaxError({err, context: "Get Story Character"});
+        handleAjaxError(err, "Get Story Character");
     }  
 }   
 
@@ -174,7 +174,7 @@ export async function updateCharNotes(id) {
     try{
         response= await updateStoryCharacter(id, newNotes);
     } catch (err) {
-        handleAjaxError({err, context: "Update Story Character"});
+        handleAjaxError(err, "Update Story Character");
     } finally {
         if (response && response.success) {
             const table = document.getElementById("storyCharsTable");
@@ -196,7 +196,7 @@ export async function deleteStoryChar(id) {
     try{
         response= await deleteStoryCharacter(id)
     } catch (err) {
-        handleAjaxError({err, context: "Get Story Character"});
+        handleAjaxError(err, "Delete Story Character");
     } finally {  
 
         if (response && response.success) {
@@ -248,7 +248,7 @@ async function addBackToDropdown(charId,  input_name="charSelect", dropdownId="c
         response = await getListItem(charId, input_name, dropdownId);
 
     } catch (err) {
-        handleAjaxError({err, context: "Get Character for Dropdown"});
+        handleAjaxError(err, "Get Character for Dropdown");
     } finally {
         if (response && response.success) {
             dropdownId = `ul-${dropdownId}`;

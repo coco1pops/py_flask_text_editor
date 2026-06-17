@@ -24,6 +24,7 @@ class StoryWithCharacters(db.Model):
     personality = db.Column(db.Text, nullable=True)
     image_mime_type = db.Column(db.Text, nullable=True)
     image_data = db.Column(db.LargeBinary)
+    image_description = db.Column(db.Text, nullable=True)
 
 class StoryCharsService:
     @staticmethod

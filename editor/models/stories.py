@@ -1,9 +1,6 @@
 from editor.models.database import db, print_except
-#from editor.models.storyChars import StoryChars
-#from editor.models.posts import Post, PostPart
 
 from datetime import datetime
-from flask_login import current_user
 
 class Story(db.Model):
     __tablename__ = "stories"
@@ -57,21 +54,29 @@ class StoryService:
             print_except("get_story", e)
 
     @staticmethod
-    def get_latest_story():
+    def get_user_story(story_id, user_id):
         try:
-            return Story.query.filter_by(user_id=current_user.id).order_by(Story.created.desc()).first()
+            story = db.session.query(Story).filter_by(story_id=story_id, user_id=user_id).first()
+            return story
+        except Exception as e:
+            print_except("get_user_story", e)
+    
+    @staticmethod
+    def get_latest_story(user_id):
+        try:
+            return Story.query.filter_by(user_id=user_id).order_by(Story.created.desc()).first()
         except Exception as e:
             print_except("get_latest_story", e)
     
     @staticmethod
-    def get_last_updated_story():
+    def get_last_updated_story(user_id):
         try:
-            return Story.query.filter_by(user_id=current_user.id).order_by(Story.updated.desc()).first()
+            return Story.query.filter_by(user_id=user_id).order_by(Story.updated.desc()).first()
         except Exception as e:
             print_except("get_last_updated_story", e)
 
     @staticmethod
-    def insert_story(title, note, systeminstruction, 
+    def insert_story(user_id,title, note, systeminstruction, 
             temperature, top_p,
             harassment_threshold, hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold, 
             model, world_rules, book):
@@ -89,7 +94,7 @@ class StoryService:
                 model=model,
                 world_rules=world_rules,
                 book=book,
-                user_id=current_user.id
+                user_id=user_id
             )
 
             db.session.add(story)
@@ -102,16 +107,16 @@ class StoryService:
             print_except("insert_story", e)
 
     @staticmethod
-    def get_stories():
+    def get_user_stories(user_id):
         try:
-            return Story.query.filter_by(user_id=current_user.id).order_by(Story.created.desc()).all()
+            return Story.query.filter_by(user_id=user_id).order_by(Story.created.desc()).all()
         except Exception as e:
-            print_except("get_stories", e)  
+            print_except("get_user_stories", e)  
 
     @classmethod   
-    def delete_story(cls,story_id):
+    def delete_story(cls,story_id, user_id):
         try:
-            story = cls.get_story(story_id)
+            story = cls.get_user_story(story_id, user_id)
 
             if not story:
                 print_except("delete_story", "Record not found")
@@ -123,9 +128,9 @@ class StoryService:
             print_except("delete_story", e)
 
     @classmethod
-    def update_story(cls, story_id, field, value):
+    def update_story(cls, story_id, user_id, field, value):
         try:
-            story = cls.get_story(story_id)
+            story = cls.get_user_story(story_id, user_id)
 
             if not story:
                 print_except("update_story", "Record not found")
@@ -137,11 +142,11 @@ class StoryService:
             print_except("update_story", e)
 
     @classmethod
-    def update_story_all(cls, story_id, title, note, systeminstruction, temperature, top_p,
+    def update_story_all(cls, story_id, user_id,title, note, systeminstruction, temperature, top_p,
         harassment_threshold, hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold,
         model, world_rules):
         try:
-            story = cls.get_story(story_id)
+            story = cls.get_user_story(story_id, user_id)
 
             if not story:
                 print_except("update_story_all", "Record not found")
@@ -159,7 +164,7 @@ class StoryService:
             story.model=model
             story.world_rules=world_rules
 
-            cls.touch_story(story_id)
+            cls.touch_story(story_id, user_id)
 
             db.session.commit()
         except Exception as e:
@@ -167,9 +172,9 @@ class StoryService:
             print_except("update_story_all", e)
     
     @classmethod
-    def touch_story(cls, story_id):
+    def touch_story(cls, story_id, user_id):
         try:
-            story = cls.get_story(story_id)
+            story = cls.get_user_story(story_id, user_id)
 
             if not story:
                 print_except("touch_story", "Record not found")

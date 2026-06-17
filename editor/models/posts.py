@@ -39,6 +39,7 @@ class UnifiedPostTimeline(db.Model):
     part_text = db.Column(db.Text)  # For text parts
     part_image_data = db.Column(db.LargeBinary)  # For image parts
     part_image_mime_type = db.Column(db.String(255))  # MIME type for image parts
+    part_image_description = db.Column(db.Text)  
 
 class PostPart(db.Model):
     __tablename__ = "post_parts"
@@ -51,6 +52,7 @@ class PostPart(db.Model):
     part_text = db.Column(db.Text)  # For text parts
     part_image_data = db.Column(db.LargeBinary)  # For image parts
     part_image_mime_type = db.Column(db.String(255))  # MIME type for image parts
+    part_image_description = db.Column(db.Text)  # Description for image parts
     created = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -122,6 +124,7 @@ class UnifiedPostTimelineService:
             if upd:
                 format_posts[posts_ix - 1]['image_data'] = image_data
                 format_posts[posts_ix - 1]['image_mime_type'] = post.part_image_mime_type
+                format_posts[posts_ix - 1]['image_description'] = post.part_image_description
             else:
                 format_posts.append({'post_id' : post.post_id, 
                                     'created' : post.created, 
@@ -132,7 +135,8 @@ class UnifiedPostTimelineService:
                                     "message" : message, 
                                     "message_md" : content, 
                                     'image_data' : image_data, 
-                                    "image_mime_type" : post.part_image_mime_type})
+                                    "image_mime_type" : post.part_image_mime_type,
+                                    "image_description" : post.part_image_description})
             
                 posts_ix += 1
             logging.debug(f"Parsed post {post.post_id} from source {post.source} with part type {post.part_type}")
@@ -159,12 +163,12 @@ class PostService:
             print_except("get_chapter_posts", e)
 
     @classmethod
-    def update_message(cls,post_id, value):
+    def update_message(cls,post_id, value, user_id):
         try:
             post = cls.get_message(post_id)
             if not post:
                 return False
-            StoryService.touch_story(post.story_id)
+            StoryService.touch_story(post.story_id, user_id)
             post.message = value
             db.session.commit()
             return True
@@ -173,7 +177,7 @@ class PostService:
             print_except("update_message",e)
 
     @staticmethod
-    def delete_posts_from(story_id, post_id, chapter_id=None):
+    def delete_posts_from(story_id, user_id, post_id, chapter_id=None):
         try:
             if chapter_id:
                 db.session.query(PostPart).filter(
@@ -198,7 +202,7 @@ class PostService:
                     Post.post_id >= post_id
                 ).delete(synchronize_session=False)
 
-            StoryService.touch_story(story_id)
+            StoryService.touch_story(story_id, user_id)
             db.session.commit()
 
         except Exception as e:
@@ -206,7 +210,7 @@ class PostService:
             print_except("delete_posts_from",e)
           
     @staticmethod
-    def insert_post(story_id, creator, prompt, multi, chapter_id=None):
+    def insert_post(story_id, user_id, creator, prompt, multi, chapter_id=None):
         try:            
             post = Post(
                 story_id=story_id,
@@ -216,7 +220,7 @@ class PostService:
                 multi_modal=multi
             )
             db.session.add(post)
-            StoryService.touch_story(story_id)
+            StoryService.touch_story(story_id, user_id)
             db.session.commit()
             return post.post_id
         
@@ -226,7 +230,7 @@ class PostService:
 
 class PostPartService:
     @staticmethod
-    def insert_post_text_part(story_id, post_id, part_text, chapter_id=None):
+    def insert_post_text_part(story_id, user_id, post_id, part_text, chapter_id=None):
         try:
             post_part = PostPart(
                 post_id=post_id,
@@ -236,7 +240,7 @@ class PostPartService:
                 part_text=part_text
             )
             db.session.add(post_part)
-            StoryService.touch_story(story_id)
+            StoryService.touch_story(story_id, user_id)
             db.session.commit()
             return post_part.part_id
         except Exception as e:
@@ -244,7 +248,7 @@ class PostPartService:
             print_except("insert_post_part", e)
 
     @staticmethod
-    def insert_post_image_part(story_id, post_id, image_data, image_mime_type, chapter_id=None):
+    def insert_post_image_part(story_id, post_id, image_data, image_mime_type, image_description, chapter_id=None):
         try:
             post_part = PostPart(
                 post_id=post_id,
@@ -252,7 +256,8 @@ class PostPartService:
                 chapter_id=chapter_id,
                 part_type="image",
                 part_image_data=image_data,
-                part_image_mime_type=image_mime_type
+                part_image_mime_type=image_mime_type,
+                part_image_description=image_description
             )
             db.session.add(post_part)
             db.session.commit()

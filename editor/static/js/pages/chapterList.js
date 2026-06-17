@@ -29,7 +29,7 @@ async function deleteChapter(id) {
     response = await delChapter(story_id, id );
   }
   catch (err) {
-    handleAjaxError({err, context: "Delete Chapter"});
+    handleAjaxError(err, "Delete Chapter");
   } finally {
     if (response && response.success){
       logger.log("Chapter deleted successfully!");

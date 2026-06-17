@@ -11,8 +11,7 @@ export function initStories() {
 function bindEvents() {
 
     document.addEventListener('input', event => {
-        if (event.target.classList.contains('edit-row') || 
-            event.target.classList.contains('chapter-record') ||  
+        if (event.target.classList.contains('chapter-record') ||  
             event.target.classList.contains('story-record')) {
             resizeTextarea(event.target);
         }

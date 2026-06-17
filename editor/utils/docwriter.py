@@ -4,7 +4,7 @@ from docx.shared import Inches
 from docx.enum.text import WD_BREAK
 import logging
 import markdown
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from io import BytesIO
 
 from editor.models.posts import UnifiedPostTimelineService
@@ -16,25 +16,89 @@ from editor.utils.formatCharacter import buildChar
 
 from flask_login import current_user
 
+def process_inline(node, paragraph):
+    #    Process inline formatting within a paragraph.
+
+    if isinstance(node, NavigableString):
+        paragraph.add_run(str(node))
+        return
+
+    if node.name == "strong":
+        run = paragraph.add_run(node.get_text())
+        run.bold = True
+
+    elif node.name == "em":
+        run = paragraph.add_run(node.get_text())
+        run.italic = True
+
+    else:
+        for child in node.children:
+            process_inline(child, paragraph)
+
+
+def process_block(node, doc):
+    
+    # Process block-level elements.
+
+    if node.name == "p":
+        para = doc.add_paragraph()
+
+        for child in node.children:
+            process_inline(child, para)
+
+    elif node.name == "h1":
+        doc.add_heading(node.get_text(), level=1)
+
+    elif node.name == "h2":
+        doc.add_heading(node.get_text(), level=2)
+
+    elif node.name == "h3":
+        doc.add_heading(node.get_text(), level=3)
+
+    elif node.name == "ol":
+
+        for li in node.find_all("li", recursive=False):
+
+            para = doc.add_paragraph(style="List Number")
+
+            for child in li.children:
+
+                if getattr(child, "name", None) == "p":
+
+                    # Copy paragraph contents into list item
+                    for grandchild in child.children:
+                        process_inline(grandchild, para)
+
+                else:
+                    process_inline(child, para)
+
+    elif node.name == "ul":
+
+        for li in node.find_all("li", recursive=False):
+
+            para = doc.add_paragraph(style="List Bullet")
+
+            for child in li.children:
+
+                if getattr(child, "name", None) == "p":
+
+                    for grandchild in child.children:
+                        process_inline(grandchild, para)
+
+                else:
+                    process_inline(child, para)
+
 def markdown_to_docx_paragraph(doc: Document, input_text: str):
     # Convert markdown to HTML then parse
     html=markdown.markdown(input_text)
     soup = BeautifulSoup(html, 'html.parser')
 
-    para=None
-    for p in soup.find_all(["p"]):
+    for node in soup.contents:
 
-        para=doc.add_paragraph()
-        for child in p.contents:
-            if child.name == "strong":
-                run = para.add_run(child.get_text())
-                run.bold = True
-            elif child.name == "em":
-                run = para.add_run(child.get_text())
-                run.italic = True
-            elif child.name is None:
-                para.add_run(child)
-    return para
+        if getattr(node, "name", None):
+            process_block(node, doc)
+
+    return
 
 def insert_image(doc: Document, image_b64: str, mime_type: str) -> None:
     try:
@@ -55,7 +119,7 @@ def generate_doc_from_posts(story_id, chapter_id=None) -> BytesIO:
         posts=UnifiedPostTimelineService.get_all_posts_raw(story_id)
     logging.debug("Entering print generation")
     doc = Document()
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
 
     if chapter_id:
         posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id)
@@ -139,7 +203,7 @@ def print_chapter_intro(doc, story, chapter):
         if firstTime:
             doc.add_heading("Characters", level=2)
             firstTime=False
-        char=CharService.get_character(chapter_char.char_id)
+        char=CharService.get_character(chapter_char.char_id, current_user.id)
         if chapter_char.override:
             note=chapter_char.note
         else:

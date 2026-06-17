@@ -30,7 +30,7 @@ export async function involvedHandler(chk){
             response = await addChapterCharacter(story_id, chapter_id, characterId);
         }
         catch (err) {
-            handleAjaxError({err, context: "Add Chapter Character"});
+            handleAjaxError(err, "Add Chapter Character");
         }
         finally{
             if (response && response.success) {
@@ -45,7 +45,7 @@ export async function involvedHandler(chk){
             response=await deleteChapterCharacter(id);
         }
         catch (err) {
-            handleAjaxError({err, context: "Delete Chapter Character"});
+            handleAjaxError(err, "Delete Chapter Character");
         } finally {
             if (response && response.success){
                 logger.log("Deleted chapter character with id " + id);
@@ -76,7 +76,7 @@ export async function overrideHandler(chk){
         response = await updateChapterCharacter(id, "override", chk.checked);
     }
     catch (err) {
-        handleAjaxError({err, context: "Update Chapter Character"});
+        handleAjaxError(err, "Update Chapter Character");
     }
     finally{
         if (response && response.success) {
@@ -105,7 +105,7 @@ export async function noteHandler(txt){
         response = await updateChapterCharacter(id, "note", note)
     }
     catch (err){
-        handleAjaxError({err, context: "Update Chapter Character"});
+        handleAjaxError(err, "Update Chapter Character");
     }
 }
 
@@ -126,7 +126,7 @@ export async function summaryHandler(newStatus){
     try {
         response = await generateChapterSummary(story_id, chapter_id, newStatus);
     } catch (err) {
-        handleAjaxError({err, context: "Generate Summary"});
+        handleAjaxError(err, "Generate Summary");
     } finally {
         // Hide timer
         stopSpinner("loading-spinner");
@@ -163,7 +163,7 @@ export async function updateSummaryHandler() {
         response = await updateChapter(story_id, chapter_id, "summary", summary);
     }
     catch (err) {
-        handleAjaxError({err, context: "Update Chapter"});
+        handleAjaxError(err,  "Update Chapter");
     }
     finally{
         if (response && response.success) {

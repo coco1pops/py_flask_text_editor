@@ -11,7 +11,8 @@ from flask import (
     render_template,
     get_flashed_messages,
     url_for,
-    redirect
+    redirect,
+    abort
 )
 from flask_login import current_user
 
@@ -37,14 +38,18 @@ def require_login():
 def generate_story():
     # Build story info
     story_id = int(request.values.get("story_id"))
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        abort(404, description="Story not found or access denied.")
+
     if story.book:
         chapter_id = int(request.values.get("chapter_id"))
         chapter = ChapterService.get_chapter(chapter_id)
-        chars = CharService.get_characters_outside_chapter(story_id, chapter_id)
+        chars = CharService.get_characters_outside_chapter(story_id, chapter_id, current_user.id)
     else:
         chapter=None
-        chars = CharService.get_characters_outside_story(story_id)
+        chars = CharService.get_characters_outside_story(story_id, current_user.id)
 
     sCOutput=[]
     storyChars = StoryWithCharactersService.get_story_with_characters(story_id)
@@ -88,7 +93,7 @@ def formatStoryChar(storyChar, note):
     
     return({"textBundle" : textPartHTML, "image_data": imagePart})
 
-
+""" Not used 
 @bp.route("/get_message", methods=["GET"])
 def get_message():
     post_id = int(request.values.get("post_id"))
@@ -96,16 +101,26 @@ def get_message():
     logging.debug(f"Retrieving message for {post_id}")
     if post_id:
         message = PostService.get_message(post_id)
-        return jsonify({"success": True, "message": message}), 200
+        if message:
+            story=StoryService.get_user_story(message.story_id, current_user.id)
+            if not story:
+                logging.error(f"Error occurred while fetching story")
+                return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+            return jsonify({"success": True, "message": message}), 200
+
     return jsonify({"error": "Database read failed"}), 406
+"""
 #
 # Assigns a character to a story
 #
 @bp.route("/assignChar", methods=["POST"])
 def assignChar():
     char_id = int(request.form["char_id"])
-    char = CharService.get_character(char_id);
-    resp = CharService.build_char(char_id)
+    char = CharService.get_character(char_id, current_user.id)
+    if not char:
+        logging.error(f"Error occurred while fetching character")
+        return jsonify({"success": False, "message": "Character not found or access denied"}), 404
+    resp = CharService.build_char(char_id, current_user.id)
     html = render_template("stories/storyAddCharStub.html",id=char_id, image_mime_type=char.image_mime_type, image_data=char.image_data, text=resp['text'])
     return jsonify({"success": True, "message": "Character assigned successfully", "details": resp, "html": html}), 200
 
@@ -119,17 +134,21 @@ def deleteRows():
     logging.debug(f"Deleting older posts from {post_id}")
     
     story_id = int(request.values.get("story_id"))
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+    
     if story.book:
         chapter_id= int(request.values.get("chapter_id"))
         try:
-            PostService.delete_posts_from(story_id, post_id, chapter_id=chapter_id)
+            PostService.delete_posts_from(story_id, current_user.id, post_id, chapter_id=chapter_id)
         except Exception as e:
             logging.debug(f"Error deleting posts {e}")
             return jsonify({"success": False, "message": "Database delete failed"}), 406
     else:
         try:
-            PostService.delete_posts_from(story_id, post_id)
+            PostService.delete_posts_from(story_id, current_user.id, post_id)
         except Exception as e:
             logging.debug(f"Error deleting posts {e}")
             return jsonify({"success": False, "message": "Database delete failed"}), 406
@@ -161,6 +180,13 @@ def generate_text():
 
     logging.debug(f"Received prompt: {data['prompt'][:30]}, Mode {data['mode']} Row {data['row_id']} {data['chars']} ")
     #
+    # First get the story
+    #
+    story=StoryService.get_user_story(data['story_id'], current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+    #
     # If Edit then all you need to do is update the database
     #
     if data['mode'] == "Edit Response":
@@ -168,10 +194,9 @@ def generate_text():
     #
     # If editing prompt need to delete everything after the prompt
     #
-    story=StoryService.get_story(data['story_id'])
-    #
-    # TODO: Generating chat can return an error in which case we don't want to have deleted the posts. 
-    # TODO: In which case we don't want to delete the posts; however we need to make sure they don't get added to the chat_history before generation   
+    # Generating chat can return an error in which case we don't want to delete the posts; however we need 
+    # to make sure they don't get added to the chat_history before generation. Set a limit to the row_id of the prompt being 
+    # edited so that only posts before that are added to the chat history.   
     # 
     limit=None
     if data['mode'] == "Edit Prompt":
@@ -238,10 +263,10 @@ def delete_posts(story_id, row_id, chapter_id=None):
     try:
         if chapter_id:
             logging.debug(f"Deleting newer posts from {row_id} for story {story_id} chapter {chapter_id}")
-            PostService.delete_posts_from(story_id, row_id, chapter_id=chapter_id)
+            PostService.delete_posts_from(story_id, current_user.id ,row_id, chapter_id=chapter_id)
         else:
             logging.debug(f"Deleting newer posts from {row_id} for story {story_id}")
-            PostService.delete_posts_from(story_id, row_id)
+            PostService.delete_posts_from(story_id, current_user.id, row_id)
         return
     except Exception as e:
         logging.debug(f"Error deleting posts {e}")
@@ -256,7 +281,7 @@ def json_response(payload, status=200, flash_msg=None, category="success"):
 
 def handle_edit_response(row_id, prompt):
     logging.debug("Handling edit response")
-    success = PostService.update_message(row_id, prompt)
+    success = PostService.update_message(row_id, prompt, current_user.id)
 
     if not success:
         return json_response({"success": False, "message": "Response update failed"}, 406)
@@ -269,7 +294,7 @@ def handle_edit_response(row_id, prompt):
 
 def generate_chat_message(story_id, prompt, chars, chapter_id=None, limit=None):
     chat = get_chat_service()
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
     if story.book:
         chapter=ChapterService.get_chapter(chapter_id)
 
@@ -304,14 +329,14 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
     # multi determines if there are parts to add to the post. Add the post first
     # indicating whether there are further parts
     if chapter_id:
-        post_id = PostService.insert_post(story_id, "user", prompt, multi, chapter_id=chapter_id)
+        post_id = PostService.insert_post(story_id, current_user.id, "user", prompt, multi, chapter_id=chapter_id)
     else:
-        post_id = PostService.insert_post(story_id, "user", prompt, multi)
+        post_id = PostService.insert_post(story_id, current_user.id, "user", prompt, multi)
 
     # Add a character as a part for each character
 
     for ix in chars:
-        part = CharService.get_character(ix)
+        part = CharService.get_character(ix, current_user.id)
 
         text_part = buildChar(
             part.name,
@@ -322,21 +347,22 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
         )
 
         if chapter_id:
-            PostPartService.insert_post_text_part(story_id, post_id, text_part, chapter_id=chapter_id)
+            PostPartService.insert_post_text_part(story_id, current_user.id, post_id, text_part, chapter_id=chapter_id)
             # If there is an image associated with the character, add a part
-
+            # TODO: Add image description field to post_parts
             if part.image_mime_type:
                 PostPartService.insert_post_image_part(
-                    story_id, post_id, part.image_data, part.image_mime_type, chapter_id=chapter_id
+                    story_id, post_id, part.image_data, part.image_mime_type, part.image_description, chapter_id=chapter_id
                 )
         else:
-            PostPartService.insert_post_text_part(story_id, post_id, text_part)
+            PostPartService.insert_post_text_part(story_id, current_user.id, post_id, text_part)
 
             # If there is an image associated with the character, add a part
 
             if part.image_mime_type:
+                # TODO: Add image description field to post_parts
                 PostPartService.insert_post_image_part(
-                    story_id, post_id, part.image_data, part.image_mime_type
+                    story_id, post_id, part.image_data, part.image_mime_type, part.image_description
                 )
 
     posts = UnifiedPostTimelineService.get_post(post_id)
@@ -344,9 +370,9 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
     # Now add the response as a new post
 
     if chapter_id:
-        newpost_id = PostService.insert_post(story_id, "model", message, False, chapter_id=chapter_id)
+        newpost_id = PostService.insert_post(story_id, current_user.id, "model", message, False, chapter_id=chapter_id)
     else:
-        newpost_id = PostService.insert_post(story_id, "model", message, False)
+        newpost_id = PostService.insert_post(story_id, current_user.id, "model", message, False)
 
     newpost = UnifiedPostTimelineService.get_post(newpost_id)
 
@@ -391,12 +417,11 @@ def buildHistory(chat, story, posts, chapter=None):
             if post.part_type == "text":
                 multimessage.append({"text": post.part_text})
             elif post.part_type == "image":
+                # TODO: Replace the following with a text part and post.part_image_description to reduce the token load and provide better context to the model about the image
+                # This will need image_description adding to unified post timeline view and the post part table
                 multimessage.append(
                     {
-                        "inline_data": {
-                            "mime_type": post.part_image_mime_type,
-                            "data": post.part_image_data,
-                        }
+                        "text": f"Use the following text to describe the character's physical appearance: { post.part_image_description }"
                     }
                 )
         else:  # Getting here we have a post
@@ -431,12 +456,10 @@ def buildPrompt(content, chars):
   
         multi_modal_content.append({"text": txtprompt})
         if char.image_mime_type:
+            # TODO: Replace the following with a text part and char.image_description to reduce the token load and provide better context to the model about the image
             multi_modal_content.append(
                 {
-                    "inline_data": {
-                        "mime_type": char.image_mime_type,
-                        "data": char.image_data,
-                    }
+                    "text": f"Use the following text to describe the character's physical appearance: { char.image_description }"
                 }
             )
 
@@ -452,7 +475,7 @@ def buildBaseChapter(story, chapter, prompt=""):
     story_chars=[]
     chapter_chars=ChapterCharService.get_chapter_chars(story.story_id, chapter.chapter_id)
     for chapter_char in chapter_chars:
-        char=CharService.get_character(chapter_char.char_id)
+        char=CharService.get_character(chapter_char.char_id, current_user.id)
         if chapter_char.override:
             note=chapter_char.note
         else:
@@ -466,6 +489,7 @@ def buildBaseChapter(story, chapter, prompt=""):
             "motivation": char.motivation,
             "image_mime_type" : char.image_mime_type,
             "image_data": char.image_data,
+            "image_description": char.image_description,
             "note": note
         })
     return render_template("prompts/baseChapterPrompt.txt", story=story, chapter=chapter, summaries=summaries, characters=story_chars, prompt=prompt)

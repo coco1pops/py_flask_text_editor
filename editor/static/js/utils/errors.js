@@ -3,7 +3,7 @@ import { showNotifyModal } from '../ui/modals.js';
 
 // Utility function for handling ajax errors in a consistent way across the module. 
 
-export function handleAjaxError({ err, context }) {
+export function handleAjaxError( err, context ) {
     // Extract useful info
     const statusCode = err.jqXHR?.status;
     const responseText = err.jqXHR?.responseText;
@@ -30,8 +30,8 @@ export function handleAjaxError({ err, context }) {
         }, responseText);
 }
 
-function showError(err) {
+function showError(err, responseText) {
     // This is a very basic error display function. We can make it more sophisticated later if we want to
-    let errorMessage=`${err.context}. An error occurred: ${err.statusCode} - ${err.message}.`;
+    let errorMessage=`${err.context}. An error occurred: ${err.statusCode} - ${err.message}. Response: ${responseText}`;
     showNotifyModal(errorMessage, "Error");
 };

@@ -9,7 +9,8 @@ from flask import (
     jsonify,
     send_file,
     flash,
-    get_flashed_messages
+    get_flashed_messages,
+    abort
 )
 from flask_login import current_user
 
@@ -37,7 +38,13 @@ def require_login():
 @bp.route("/create/<int:story_id>", methods=["GET", "POST"])
 def create(story_id=None):
 
-    mode= "Edit" if story_id else "Create"
+    mode= "Create"
+    if story_id:
+        story = StoryService.get_user_story(story_id, current_user.id)
+        if not story:
+            logging.error(f"Error occurred while fetching story")
+            abort(404, description="Story not found or access denied.")
+        mode= "Edit" 
     params = ParamsService.get_params(1)
     if not params:
         raise Exception("No parameters found. Please ensure there is a record in the params table with id 1")
@@ -51,7 +58,7 @@ def create(story_id=None):
 
         if mode == "Edit":
             logging.debug(f"Updating story {story_id}")
-            story = StoryService.get_story(story_id)
+            story = StoryService.get_user_story(story_id, current_user.id)
             storyChars = StoryWithCharactersService.get_story_with_characters(story_id)
         else:
             book = "book" in request.form
@@ -84,14 +91,14 @@ def create(story_id=None):
             world_rules=params.world_rules
 
         if mode == "Create":
-            story_id =StoryService.insert_story(title, note, systeminstruction, temperature, 
+            story_id =StoryService.insert_story(current_user.id, title, note, systeminstruction, temperature, 
                 top_p, harassment_threshold, hate_speech_threshold, dangerous_content_threshold, 
                 explicit_content_threshold, model, world_rules, book)
-            story=StoryService.get_story(story_id)
+            story=StoryService.get_user_story(story_id, current_user.id)
             storyChars = []
             flash("Story Added", "success")
         else:
-            StoryService.update_story_all(story_id, title, note, systeminstruction, temperature, 
+            StoryService.update_story_all(story_id, current_user.id, title, note, systeminstruction, temperature, 
                 top_p, harassment_threshold, hate_speech_threshold, dangerous_content_threshold, 
                 explicit_content_threshold, model, world_rules)
             flash("Story Updated", "success")
@@ -115,11 +122,11 @@ def create(story_id=None):
         storyChars = []
         if story_id:
             logging.debug(f"Loading story {story_id}")
-            story = StoryService.get_story(story_id)
+            story = StoryService.get_user_story(story_id, current_user.id)
             storyChars = StoryWithCharactersService.get_story_with_characters(story_id)
 
     sysints = SysIntService.get_sysints()
-    chars = CharService.get_characters_outside_story(story_id)
+    chars = CharService.get_characters_outside_story(story_id, current_user.id)
     return render_template("stories/storyCreate.html", 
         story=story, 
         storyChars=storyChars, 
@@ -135,7 +142,7 @@ def stories():
         
         if action.startswith("Generate:"):
             story_id = action.split(":")[1]
-            story=StoryService.get_story(story_id)
+            story=StoryService.get_user_story(story_id, current_user.id)
             if story.book:
                 return redirect(url_for("chapters.chapters", story_id=story_id))
             else:
@@ -144,7 +151,7 @@ def stories():
             story_id = action
             return redirect(url_for("stories.create", story_id=story_id))
 
-    stories = StoryService.get_stories()
+    stories = StoryService.get_user_stories(current_user.id)
 
     return render_template("stories/storiesList.html", stories=stories)
 
@@ -156,8 +163,13 @@ def delete_story():
     story_id = int(request.values.get("story_id"))
     logging.debug(f"Requested delete of row {story_id}")
     if story_id:
+        story = StoryService.get_user_story(story_id, current_user.id)
+        if not story:
+            logging.error(f"Error occurred while fetching story")
+            return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+        
         try:
-            StoryService.delete_story(story_id)
+            StoryService.delete_story(story_id, current_user.id)
             flash("Story deleted", "success")
             messages = get_flashed_messages(with_categories=True)
             return jsonify({"success": True,"messages": messages}),200
@@ -179,8 +191,12 @@ def update_story():
 
     logging.debug(f"Updating {story_id} {field} {value}")
     if story_id:
+        story = StoryService.get_user_story(story_id, current_user.id)
+        if not story:
+            logging.error(f"Error occurred while fetching story")
+            return jsonify({"success": False, "message": "Story not found or access denied"}), 404
         try:
-            StoryService.update_story(story_id, field, value)
+            StoryService.update_story(story_id, current_user.id, field, value)
             return jsonify({"success": True, "message": "Record updated successfully"}), 200
         except Exception as e:
             logging.error(f"Error updating story: {e}")
@@ -196,7 +212,10 @@ def update_story():
 def print_story():
     data=request.get_json()
     story_id = int(data.get("story_id"))
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
     dl_name = f"{story.title}.docx"
     logging.debug(f"Printing {dl_name}")
     if story_id:

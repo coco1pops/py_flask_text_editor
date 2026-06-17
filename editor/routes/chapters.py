@@ -10,7 +10,8 @@ from flask import (
     jsonify,
     send_file,
     flash,
-    get_flashed_messages
+    get_flashed_messages,
+    abort
 )
 from flask_login import login_required, current_user
 
@@ -37,12 +38,15 @@ def require_login():
 #
 @bp.route("/story/<int:story_id>/chapter/create", methods=["GET", "POST"])
 @bp.route("/story/<int:story_id>/chapter/<int:chapter_id>", methods=["GET", "POST"])
-@login_required
 def create_chapter(story_id, chapter_id=None):
 
     #chapter=None
     mode= "Edit" if chapter_id else "Create"
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        abort(404, description="Story not found or access denied.")
+
     story_chars=None
 
     if mode == "Edit":
@@ -87,9 +91,8 @@ def create_chapter(story_id, chapter_id=None):
                 story_chars=story_chars)
 
         if mode=="Edit":
-            status=request.form["status"]
             ChapterService.update_chapter_all(chapter_id, title, position, introduction, goal, 
-                memory, status)
+                memory)
             flash("Chapter Updated", "success")
 
         else:
@@ -116,6 +119,10 @@ def update_chapter():
 
     logging.debug(f"Updating Story {story_id}, Chapter {chapter_id} {field} {value}")
     if story_id:
+        story=StoryService.get_user_story(story_id, current_user.id)
+        if not story:
+            logging.error(f"Error occurred while fetching story")
+            return jsonify({"success": False, "message": "Story not found or access denied"}), 404
         ChapterService.update_chapter(chapter_id, field, value)
         if field == "summary":
             chapter=ChapterService.get_chapter_for_display(chapter_id)
@@ -161,9 +168,11 @@ def buildChapterChars(story_id, chapter_id):
 
 # Returns a list of chapters for a story
 @bp.route("/story/<int:story_id>/chapters", methods=["GET", "POST"])
-@login_required
 def chapters(story_id):
-    story=StoryService.get_story(story_id)
+    story=StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        abort(404, description="Story not found or access denied.")
     if request.method == "POST":
         action = request.form.get("action")
         if action.startswith("Generate:"):
@@ -178,9 +187,12 @@ def chapters(story_id):
     return render_template("stories/chapterList.html", story=story, chapters=chapters)
 
 @bp.route("/addChapterCharacter", methods=["POST"])
-@login_required
 def addChapterCharacter():
     story_id=int(request.values.get("story_id"))
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
     chapter_id=int(request.values.get("chapter_id"))
     char_id=int(request.values.get("char_id"))
     try:
@@ -191,9 +203,13 @@ def addChapterCharacter():
         return jsonify({"success": False, "message": "Database insert failed"}), 406
 
 @bp.route("/deleteChapterCharacter", methods=["POST"])
-@login_required
 def deleteChapterCharacter():
     id=request.values.get("id")
+    record=ChapterCharService.get_chapter_char(id)
+    story=StoryService.get_user_story(record.story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
     try:
         ChapterCharService.delete_chapter_char(id)
         return ({"success": True, "message": "Character removed from chapter"}), 200
@@ -202,9 +218,13 @@ def deleteChapterCharacter():
         return jsonify({"success": False, "message": "Database delete failed"}), 406    
 
 @bp.route("/updateChapterCharacter", methods=["POST"])
-@login_required
 def updateChapterCharacter():
     id=request.values.get("id")
+    record=ChapterCharService.get_chapter_char(id)
+    story=StoryService.get_user_story(record.story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
     field=request.values.get("field")
     value=request.values.get("value")
     if field=="override":
@@ -222,6 +242,11 @@ def updateChapterCharacter():
 @bp.route("/delete_chapter", methods=["POST"])
 def delete_chapter():
     story_id = int(request.values.get("story_id"))
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+
     chapter_id = int(request.values.get("chapter_id"))
     logging.debug(f"Requested delete of story {story_id}, chapter {chapter_id}")
     if story_id and chapter_id:
@@ -245,7 +270,10 @@ def print_chapter():
     story_id = int(data.get("story_id"))
     chapter_id = int(data.get("chapter_id"))
 
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
     chapter=ChapterService.get_chapter(chapter_id)
 
     dl_name = f"{story.title} {chapter.title}.docx"
@@ -269,9 +297,13 @@ def summarise_chapter():
     story_id = int(request.values.get("story_id"))
     chapter_id = int(request.values.get("chapter_id"))
     status=request.values.get("status")
-    ChapterService.update_chapter(chapter_id, "status", status)
 
-    story = StoryService.get_story(story_id)
+    story = StoryService.get_user_story(story_id, current_user.id)
+    if not story:
+        logging.error(f"Error occurred while fetching story")
+        return jsonify({"success": False, "message": "Story not found or access denied"}), 404
+
+    ChapterService.update_chapter(chapter_id, "status", status)
     chapter= ChapterService.get_chapter(chapter_id)
     dl_name = f"{story.title} {chapter.title}"
     logging.debug(f"Summarising {dl_name}")
@@ -294,7 +326,7 @@ def build_summary(story, chapter):
     chars_list=ChapterCharService.get_chapter_chars(story.story_id, chapter.chapter_id)
     chars=[]
     for char in chars_list:
-        character = CharService.get_character(char.char_id)
+        character = CharService.get_character(char.char_id, current_user.id)
         chars.append({
             "name": character.name,
             "note" : char.note

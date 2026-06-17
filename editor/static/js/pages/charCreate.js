@@ -44,7 +44,7 @@ async function uploadImage() {
                 showNotifyModal("Invalid file type", "Error");
             }
             else {
-                handleAjaxError({err, context: "Upload Image"});
+                handleAjaxError(err, "Upload Image");
             }
   
         } finally {

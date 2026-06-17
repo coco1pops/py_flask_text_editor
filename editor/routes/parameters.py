@@ -19,6 +19,9 @@ from editor.models.chars import CharService
 from editor.models.users import UserService
 from editor.models.sysints import SysIntService
 from editor.models.storyChars import StoryCharsService
+from editor.models.chat_service import get_chat_service
+from editor.models.stories import Story
+from editor.models.params import ParamsService
 from editor.utils.processImage import process_image
 
 import os
@@ -38,8 +41,11 @@ bp = Blueprint("parameters", __name__)
 @login_required
 def createchar(char_id=None):
     if char_id:
-        char = CharService.get_character_formatted(char_id)
-        logging.debug(f"Updating character {char['char_id']}")
+        char = CharService.get_character_formatted(char_id, current_user.id)
+        if not char:
+            logging.error(f"Error occurred while fetching character")
+            abort(404, description="Character not found or access denied.")
+            logging.debug(f"Updating character {char['char_id']}")
     else:
         char = None
 
@@ -55,33 +61,75 @@ def createchar(char_id=None):
         if char_id == None:
             logging.debug("Inserting new character")
             char_id = CharService.insert_character(
-                name, description, personality, motivation
+                name, description, personality, motivation, current_user.id
             )
             logging.debug(f"Inserted character {char_id}")
             if image_file:
-                CharService.update_character_image(char_id, image_bytes, mimeType)
-            char = CharService.get_character(char_id)
+                image_description = getImageDescription(char_id, mimeType, image_bytes)
+                CharService.update_character_image(char_id, current_user.id, image_bytes, mimeType, image_description)
+            char = CharService.get_character(char_id, current_user.id)
             flash("Character added", "success")
         else:
             logging.debug(f"Updated character {char_id}")
             CharService.update_character_all(
-                char_id, name, description, personality, motivation
+                char_id, current_user.id, name, description, personality, motivation
             )
             if image_file:
-                CharService.update_character_image(char_id, image_bytes, mimeType)
-            char = CharService.get_character(char_id)
+                image_description = getImageDescription(char_id, mimeType, image_bytes)
+                CharService.update_character_image(char_id, current_user.id, image_bytes, mimeType, image_description)
+            char = CharService.get_character(char_id, current_user.id)
             flash("Character updated", "success")
 
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
     return render_template("parameters/charCreate.html", char=char)
 
+def getImageDescription(char_id, mimeType, image_data):
 
-@bp.route("/getchar")
+    message=[]
+
+    char = CharService.get_character(char_id, current_user.id)
+    full_desc = CharService.build_char(char_id, current_user.id)
+    prompt = render_template("prompts/describeCharacter.txt", name=char.name, desc=full_desc["text"])
+    message.append(prompt)
+    message.append({                    
+                        "inline_data": {
+                            "mime_type": mimeType,
+                            "data": image_data
+                        }
+                    })
+    
+    char_instruction=render_template("prompts/describeCharacterInstruction.txt")
+
+    params=ParamsService.get_params(1)
+    story=Story(temperature=params.temperature, 
+                top_p=params.top_p, 
+                model=params.model, 
+                harassment_threshold=params.harassment_threshold,
+                hate_speech_threshold=params.hate_speech_threshold, 
+                dangerous_content_threshold=params.dangerous_content_threshold, 
+                explicit_content_threshold=params.explicit_content_threshold)
+
+
+    chat=get_chat_service()
+    chat.reset_chat(story, char_instruction)
+    chat.add_history("user", message)
+    image_description = chat.send_message(prompt)
+
+    logging.debug(f"Generated image description prompt: {prompt[:100]}...")
+    logging.debug(f"Generated image description: {image_description[:100]}...")
+    return image_description
+
+"""
+@bp.route("/getchar", methods=["POST"])
 @login_required
 def getchar():
     char_id = int(request.values.get("char_id"))
-    row = CharService.get_character(char_id)
+    row = CharService.get_character(char_id, current_user.id)
+    if not row:
+        logging.error(f"Error occurred while fetching character")
+        return jsonify({"success": False, "message": "Character not found or access denied"}), 404
+    
     if row.image_mime_type:
         row.image_data = (
             "data:"
@@ -92,13 +140,17 @@ def getchar():
         )
 
     return jsonify(row), 200
-
+"""
 
 @bp.route("/deletechar", methods=["POST"])
 @login_required
 def delchar():
     char_id = int(request.values.get("char_id"))
     logging.debug(f"Deleting character {char_id}")
+    char = CharService.get_character(char_id, current_user.id)
+    if not char:
+        logging.error(f"Error occurred while fetching character")
+        return jsonify({"success": False, "message": "Character not found or access denied"}), 404
     
     if StoryCharsService.get_story_chars_for_char(char_id):
         flash("Cannot delete - character linked to story", "error")
@@ -106,7 +158,7 @@ def delchar():
         
     else:
         try:
-            CharService.delete_character(char_id)
+            CharService.delete_character(char_id, current_user.id)
             flash("Character deleted", "success")
             success=True
         except Exception as e:
@@ -120,7 +172,7 @@ def delchar():
 @bp.route("/chars", methods=["GET", "POST"])
 @login_required
 def chars():
-    chars = CharService.get_characters()
+    chars = CharService.get_characters(current_user.id)
     if request.method == "POST":
         char_id = int(request.form.get("action"))
         return redirect(url_for("parameters.createchar", char_id=char_id))
@@ -150,7 +202,11 @@ def build_char_list_item():
 
     logging.debug(f"Building char list for character {char_id}, input name {input_name} and dropdown {dropdown_id}")
     if char_id:
-        char = CharService.get_character(char_id)
+        char = CharService.get_character(char_id, current_user.id)
+        if not char:
+            logging.error(f"Error occurred while fetching character")
+            return jsonify({"success": False, "message": "Character not found or access denied"}), 404
+        
         list_item = render_template("parameters/charDropdownItemStub.html", char=char, input_name=input_name, dropdown_id=dropdown_id)
         return jsonify({"success": True, "message" : "List item built", "listItem": list_item}), 200
 

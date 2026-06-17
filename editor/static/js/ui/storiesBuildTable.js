@@ -1,5 +1,4 @@
 import {logger} from "../utils/logger.js";
-import { handleAjaxError } from "../utils/errors.js";
 
 export function buildClearLastRowButtons(tbody) {
 
