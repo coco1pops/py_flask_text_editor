@@ -12,6 +12,7 @@ Rules:
 - Be precise (no fluff)
 - Only include information relevant for future chapters
 - Format the response as valid GitHub-flavoured Markdown. Leave a blank line after every heading and before every bulleted or numbered list.
+- Don't use headings
 
 {% if previous %}{previous}{% endif %}
 

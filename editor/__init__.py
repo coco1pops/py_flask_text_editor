@@ -34,8 +34,10 @@ def create_app():
     logging.info("Startup-Initialising database")
     database.init_app(app)
     
-    logging.info("Startup-Initialising chat")
-    chat_service.initialize_global_chat_service();
+    # TODO: Delete if can initialise chat service for every call.
+
+    # logging.info("Startup-Initialising chat")
+    # chat_service.initialize_global_chat_service();
     
     logging.info("Startup-Initialising login module")
     login_manager.init_app(app)

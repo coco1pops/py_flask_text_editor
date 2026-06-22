@@ -34,7 +34,7 @@ def add_story_character():
     logging.debug(f"Adding char {char_id} to story {story_id} with notes {char_notes}")
     if story_id and char_id:
         try:
-            new_id = StoryCharsService.insert_story_char(story_id, char_id, char_notes)
+            new_id = StoryCharsService.insert_story_char(story_id, char_id, char_notes, current_user.id)
         except Exception as e:
             logging.error(f"Error adding story character: {e}")
             return jsonify({"success": False, "message": "Database Add Failed"}), 406
@@ -67,7 +67,7 @@ def update_story_character():
     logging.debug(f"Updating story char {id} with notes {char_notes}")
     if id:
         try:
-            StoryCharsService.update_story_char(id, char_notes)
+            StoryCharsService.update_story_char(id, char_notes, current_user.id)
             return jsonify({"success": True, "message": "Character updated successfully"}), 200
         except Exception as e:
             logging.error(f"Error updating story character: {e}")
@@ -88,7 +88,7 @@ def delete_story_character():
     logging.debug(f"Deleting story char {story_char_id}")
     if story_char_id:
         try:
-            StoryCharsService.delete_story_char(story_char_id)
+            StoryCharsService.delete_story_char(story_char_id, current_user.id)
             return jsonify({"success": True, "message": "Character deleted successfully", "char_id": char_id}), 200
         except Exception as e:
             logging.error(f"Error deleting story character: {e}")

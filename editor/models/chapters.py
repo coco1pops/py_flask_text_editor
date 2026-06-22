@@ -158,7 +158,8 @@ class ChapterService:
             chapter.introduction=introduction
             chapter.goal=goal
             chapter.memory=memory
-            
+
+            StoryService.touch_story(chapter.story_id, current_user.id)
             db.session.commit()
             return True
         except Exception as e:
@@ -193,6 +194,8 @@ class ChapterService:
 
             if not chapter:
                 return False
+
+            StoryService.touch_story(chapter.story_id, current_user.id)
 
             db.session.delete(chapter)
             db.session.commit()
@@ -230,6 +233,7 @@ class ChapterCharService:
     @staticmethod
     def delete_chapter_chars_by_story(story_id, char_id):
         try:
+            StoryService.touch_story(story_id, current_user.id)
             return ChapterChar.query.filter_by(story_id=story_id, char_id=char_id).delete(synchronize_session=False)
 
         except Exception as e:
@@ -253,6 +257,7 @@ class ChapterCharService:
         if not chapter_char:
             return False        
         try:
+            StoryService.touch_story(chapter_char.story_id, current_user.id)
             setattr(chapter_char, field, value)
             db.session.commit()
         except Exception as e:
@@ -264,6 +269,8 @@ class ChapterCharService:
         if not chapter_char:
             print_except("delete_chapter_char", "Record not found")     
         try:
+            StoryService.touch_story(chapter_char.story_id, current_user.id)
+
             db.session.delete(chapter_char)
             db.session.commit()
         except Exception as e:

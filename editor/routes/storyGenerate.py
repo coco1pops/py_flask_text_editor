@@ -93,23 +93,6 @@ def formatStoryChar(storyChar, note):
     
     return({"textBundle" : textPartHTML, "image_data": imagePart})
 
-""" Not used 
-@bp.route("/get_message", methods=["GET"])
-def get_message():
-    post_id = int(request.values.get("post_id"))
-
-    logging.debug(f"Retrieving message for {post_id}")
-    if post_id:
-        message = PostService.get_message(post_id)
-        if message:
-            story=StoryService.get_user_story(message.story_id, current_user.id)
-            if not story:
-                logging.error(f"Error occurred while fetching story")
-                return jsonify({"success": False, "message": "Story not found or access denied"}), 404
-            return jsonify({"success": True, "message": message}), 200
-
-    return jsonify({"error": "Database read failed"}), 406
-"""
 #
 # Assigns a character to a story
 #
@@ -349,7 +332,7 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
         if chapter_id:
             PostPartService.insert_post_text_part(story_id, current_user.id, post_id, text_part, chapter_id=chapter_id)
             # If there is an image associated with the character, add a part
-            # TODO: Add image description field to post_parts
+          
             if part.image_mime_type:
                 PostPartService.insert_post_image_part(
                     story_id, post_id, part.image_data, part.image_mime_type, part.image_description, chapter_id=chapter_id
@@ -360,7 +343,7 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
             # If there is an image associated with the character, add a part
 
             if part.image_mime_type:
-                # TODO: Add image description field to post_parts
+              
                 PostPartService.insert_post_image_part(
                     story_id, post_id, part.image_data, part.image_mime_type, part.image_description
                 )
@@ -417,8 +400,7 @@ def buildHistory(chat, story, posts, chapter=None):
             if post.part_type == "text":
                 multimessage.append({"text": post.part_text})
             elif post.part_type == "image":
-                # TODO: Replace the following with a text part and post.part_image_description to reduce the token load and provide better context to the model about the image
-                # This will need image_description adding to unified post timeline view and the post part table
+
                 multimessage.append(
                     {
                         "text": f"Use the following text to describe the character's physical appearance: { post.part_image_description }"
@@ -456,7 +438,7 @@ def buildPrompt(content, chars):
   
         multi_modal_content.append({"text": txtprompt})
         if char.image_mime_type:
-            # TODO: Replace the following with a text part and char.image_description to reduce the token load and provide better context to the model about the image
+
             multi_modal_content.append(
                 {
                     "text": f"Use the following text to describe the character's physical appearance: { char.image_description }"

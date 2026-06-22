@@ -22,6 +22,12 @@
         <img id="currentImage" name="currentImage" src="{{ char.image_data }}" style="max-width:300px;" />
     {% endif %}
 
+    {% if char.char_id %}
+    <div id="summary-box"  data-summary="{{char.display_description}}" class="mb-3">
+      <span id="summary-box-display">{{char.display_description | safe}}</span>
+    </div>
+    {% endif %}
+
     {{macros.textarea('personality', 'Personality', char.personality if char else '')}}
 
     {{macros.textarea('motivation', 'Motivation', char.motivation if char else '')}}

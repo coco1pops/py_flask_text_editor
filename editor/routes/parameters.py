@@ -59,26 +59,36 @@ def createchar(char_id=None):
             image_bytes, mimeType = process_image(image_file)
 
         if char_id == None:
+            success = True
             logging.debug("Inserting new character")
             char_id = CharService.insert_character(
                 name, description, personality, motivation, current_user.id
             )
             logging.debug(f"Inserted character {char_id}")
             if image_file:
-                image_description = getImageDescription(char_id, mimeType, image_bytes)
-                CharService.update_character_image(char_id, current_user.id, image_bytes, mimeType, image_description)
+                success, image_description = getImageDescription(char_id, mimeType, image_bytes)
+                if success:
+                    CharService.update_character_image(char_id, current_user.id, image_bytes, mimeType, image_description)
             char = CharService.get_character(char_id, current_user.id)
-            flash("Character added", "success")
+            if success:
+                flash("Character added", "success")
+            else:
+                flash(f"Character added, but failed to generate image description: {image_description}", "error")
         else:
+            success=True
             logging.debug(f"Updated character {char_id}")
             CharService.update_character_all(
                 char_id, current_user.id, name, description, personality, motivation
             )
             if image_file:
-                image_description = getImageDescription(char_id, mimeType, image_bytes)
-                CharService.update_character_image(char_id, current_user.id, image_bytes, mimeType, image_description)
+                success,image_description = getImageDescription(char_id, mimeType, image_bytes)
+                if success:
+                    CharService.update_character_image(char_id, current_user.id, image_bytes, mimeType, image_description)
             char = CharService.get_character(char_id, current_user.id)
-            flash("Character updated", "success")
+            if success:
+                flash("Character updated", "success")
+            else:
+                flash(f"Character updated, but failed to generate image description: {image_description}", "error")
 
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
@@ -105,20 +115,25 @@ def getImageDescription(char_id, mimeType, image_data):
     story=Story(temperature=params.temperature, 
                 top_p=params.top_p, 
                 model=params.model, 
-                harassment_threshold=params.harassment_threshold,
-                hate_speech_threshold=params.hate_speech_threshold, 
-                dangerous_content_threshold=params.dangerous_content_threshold, 
-                explicit_content_threshold=params.explicit_content_threshold)
+                harassment_threshold="BLOCK_NONE",
+                hate_speech_threshold="BLOCK_NONE",
+                dangerous_content_threshold="BLOCK_NONE",
+                explicit_content_threshold="BLOCK_NONE")
 
 
     chat=get_chat_service()
     chat.reset_chat(story, char_instruction)
     chat.add_history("user", message)
-    image_description = chat.send_message(prompt)
+    try:
+        image_description = chat.send_message(prompt)
+    except Exception as e:
+        mess=e if isinstance(e,str) else str(e)
+        logging.error(f"Error occurred while generating image description: {e}")
+        return False, mess
 
     logging.debug(f"Generated image description prompt: {prompt[:100]}...")
     logging.debug(f"Generated image description: {image_description[:100]}...")
-    return image_description
+    return True, image_description
 
 """
 @bp.route("/getchar", methods=["POST"])

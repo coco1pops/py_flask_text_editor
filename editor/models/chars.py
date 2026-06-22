@@ -5,6 +5,7 @@ from editor.models.chapters import ChapterCharService
 from datetime import datetime
 from flask_login import current_user
 import base64
+import markdown
 
 class Char(db.Model):
     __tablename__ = "chars"
@@ -64,7 +65,9 @@ class CharService:
                 "personality": char.personality,
                 "motivation": char.motivation,
                 "image_data": format_image_data,
-                "image_mime_type": char.image_mime_type
+                "image_mime_type": char.image_mime_type,
+                "image_description": char.image_description,
+                "display_description": markdown.markdown(char.image_description) if char.image_description else ""
             }
 
         except Exception as e:

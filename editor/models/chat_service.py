@@ -9,18 +9,22 @@ import os
 import logging
 
 # --- Global instance of the ChatService ---
-chat_service_instance = None # Initialize to None
+# TODO: Changing to chat service for every call, so this global instance may not be needed.
+# chat_service_instance = None # Initialize to None
 
-# --- Function to initialize the global instance ---
-def initialize_global_chat_service():
-
-    global chat_service_instance
+# --- Function to initialize the service  ---
+# def initialize_global_chat_service():
+def initialize_chat_service():
+    # TODO: Replacing with chat service for every call, so this global instance may not be needed.
+    # global chat_service_instance
     try:
         chat_service_instance = ChatService()
         logging.debug(f"Global ChatService instance created.")
     except (ValueError, RuntimeError) as e:
         logging.exception(f"CRITICAL ERROR: Failed to initialize ChatService module: {e}")
         chat_service_instance = None # Ensure it's None if initialization fails
+    # TODO: If you want to keep a global instance, uncomment the following line
+    return chat_service_instance
 
 # --- Helper function to get the instance ---
 def get_chat_service():
@@ -28,7 +32,9 @@ def get_chat_service():
     Provides access to the globally initialized ChatService instance.
     Returns None if initialization failed.
     """
-    return chat_service_instance
+    # TODO: Replacing with chat service for every call, so this global instance may not be needed.
+    # return chat_service_instance
+    return initialize_chat_service()  # Return a new instance for each call, as per the new design
 
 # Path to your downloaded service account JSON key
 SERVICE_ACCOUNT_FILE_PATH = os.getenv("SERVICE_ACCOUNT_FILE_PATH")

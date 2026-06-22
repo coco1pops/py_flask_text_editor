@@ -136,6 +136,8 @@ class StoryService:
                 print_except("update_story", "Record not found")
 
             setattr(story, field, value)
+            cls.touch_story(story_id, user_id)
+            
             db.session.commit()
         except Exception as e:
             db.session.rollback()

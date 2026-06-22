@@ -1,5 +1,6 @@
 from editor.models.database import db, print_except
 from editor.models.chapters import ChapterCharService
+from editor.models.stories import StoryService
 
 from datetime import datetime
 
@@ -57,7 +58,7 @@ class StoryCharsService:
 
 
     @staticmethod
-    def insert_story_char(story_id, char_id, char_note):
+    def insert_story_char(story_id, char_id, char_note, user_id):
         try:
             story_char = StoryChars(
                 story_id=story_id,
@@ -66,6 +67,8 @@ class StoryCharsService:
             )
 
             db.session.add(story_char)
+            StoryService.touch_story(story_id, user_id)
+
             db.session.commit()
 
             return story_char.id  # works for BOTH SQLite & Postgres
@@ -75,7 +78,7 @@ class StoryCharsService:
             print_except("insert_story_char", e)
 
     @classmethod
-    def delete_story_char(cls, story_char_id):  
+    def delete_story_char(cls, story_char_id, user_id):  
         try:
             story_char = db.session.get(StoryChars, story_char_id)
 
@@ -85,13 +88,15 @@ class StoryCharsService:
             ChapterCharService.delete_chapter_chars_by_story(story_char.story_id,story_char.char_id)
 
             db.session.delete(story_char)
+            StoryService.touch_story(story_char.story_id, user_id)
+
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             print_except("delete_story_char", e)
     
     @classmethod
-    def update_story_char(cls, id, note):    
+    def update_story_char(cls, id, note, user_id):    
         try:
             story_char = cls.get_story_char(id)
 
@@ -99,6 +104,8 @@ class StoryCharsService:
                 print_except("update_story_char", "Record not found")
 
             story_char.note = note
+            StoryService.touch_story(story_char.story_id, user_id)
+            
             db.session.commit()
         except Exception as e:
             db.session.rollback()

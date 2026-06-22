@@ -4,7 +4,7 @@ Your job is to extract the key features of an image of an individual.
 
 Rules:
 - Do NOT add new details
-- Do NOT use flowery language
+- Do NOT use flowery language but be positive
 - Focus only on the image itself
 - Prefer bullet points over prose
 

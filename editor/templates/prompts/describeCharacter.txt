@@ -4,4 +4,7 @@ alongside the text description.
 The character image follows as the second part of this prompt.
 
 Describe this character image in a detailed but structured way.
-Include appearance, clothing, distinguishing features and style.
+Include detailed physical appearance (figure, hair, attractiveness), clothing, distinguishing features and style.
+
+Format the response as valid GitHub-flavoured Markdown. Leave a blank line after every heading and before every bulleted or numbered list. 
+Don't use headings
