@@ -17,7 +17,7 @@ from flask_login import current_user
 from editor.models.stories import Story, StoryService
 from editor.models.storyChars import StoryWithCharactersService
 from editor.models.chars import CharService
-from editor.models.params import ParamsService
+from editor.models.params import ParamsService, ModelsService
 from editor.models.sysints import SysIntService
 
 import editor.utils.docwriter
@@ -46,6 +46,8 @@ def create(story_id=None):
             abort(404, description="Story not found or access denied.")
         mode= "Edit" 
     params = ParamsService.get_params(1)
+    models=ModelsService.get_active_models()
+    default_model=ModelsService.get_default_model()
     if not params:
         raise Exception("No parameters found. Please ensure there is a record in the params table with id 1")
 
@@ -87,7 +89,7 @@ def create(story_id=None):
             hate_speech_threshold=params.hate_speech_threshold
             dangerous_content_threshold=params.dangerous_content_threshold
             explicit_content_threshold=params.explicit_content_threshold
-            model=params.model
+            model=default_model.model_id
             world_rules=params.world_rules
 
         if mode == "Create":
@@ -116,7 +118,7 @@ def create(story_id=None):
             hate_speech_threshold=params.hate_speech_threshold,
             dangerous_content_threshold=params.dangerous_content_threshold,
             explicit_content_threshold=params.explicit_content_threshold,
-            model=params.model,
+            model=default_model.model_id,
             world_rules=params.world_rules
             )
         storyChars = []
@@ -131,7 +133,8 @@ def create(story_id=None):
         story=story, 
         storyChars=storyChars, 
         sysints=sysints, 
-        chars=chars, 
+        chars=chars,
+        models=models, 
         isadmin=current_user.is_admin)
 
 # Returns a list of stories

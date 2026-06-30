@@ -108,10 +108,10 @@
             </div>
           </td>
 
-          <td style="max-width: 300px;" data-base-data="{{story_char.base_notes}}">
+          <td style="max-width: 300px;" data-base-data="{{story_char.base_notes}}" class="flex-grow-1">
             <div class="display-note {% if story_char.override %} d-none {% endif %}">{{story_char.base_notes}}</div>
             <textarea class="entry-textarea entry-note {%if not story_char.override %} d-none {% endif %}" rows="2"
-              >{% if story_char.override %}{{story_char.notes}}{% endif %}</textarea> 
+              style="width:100%; resize:vertical;">{% if story_char.override %}{{story_char.notes}}{% endif %}</textarea> 
           </td>
       </tr>
       {% endfor %}

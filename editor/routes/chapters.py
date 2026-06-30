@@ -22,7 +22,7 @@ from editor.utils.docwriter import generate_doc_from_posts
 from editor.models.posts import PostService
 from editor.models.chars import CharService
 
-from editor.models.chat_service import get_chat_service
+from editor.models.chat_service import get_chat_service, ChatResult
 
 bp = Blueprint("chapters", __name__)
 
@@ -309,37 +309,56 @@ def summarise_chapter():
     logging.debug(f"Summarising {dl_name}")
 
     if story_id and chapter_id:
-        try:
-            summary, disp_summary = build_summary(story, chapter)
+        success, summary = build_summary(story, chapter)
+        if success == 0:
+                disp_summary=markdown.markdown(summary)
 
-            flash("Chapter summarised", "success")
-            messages = get_flashed_messages(with_categories=True)
-            return ({"success": True, "summary" : summary, "disp_summary" : disp_summary, "messages" : messages}), 200
-        except Exception as e:
-            logging.debug(f"Error {e}")
-            return jsonify({"success": False, "message": "Summary generation failed"}), 406
+                flash("Chapter summarised", "success")
+                messages = get_flashed_messages(with_categories=True)
+
+                return ({"success": True, "summary" : summary, "disp_summary" : disp_summary, "messages" : messages}), 200
+        elif success==1:
+            return jsonify({"success": False, "message": summary}), 422
+        else:
+            return jsonify({"success": False, "message": summary}), 500
     else:
         return jsonify({"success": False, "message": "Missing story or chapter id"}), 406
 
 def build_summary(story, chapter):
-    posts=PostService.get_chapter_posts(story.story_id, chapter.chapter_id)
-    chars_list=ChapterCharService.get_chapter_chars(story.story_id, chapter.chapter_id)
-    chars=[]
-    for char in chars_list:
-        character = CharService.get_character(char.char_id, current_user.id)
-        chars.append({
-            "name": character.name,
-            "note" : char.note
-        })
-    previous=ChapterService.get_previous_chapter_summary(story.story_id, chapter.position)
+    try:
+        posts=PostService.get_chapter_posts(story.story_id, chapter.chapter_id)
+        chars_list=ChapterCharService.get_chapter_chars(story.story_id, chapter.chapter_id)
+        chars=[]
+        for char in chars_list:
+            character = CharService.get_character(char.char_id, current_user.id)
+            chars.append({
+                "name": character.name,
+                "note" : char.note
+            })
+        previous=ChapterService.get_previous_chapter_summary(story.story_id, chapter.position)
 
-    prompt=render_template("prompts/summariseChapter.txt", story=story, chapter=chapter, chars=chars, previous=previous, posts=posts)
-    summary_instruction=render_template("prompts/summariseInstruction.txt")
-    chat=get_chat_service()
-    chat.reset_chat(story, summary_instruction)
-    chat.add_history("user", prompt)
-    summary = chat.send_message(prompt)
+        prompt=render_template("prompts/summariseChapter.txt", story=story, chapter=chapter, chars=chars, previous=previous, posts=posts)
+        summary_instruction=render_template("prompts/summariseInstruction.txt")
+        chat=get_chat_service()
+        chat.reset_chat(story, summary_instruction)
+        chat.add_history("user", prompt)
+    
+    except Exception as e:
+        
+        return 2, "Error: Problem Building History"
+   
+    try:
+        chatresult=ChatResult(False, "", "", "")
+        chatresult = chat.send_message(prompt)
+            
+        if chatresult.success:
+            ChapterService.update_chapter(chapter.chapter_id, "summary", chatresult.text)
+            return 0, chatresult.text
 
-    ChapterService.update_chapter(chapter.chapter_id, "summary", summary)
-
-    return summary, markdown.markdown(summary)
+        else:
+            summary= f"Error: Prompt Rejected, Reason: {chatresult.finish_reason}, Info: {chatresult.safety_settings}"
+            return 1, summary
+        
+    except Exception as e:
+        
+        return 2, "Error: Problem Generating Summary"

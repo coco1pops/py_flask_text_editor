@@ -109,7 +109,10 @@ export async function post() {
       appState.getState().chars);
 
   } catch (err) {
-      handleAjaxError(err, "Post Prompt");
+      const statusCode = err.jqXHR?.status;
+      if (statusCode != 422) {
+        handleAjaxError(err, "Post Prompt");
+      }
       logger.error(err);
     // Currently extracts data from the error object and shows a flash message.
       const messages = JSON.parse(err?.jqXHR?.responseText)?.messages;
@@ -153,7 +156,10 @@ export async function updateRow(btn, mode) {
 
 
   } catch (err) {
-      handleAjaxError(err, "Update Post");
+      const statusCode = err.jqXHR?.status;
+      if (statusCode != 422) {
+        handleAjaxError(err, "Post Prompt");
+      }
       const messages = JSON.parse(err?.jqXHR?.responseText)?.messages;
       if (messages) {
         UI.displayMessages(messages);

@@ -17,19 +17,20 @@ from flask import (
 from flask_login import current_user
 
 from editor.models import posts
-from editor.models.chat_service import get_chat_service
+from editor.models.chat_service import get_chat_service, ChatResult
 from editor.models.stories import StoryService
 from editor.models.storyChars import StoryCharsService, StoryWithCharactersService
 from editor.models.posts import PostPartService, PostService, UnifiedPostTimelineService 
 from editor.models.chapters import ChapterService, ChapterCharService
 from editor.models.chars import CharService
+from editor.models.params import ModelsService
 from editor.utils.formatCharacter import buildChar
 
 bp = Blueprint("storyGenerate", __name__)
 @bp.before_request
 def require_login():
     if not current_user.is_authenticated:
-        logging.debug("Not authenticated")
+        logging.debug("Not authenticated")      
         return redirect(url_for("login.login"))  # Redirect to your login route
 #
 # Used to display an individual story and the chat. Behind the scenes it also populates the chat with previous messages
@@ -80,8 +81,9 @@ def generate_story():
         formatted_post = render_template("stories/storyAddNewRowStub.html", post=post, is_last=is_last)
         formatted_posts += formatted_post
 
+    models=ModelsService.get_active_models()
     return render_template(
-        "stories/storyGenerate.html", story=story, chapter=chapter, posts=formatted_posts, chars=chars, storyChars=sCOutput, isadmin=current_user.is_admin
+        "stories/storyGenerate.html", story=story, chapter=chapter, posts=formatted_posts, chars=chars, storyChars=sCOutput, models=models, isadmin=current_user.is_admin
     )
 
 def formatStoryChar(storyChar, note):
@@ -187,17 +189,33 @@ def generate_text():
 
     # Try to generate more chat
 
+    chatresult=ChatResult(False,None, "","")
+
     try:
         if story.book:
-            message = generate_chat_message(data['story_id'], data['prompt'], data['chars'], chapter_id=data['chapter_id'], limit=limit)
+            chatresult = generate_chat_message(data['story_id'], data['prompt'], data['chars'], chapter_id=data['chapter_id'], limit=limit)
         else:
-            message = generate_chat_message(data['story_id'], data['prompt'], data['chars'], limit=limit)
+            chatresult = generate_chat_message(data['story_id'], data['prompt'], data['chars'], limit=limit)
 
-    except Exception as e:
-        mess=e if isinstance(e,str) else str(e)
-        return json_response(
+        if chatresult.success:
+            message=chatresult.text
+        else:
+            mess= f"Error: {chatresult.text}, Reason: {chatresult.finish_reason}, Info: {chatresult.safety_ratings}"
+            return json_response(
             {"success": False, "message": "Generation Failed"},
             422,
+            flash_msg=mess,
+            category="error"
+        )
+
+    except Exception as e:
+        logging.error(f"Could not generate response {e}")
+        
+        mess="Problem Processing Prompt"
+
+        return json_response(
+            {"success": False, "message": "Generation Failed"},
+            500,
             flash_msg=mess,
             category="error"
         )

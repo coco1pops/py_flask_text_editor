@@ -21,6 +21,17 @@ export function getImageUploadURL(formData) {
     return apiRequest(options);
 }
 
+export function getFormattedText(txt) {
+    const options = {
+            url: "/getFormattedText",
+            type: "post",
+            data: { 'text': txt },
+            dataType: "json"
+    };
+    return apiRequest(options);
+}
+
+
 export function deleteChar(id) {
     const options = {
             url: "/deletechar",

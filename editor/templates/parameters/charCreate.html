@@ -17,16 +17,24 @@
         <div id="fileName" class="form-text"></div>
     </div>
 
-    <img id="preview" name="preview" style="display:none; max-width:300px;" />
-    {% if char.image_data %}
-        <img id="currentImage" name="currentImage" src="{{ char.image_data }}" style="max-width:300px;" />
-    {% endif %}
+    <div class="d-flex justify-content-start align-items-center gap-4">
+        <img id="preview" name="preview" style="display:none; max-width:300px;" />
+        {% if char.image_data %}
+            <img id="currentImage" name="currentImage" src="{{ char.image_data }}" style="max-width:300px;" />
+        {% endif %}
 
-    {% if char.char_id %}
-    <div id="summary-box"  data-summary="{{char.display_description}}" class="mb-3">
-      <span id="summary-box-display">{{char.display_description | safe}}</span>
+        {% if char.char_id %}
+        <div id="summary-box"  data-display-description="{{char.display_description | safe}}" data-description="{{char.image_description}}" class="mb-3 flex-grow-1">
+            <span id="summary-box-display">{{char.display_description | safe}}</span>
+            <textarea name="image-description" id="image-description" rows="2" class="entry-textarea form-control d-none mb-3">{{char.image_description}}</textarea>
+            <div class="d-flex justify-content-start align-items-left gap-2">
+                <button type="button" class="btn btn-secondary" id="edit-desc">Edit</button>
+                <button type="button" class="btn btn-secondary d-none" id="edit-ok">OK</button>
+                <button type="button" class="btn btn-secondary d-none" id="edit-cancel">Cancel</button>
+            </div>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
     {{macros.textarea('personality', 'Personality', char.personality if char else '')}}
 
@@ -35,6 +43,7 @@
     <div class="form-group">
         <button type="submit" class="btn btn-primary">{{ 'Update' if char else 'Add' }}</button>
     </div>
+
 </form>
 
  {{ macros.modalConfirm('Invalid File', 'Error message') }}

@@ -89,7 +89,7 @@
 
 {{ macros.flashMessages() }}
 {% import '_studio.html' as studio %}
-{{ studio.studioModal(story, sysints, isadmin) }}
+{{ studio.studioModal(story, sysints, models, isadmin) }}
 
 {% import '_charUtils.html' as charUtils %}
 {{ charUtils.charsPicker(story, chars) }}

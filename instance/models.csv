@@ -1,0 +1,7 @@
+model_id,is_default,deprecated,name
+gemini-2.5-flash-lite,1,0,"Gemini 2.5 Flash Lite"
+gemini-2.5-flash,0,0,"Gemini 2.5 Flash"
+gemini-3.5-flash,0,0,"Gemini 3.5 Flash"
+gemini-2.5-pro,0,0,"Gemini 2.5 Pro"
+gemini-3.5-pro,0,0,"Gemini 3.5 Pro"
+gemini-3.1-flash-lite,0,0,"Gemini 3.1 Flash"

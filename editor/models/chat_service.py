@@ -5,8 +5,17 @@ import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from google.auth.exceptions import DefaultCredentialsError
 
+from dataclasses import dataclass
+
 import os
 import logging
+
+@dataclass
+class ChatResult:
+    success: bool
+    text: str | None
+    finish_reason: str
+    safety_ratings: str
 
 # --- Global instance of the ChatService ---
 # TODO: Changing to chat service for every call, so this global instance may not be needed.
@@ -165,21 +174,61 @@ class ChatService:
         try:
             logging.debug(f"Sending user prompt...")
             response = self.chat_session.send_message({"role": "user", "parts": message})
-            response_text = response.text
-            logging.debug(f"Received model response: {response_text[:30]}")
-            logging.debug(f"Metadata response: {response.usage_metadata}")
-            return response_text
-        except Exception as e:
-            logging.error(f"Exception type: {type(e).__name__}")
-            logging.error(f"Exception module: {type(e).__module__}")
-            logging.error(f"Exception args: {e.args}")
+            candidate=response.candidates[0]
+            result=ChatResult(False,"","","")
+            reason_id=candidate.finish_reason
+            result.finish_reason=candidate.FinishReason(reason_id).name
+            
+            if candidate.finish_reason == candidate.FinishReason.STOP:
+                result.success=True
+                result.text=response.text
 
-            if isinstance(e,str):
-                mess=e
             else:
-                mess=e.args[0]
-            raise Exception(f"Error in send prompt, {mess}")
+                result=self.process_safety_error(candidate)
 
+            logging.debug(f"Metadata response: {response.usage_metadata}")
+            return result
+            
+       
+        except Exception as e:
+            candidate=e.args[0]
+            if hasattr(candidate, "finish_reason"):
+                if candidate.finish_reason:
+
+                    result=self.process_safety_error(candidate)
+                    return result
+                
+            logging.exception("Gemini failed to respond")
+
+            logging.error("Exception type: %s", type(e))
+            logging.error("args type: %s", type(e.args))
+            logging.error("args length: %s", len(e.args))
+
+            for i, arg in enumerate(e.args):
+                logging.error("arg[%s] type: %s", i, type(arg))
+                logging.error("arg[%s] repr: %r", i, arg)
+                logging.error("arg[%s] dir: %s", i, dir(arg))
+
+            raise
+        
+    def process_safety_error(self,candidate):
+        result=ChatResult(False,"","","")
+        reason_id=candidate.finish_reason
+        result.finish_reason=candidate.FinishReason(reason_id).name
+        if candidate.finish_reason == candidate.FinishReason.SAFETY:
+            result.success=False
+            result.text="Gemini rejected the prompt: "
+            reasons=[]
+            for rating in candidate.safety_ratings:
+                if rating.probability > 1:
+
+                    reasons.append(
+                        f"{rating}"
+                    )
+
+                result.safety_ratings = ", ".join(reasons)
+        return result
+    
     def get_chat_history(self):
         """
         Returns the current conversation history.
@@ -235,3 +284,4 @@ class ChatService:
             self.chat_session.history.append ({'role': creator, 'parts' : parts})
         except Exception as e:
             logging.error (f"Failed to append to chat history {e}")
+            raise

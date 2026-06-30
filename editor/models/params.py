@@ -23,7 +23,7 @@ class ParamsService:
     @staticmethod
     def insert_base_params():     
         try:
-            parmas = Params(
+            params = Params(
                 id=1,
                 temperature=0.7,
                 top_p=0.9,
@@ -34,11 +34,32 @@ class ParamsService:
                 model="gemini-2.5-flash-lite",
                 world_rules="*Relationships*/n*Locations*/n*Major world rules*/n*Timeline markers*")
 
-            db.session.add(parmas)
+            db.session.add(params)
             db.session.commit()
 
-            return parmas.id  # works for BOTH SQLite & Postgres
+            return params.id  # works for BOTH SQLite & Postgres
     
         except Exception as e:
             db.session.rollback()
             print_except("insert_params", e)
+
+class Models(db.Model):
+    __tablename__= 'models'
+    model_id = db.Column(db.String(30), primary_key=True)
+    is_default = db.Column(db.Boolean, default=False)
+    deprecated = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(30), nullable=True)
+
+class ModelsService:
+    @staticmethod
+    def get_active_models():
+        try:
+            return Models.query.filter_by(deprecated=False).order_by(Models.name.desc()).all()
+        except Exception as e:
+            print_except("get_active_models", e)  
+
+    def get_default_model():
+        try:
+            return Models.query.filter_by(is_default=True, deprecated=False).first()
+        except Exception as e:
+            print_except("get_default_model", e)  
