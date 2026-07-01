@@ -5,6 +5,7 @@ The character image follows as the second part of this prompt.
 
 Describe this character image in a detailed but structured way.
 Include detailed physical appearance (figure, hair, attractiveness), clothing, distinguishing features and style.
+Do not describe the setting or background
 
 Format the response as valid GitHub-flavoured Markdown. Leave a blank line after every heading and before every bulleted or numbered list. 
 Don't use headings

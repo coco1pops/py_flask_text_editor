@@ -21,7 +21,7 @@ from editor.models.sysints import SysIntService
 from editor.models.storyChars import StoryCharsService
 from editor.models.chat_service import get_chat_service, ChatResult
 from editor.models.stories import Story
-from editor.models.params import ParamsService
+from editor.models.params import ParamsService, ModelsService
 from editor.utils.processImage import process_image
 
 import os
@@ -120,7 +120,7 @@ def getImageDescription(char_id, mimeType, image_data):
         params=ParamsService.get_params(1)
         story=Story(temperature=params.temperature, 
                     top_p=params.top_p, 
-                    model=params.model, 
+                    model=ModelsService.get_default_model().model_id, 
                     harassment_threshold="BLOCK_NONE",
                     hate_speech_threshold="BLOCK_NONE",
                     dangerous_content_threshold="BLOCK_NONE",
