@@ -198,6 +198,15 @@ class ChatService:
                     result=self.process_safety_error(candidate)
                     return result
                 
+            if hasattr(candidate,"block_reason"):
+                if candidate.block_reason:
+                    block_id=candidate.block_reason
+            
+                    result=ChatResult(False,"","","")
+                    result.finish_reason="BLOCK: %s" % candidate.BlockReason(block_id).name
+                    result.text="Gemini blocked the prompt %s" % candidate
+                    return result
+                
             logging.exception("Gemini failed to respond")
 
             logging.error("Exception type: %s", type(e))
