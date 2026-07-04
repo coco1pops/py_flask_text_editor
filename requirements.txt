@@ -5,7 +5,7 @@ Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
 Flask==3.1.1
 google-api-core==2.24.2
-google-common-protos==1.70.0
+googleapis-common-protos==1.70.0
 google.auth==2.55.1
 gunicorn
 Markdown==3.8
