@@ -76,7 +76,7 @@ def createchar(char_id=None):
             if success==0:
                 flash("Character added", "success")
             else:
-                flash(f"Character added, but failed to generate image description: {image_description}", "error")
+                flash(f"Character added, but failed to generate image description: {image_description}", "danger")
         else:
             success=0
             logging.debug(f"Updated character {char_id}")
@@ -93,7 +93,7 @@ def createchar(char_id=None):
             if success==0:
                 flash("Character updated", "success")
             else:
-                flash(f"Character updated, but failed to generate image description: {image_description}", "error")
+                flash(f"Character updated, but failed to generate image description: {image_description}", "danger")
 
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
@@ -107,15 +107,13 @@ def getImageDescription(char_id, mimeType, image_data):
         char = CharService.get_character(char_id, current_user.id)
         full_desc = CharService.build_char(char_id, current_user.id)
         prompt = render_template("prompts/describeCharacter.txt", name=char.name, desc=full_desc["text"])
-        message.append(prompt)
-        message.append({                    
-                            "inline_data": {
-                                "mime_type": mimeType,
-                                "data": image_data
-                            }
-                        })
+        logging.debug(f"Prompt for character {char_id}: {prompt}")
+
+        message.append({"image_mime_type": mimeType, "image_data": image_data})
+        message.append({"text": prompt})
         
         char_instruction=render_template("prompts/describeCharacterInstruction.txt")
+        logging.debug(f"Character instruction for character {char_id}: {char_instruction}")
 
         params=ParamsService.get_params(1)
         story=Story(temperature=params.temperature, 

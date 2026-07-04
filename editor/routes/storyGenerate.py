@@ -468,7 +468,9 @@ def buildPrompt(content, chars):
 def buildBase(story, prompt=""):
     logging.debug("Building Base")
     story_chars=StoryWithCharactersService.get_story_with_characters(story.story_id)
-    return render_template("prompts/basePrompt.txt", story=story, characters=story_chars, prompt=prompt)
+    ret_string = render_template("prompts/basePrompt.txt", story=story, characters=story_chars, prompt=prompt)
+    logging.debug(f"Base Prompt: {ret_string}")
+    return json.loads(ret_string)
 
 def buildBaseChapter(story, chapter, prompt=""):
     summaries=ChapterService.get_previous_chapters(story.story_id, chapter.position)
@@ -492,4 +494,6 @@ def buildBaseChapter(story, chapter, prompt=""):
             "image_description": char.image_description,
             "note": note
         })
-    return render_template("prompts/baseChapterPrompt.txt", story=story, chapter=chapter, summaries=summaries, characters=story_chars, prompt=prompt)
+    ret_string = render_template("prompts/baseChapterPrompt.txt", story=story, chapter=chapter, summaries=summaries, characters=story_chars, prompt=prompt)
+    logging.debug(f"Base Chapter Prompt: {ret_string}")
+    return json.loads(ret_string)
