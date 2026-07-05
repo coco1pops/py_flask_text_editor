@@ -9,7 +9,6 @@ from google.genai.types import GenerateContentConfig
 
 from dataclasses import dataclass
 
-import os
 import logging
 
 @dataclass
@@ -52,29 +51,30 @@ def get_chat_service():
 
     return chat_service_instance
 
-
+# 
+# Class to access LLM chat services. It manages the chat session, including the model, contents, and clients.
+#
 class ChatService:
-    """
-    Manages the GenAI chat model, API key configuration, and chat history.
-    Allows other modules to send messages and receive responses.
-    """
-    # Add a parameter to control whether to configure GenAI here
-    def __init__(self, project, vertexai=False):
 
+    def __init__(self, project, vertexai=False):
         try:
-            self.chat_config=GenerateContentConfig()
-            self.model=None
-            self.contents=[]
             self.project=project
             self.vertexai=vertexai
+            # Initialise private properties for model, contents, and clients
+            self._chat_config=GenerateContentConfig()
+            self._model=None
+            self._location=None
+            self._contents=[]
             self._clients={}
 
         except Exception as e:
             logging.exception(f"CRITICAL ERROR: Failed to initialize ChatService: {e}")
             raise RuntimeError(f"Failed to initialize ChatService: {e}")
-
+#
+# (PRIVATE) Lazily provisions or retrieves the correct client for the target location.
+#
     def _get_client(self, location: str) -> genai.Client:
-        """Lazily provisions or retrieves the correct client for the target location."""
+        
         if location not in self._clients:
             self._clients[location] = genai.Client(
                 vertexai=self.vertexai,
@@ -82,13 +82,10 @@ class ChatService:
                 location=location
             )
         return self._clients[location]
-    
+#
+# Sends a user message to the chat session and returns the model's response.
+#
     def send_message(self, message: str) -> str:
-        """
-        Sends a user message to the chat session and returns the model's response.
-        """
-        if self.model is None:
-            raise RuntimeError("Chat model is not initialized.")
 
         if not message:
             return "Please provide a message."
@@ -97,87 +94,119 @@ class ChatService:
             logging.debug(f"Sending user prompt...")
             self.add_history("user", message)
 
-            client = self._get_client(self.location)
-            response = client.models.generate_content(model=self.model, contents=self.contents, config=self.chat_config)
+            client = self._get_client(self._location)
+            response = client.models.generate_content(model=self._model, contents=self._contents, config=self._chat_config)
             if not response.candidates:
-                logging.error("No candidates returned from the model.")
-                return ChatResult(False, "No candidates returned from the model", "NO_CANDIDATES", "")
+                return self._process_no_candidates(response)
             else:
-
-                candidate=response.candidates[0]
-                result=ChatResult(False,"","","")
-                reason_id=candidate.finish_reason
-                finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
-                logging.debug(f"Finish reason: {finish_reason}")
-               
-                if reason_id == "STOP":
-                    result.success=True
-                    result.text=response.text
-
-                elif reason_id == "SAFETY":
-                    logging.debug(f"Processing safety error for candidate with finish reason: {finish_reason}")
-                    result=self.process_safety_error(candidate)
-                else:
-                    result.text = f"Failed to generate content. Finish reason: {finish_reason}"
-
-                return result
-            
+                return self._process_response(response)          
        
         except Exception as e:
-            candidate=e.args[0]
-            finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
-            logging.debug(f"Finish reason: {finish_reason}")
-            
-            if hasattr(candidate, "finish_reason"):
-                if finish_reason == "SAFETY":
 
-                    result=self.process_safety_error(candidate)
+            return self._handle_send_exception(e)
 
-                else:
-                    result.text = f"Failed to generate content. Finish reason: {finish_reason}"
-
-                return result
-
-            if hasattr(candidate,"block_reason"):
-                if candidate.block_reason:
-                    block_id=candidate.block_reason
-            
-                    result=ChatResult(False,"","","")
-                    result.finish_reason="BLOCK: %s" % candidate.BlockReason(block_id).name
-                    result.text="Gemini blocked the prompt %s" % candidate
-                    return result
-                
-            logging.exception("Gemini failed to respond")
-
-            logging.error("Exception type: %s", type(e))
-            logging.error("args type: %s", type(e.args))
-            logging.error("args length: %s", len(e.args))
-
-            for i, arg in enumerate(e.args):
-                logging.error("arg[%s] type: %s", i, type(arg))
-                logging.error("arg[%s] repr: %r", i, arg)
-                logging.error("arg[%s] dir: %s", i, dir(arg))
 
             raise
+#
+# (PRIVATE) Processes the case where no candidates are returned from the model, logging the reason and returning a 
+# structured ChatResult. 
+#
+    def _process_no_candidates(self, response):
+        reason_str = "UNKNOWN"
+        if hasattr(response, "prompt_feedback") and response.prompt_feedback:
+            feedback = response.prompt_feedback
+
+            # Safely normalize the block reason enum/string
+            reason = getattr(feedback, "block_reason", "UNKNOWN")
+            reason_str = getattr(reason, "name", str(reason)).upper()
+        logging.error("No candidates returned from the model: %s", reason_str)
+
+        return ChatResult(False, reason_str, "NO_CANDIDATES", "")
+#
+# (PRIVATE) Processes the model's response, checking the finish reason and handling safety errors or other issues accordingly.
+#    
+    def _process_response(self, response):
+        candidate = response.candidates[0]
+        result = ChatResult(False, "", "", "")
+
+        reason_id = candidate.finish_reason
+        finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
+        logging.debug(f"Finish reason: {finish_reason}")
+
+        if reason_id == "STOP":
+            result.success = True
+            result.text = response.text
+
+        elif reason_id == "SAFETY":
+            logging.debug(f"Processing safety error for candidate with finish reason: {finish_reason}")
+            result = self._process_safety_error(candidate)
+        else:
+            result.text = f"Failed to generate content. Finish reason: {finish_reason}"
+
+        return result
+#
+# (PRIVATE) Processes exceptions that occur during the send_message operation, logging details and returning a structured ChatResult.
+# If safety or block reasons are detected, it handles them accordingly. Otherwise, it logs the exception details and 
+# re-raises the exception.
+#
+    def _handle_send_exception(self, e):
+        logging.exception("Exception occurred while sending message to the model: %s", e)
+        candidate=e.args[0]
+        reason_id = candidate.finish_reason
+        finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
+        logging.debug(f"Finish reason: {finish_reason}")
         
-    def process_safety_error(self,candidate):
-        result=ChatResult(False,"Gemini rejected the prompt: ","","")
+        if hasattr(candidate, "finish_reason"):
+            if finish_reason == "SAFETY":
+
+                result=self._process_safety_error(candidate)
+
+            else:
+                result.text = f"Failed to generate content. Finish reason: {finish_reason}"
+
+            return result
+
+        if hasattr(candidate,"block_reason"):
+            if candidate.block_reason:
+                block_id=candidate.block_reason
+        
+                result=ChatResult(False,"","","")
+                result.finish_reason="BLOCK: %s" % candidate.BlockReason(block_id).name
+                result.text="Gemini blocked the prompt %s" % candidate
+                return result
+            
+        logging.exception("Gemini failed to respond")
+
+        logging.error("Exception type: %s", type(e))
+        logging.error("args type: %s", type(e.args))
+        logging.error("args length: %s", len(e.args))
+
+        for i, arg in enumerate(e.args):
+            logging.error("arg[%s] type: %s", i, type(arg))
+            logging.error("arg[%s] repr: %r", i, arg)
+            logging.error("arg[%s] dir: %s", i, dir(arg))
+        
+        raise
+
+    def _process_safety_error(self, candidate):
+        result=ChatResult(False,"Gemini rejected the prompt: ","SAFETY","")
 
         reasons=[]
         for rating in candidate.safety_ratings:
             if getattr(rating, "blocked", False):
                 reasons.append(
-                    f"Blocked category: {rating.category} (Probability: {rating.probability}) "
+                    f" Blocked category: {rating.category} (Probability: {rating.probability}) "
                 )
 
             result.safety_ratings = ", ".join(reasons)
 
         return result
-    
+#
+# Clears the current chat session and starts a new one, essentially preparing the model, location and chat configuration 
+# for a new conversation based on the provided story and optional override instruction.
+#    
     def reset_chat(self, story, override=None):
-        """
-        Clears the current chat session and starts a new one.
-        """
+
         logging.debug("Resetting chat session...")
 
         if override:
@@ -188,25 +217,25 @@ class ChatService:
         if instruction == "" or instruction == "None":
             instruction=None
 
-        self.model=story.model
-        self.location=ModelsService.get_model(story.model).location
+        self._model=story.model
+        self._location=ModelsService.get_model(story.model).location
 
-        self.chat_config.system_instruction = instruction    
-        self.chat_config.temperature = story.temperature
-        self.chat_config.top_p = story.top_p
-        self.chat_config.safety_settings =  [
+        self._chat_config.system_instruction = instruction    
+        self._chat_config.temperature = story.temperature
+        self._chat_config.top_p = story.top_p
+        self._chat_config.safety_settings =  [
             types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold=story.harassment_threshold),
             types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold=story.hate_speech_threshold),
             types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold=story.explicit_content_threshold),
             types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold=story.dangerous_content_threshold),]
         # Not used for now, but can be set to control when the model stops generating text
-        self.chat_config.stop_sequences = []
+        self._chat_config.stop_sequences = []
         logging.debug("Chat session reset.")
-    
+#
+# Adds a record to the chat history. Copes with strings, lists of dicts with either text or image_mime_type and image_data keys.
+#    
     def add_history(self, creator, message):
-        """
-        Adds a record to the chat history   
-        """
+
         if isinstance(message, list):
             parts = message
         else:
@@ -229,7 +258,7 @@ class ChatService:
                     )
 
             # Appends the turn into your rolling conversation history
-            self.contents.append(
+            self._contents.append(
                 types.Content(
                     role=creator, # "user" or "model"
                     parts=api_parts
