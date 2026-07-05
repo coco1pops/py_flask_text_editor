@@ -37,9 +37,9 @@ def create_app():
     # TODO: Delete if can initialise chat service for every call.
 
     project=os.getenv("GOOGLE_CLOUD_PROJECT")
-    location=os.getenv("GOOGLE_CLOUD_LOCATION")
+
     logging.info("Startup-Initialising chat")
-    chat_service.initialize_global_chat_service(project, location);
+    chat_service.initialize_global_chat_service(project);
     
     logging.info("Startup-Initialising login module")
     login_manager.init_app(app)

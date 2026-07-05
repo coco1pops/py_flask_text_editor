@@ -3,6 +3,8 @@ import google.auth
 from google import genai
 from google.genai import types
 
+from editor.models.params import ModelsService
+
 from google.genai.types import GenerateContentConfig
 
 from dataclasses import dataclass
@@ -23,15 +25,14 @@ chat_service_instance = None # Initialize to None
 
 # --- Function to initialize the service  ---
 # def initialize_global_chat_service():
-def initialize_global_chat_service(project, location):
+def initialize_global_chat_service(project):
 
     global chat_service_instance
     try:
-        logging.debug(f"Initializing global ChatService instance with project: {project}, location: {location}")
+        logging.debug(f"Initializing global ChatService instance with project: {project}")
         chat_service_instance = ChatService(
             vertexai=True,
-            project=project,
-            location=location
+            project=project
             )
         logging.debug(f"Global ChatService instance created.")
     except (ValueError, RuntimeError) as e:
@@ -58,18 +59,30 @@ class ChatService:
     Allows other modules to send messages and receive responses.
     """
     # Add a parameter to control whether to configure GenAI here
-    def __init__(self, project, location, vertexai=False):
+    def __init__(self, project, vertexai=False):
 
         try:
-            self.client=genai.Client(project=project, location=location, vertexai=vertexai)
             self.chat_config=GenerateContentConfig()
             self.model=None
             self.contents=[]
+            self.project=project
+            self.vertexai=vertexai
+            self._clients={}
 
         except Exception as e:
             logging.exception(f"CRITICAL ERROR: Failed to initialize ChatService: {e}")
             raise RuntimeError(f"Failed to initialize ChatService: {e}")
 
+    def _get_client(self, location: str) -> genai.Client:
+        """Lazily provisions or retrieves the correct client for the target location."""
+        if location not in self._clients:
+            self._clients[location] = genai.Client(
+                vertexai=self.vertexai,
+                project=self.project,
+                location=location
+            )
+        return self._clients[location]
+    
     def send_message(self, message: str) -> str:
         """
         Sends a user message to the chat session and returns the model's response.
@@ -83,35 +96,48 @@ class ChatService:
         try:
             logging.debug(f"Sending user prompt...")
             self.add_history("user", message)
-            response = self.client.models.generate_content(model=self.model, contents=self.contents, config=self.chat_config)
+
+            client = self._get_client(self.location)
+            response = client.models.generate_content(model=self.model, contents=self.contents, config=self.chat_config)
             if not response.candidates:
                 logging.error("No candidates returned from the model.")
-                return ChatResult(False, "", "NO_CANDIDATES", "")
+                return ChatResult(False, "No candidates returned from the model", "NO_CANDIDATES", "")
             else:
 
                 candidate=response.candidates[0]
                 result=ChatResult(False,"","","")
                 reason_id=candidate.finish_reason
+                finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
+                logging.debug(f"Finish reason: {finish_reason}")
                
                 if reason_id == "STOP":
                     result.success=True
                     result.text=response.text
 
-                else:
+                elif reason_id == "SAFETY":
+                    logging.debug(f"Processing safety error for candidate with finish reason: {finish_reason}")
                     result=self.process_safety_error(candidate)
+                else:
+                    result.text = f"Failed to generate content. Finish reason: {finish_reason}"
 
-                logging.debug(f"Metadata response: {response.usage_metadata}")
                 return result
             
        
         except Exception as e:
             candidate=e.args[0]
+            finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
+            logging.debug(f"Finish reason: {finish_reason}")
+            
             if hasattr(candidate, "finish_reason"):
-                if candidate.finish_reason:
+                if finish_reason == "SAFETY":
 
                     result=self.process_safety_error(candidate)
-                    return result
-                
+
+                else:
+                    result.text = f"Failed to generate content. Finish reason: {finish_reason}"
+
+                return result
+
             if hasattr(candidate,"block_reason"):
                 if candidate.block_reason:
                     block_id=candidate.block_reason
@@ -135,19 +161,16 @@ class ChatService:
             raise
         
     def process_safety_error(self,candidate):
-        result=ChatResult(False,"","","")
-        reason_id=candidate.finish_reason
-        if reason_id == "SAFETY":
-            result.success=False
-            result.text="Gemini rejected the prompt: "
-            reasons=[]
-            for rating in candidate.safety_ratings:
-                if getattr(rating, "blocked", False):
-                    reasons.append(
-                        f"Blocked category: {rating.category} (Probability: {rating.probability}) "
-                    )
+        result=ChatResult(False,"Gemini rejected the prompt: ","","")
 
-                result.safety_ratings = ", ".join(reasons)
+        reasons=[]
+        for rating in candidate.safety_ratings:
+            if getattr(rating, "blocked", False):
+                reasons.append(
+                    f"Blocked category: {rating.category} (Probability: {rating.probability}) "
+                )
+
+            result.safety_ratings = ", ".join(reasons)
 
         return result
     
@@ -166,6 +189,7 @@ class ChatService:
             instruction=None
 
         self.model=story.model
+        self.location=ModelsService.get_model(story.model).location
 
         self.chat_config.system_instruction = instruction    
         self.chat_config.temperature = story.temperature

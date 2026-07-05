@@ -49,9 +49,17 @@ class Models(db.Model):
     is_default = db.Column(db.Boolean, default=False)
     deprecated = db.Column(db.Boolean, default=False)
     name = db.Column(db.String(30), nullable=True)
+    location = db.Column(db.String(255), nullable=True)
 
 class ModelsService:
     @staticmethod
+
+    def get_model(model_id):
+        try:
+            return db.session.get(Models, model_id)
+        except Exception as e:
+            print_except("get_model", e)  
+
     def get_active_models():
         try:
             return Models.query.filter_by(deprecated=False).order_by(Models.name.desc()).all()
