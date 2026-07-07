@@ -93,3 +93,7 @@ th {
  margin-top: 1rem;
  margin-bottom: 0rem; 
 }
+
+#summary-box-display h3 {
+  font-size: 1.25rem; 
+}

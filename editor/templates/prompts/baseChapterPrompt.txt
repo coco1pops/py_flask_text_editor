@@ -37,7 +37,7 @@ Character: {{ char.name }}
 {%- endfor -%}
 {%- set instruction_text -%}
   All character and world information provided above must be treated as the source of truth. Maintain consistency in tone and character behaviour.
-  [Prompt] {{prompt}}
+  [Prompt]
 {%- endset -%}
 ,{
   "text": {{ instruction_text | tojson }} }

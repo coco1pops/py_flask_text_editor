@@ -9,11 +9,11 @@ def process_image(file_storage, max_size=(300, 300)):
         img = img.convert("RGB")
 
     # Resize while keeping aspect ratio
-    img.thumbnail(max_size)
+    img.thumbnail((400, 400), Image.Resampling.LANCZOS)
 
     # Save to clean JPEG
     output = BytesIO()
-    img.save(output, format="JPEG", quality=85, optimize=True)
+    img.save(output, format="JPEG", quality=90, optimize=True)
     output.seek(0)
 
     return output.read(), "image/jpeg"

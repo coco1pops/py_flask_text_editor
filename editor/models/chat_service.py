@@ -1,3 +1,5 @@
+from email import message
+
 import google.auth
 
 from google import genai
@@ -79,7 +81,14 @@ class ChatService:
             self._clients[location] = genai.Client(
                 vertexai=self.vertexai,
                 project=self.project,
-                location=location
+                location=location,
+                http_options=types.HttpOptions(
+                    retry_options=types.HttpRetryOptions(
+                    attempts=4,        # Set your max retry attempts here
+                    initial_delay=1,   # Optional: initial backoff delay in seconds
+                    max_delay=10       # Optional: maximum backoff delay
+                    )
+                )
             )
         return self._clients[location]
 #
@@ -152,11 +161,11 @@ class ChatService:
     def _handle_send_exception(self, e):
         logging.exception("Exception occurred while sending message to the model: %s", e)
         candidate=e.args[0]
-        reason_id = candidate.finish_reason
-        finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
-        logging.debug(f"Finish reason: {finish_reason}")
         
         if hasattr(candidate, "finish_reason"):
+            reason_id = candidate.finish_reason
+            finish_reason = getattr(reason_id, "name", str(reason_id)).upper()
+            logging.debug(f"Finish reason: {finish_reason}")
             if finish_reason == "SAFETY":
 
                 result=self._process_safety_error(candidate)
@@ -230,12 +239,14 @@ class ChatService:
             types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold=story.dangerous_content_threshold),]
         # Not used for now, but can be set to control when the model stops generating text
         self._chat_config.stop_sequences = []
+        self._contents=[]
         logging.debug("Chat session reset.")
 #
 # Adds a record to the chat history. Copes with strings, lists of dicts with either text or image_mime_type and image_data keys.
 #    
     def add_history(self, creator, message):
 
+        logging.debug(f"Adding single message to history: {message}")
         if isinstance(message, list):
             parts = message
         else:

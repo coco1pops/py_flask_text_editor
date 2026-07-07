@@ -16,7 +16,6 @@ from flask import (
 )
 from flask_login import current_user
 
-from editor.models import posts
 from editor.models.chat_service import get_chat_service, ChatResult
 from editor.models.stories import StoryService
 from editor.models.storyChars import StoryCharsService, StoryWithCharactersService
@@ -24,7 +23,9 @@ from editor.models.posts import PostPartService, PostService, UnifiedPostTimelin
 from editor.models.chapters import ChapterService, ChapterCharService
 from editor.models.chars import CharService
 from editor.models.params import ModelsService
+
 from editor.utils.formatCharacter import buildChar
+from editor.utils.genBuildPrompts import buildBase, buildBaseChapter, buildPrompt, buildHistory
 
 bp = Blueprint("storyGenerate", __name__)
 @bp.before_request
@@ -256,10 +257,6 @@ def parse_generate_request():
         "row_id": int(request.values.get("row_id")),
         "chars": json.loads(request.values.get("chars", "[]")),
     }
-#
-# Utility function to return a consistent json response with any flash messages included. 
-# Can be used for any endpoint that needs to return a json response and also include flash messages.
-#
 def delete_posts(story_id, row_id, chapter_id=None):
     try:
         if chapter_id:
@@ -272,7 +269,10 @@ def delete_posts(story_id, row_id, chapter_id=None):
     except Exception as e:
         logging.debug(f"Error deleting posts {e}")
         raise Exception("Posts delete failed")
-
+#
+# Utility function to return a consistent json response with any flash messages included. 
+# Can be used for any endpoint that needs to return a json response and also include flash messages.
+#
 def json_response(payload, status=200, flash_msg=None, category="success"):
     if flash_msg:
         flash(flash_msg, category)
@@ -296,31 +296,20 @@ def handle_edit_response(row_id, prompt):
 def generate_chat_message(story_id, prompt, chars, chapter_id=None, limit=None):
     chat = get_chat_service()
     story = StoryService.get_user_story(story_id, current_user.id)
-    if story.book:
-        chapter=ChapterService.get_chapter(chapter_id)
+    if chapter_id:
+        chapter = ChapterService.get_chapter(chapter_id)
+    else:
+        chapter = None
+
 
     chat.reset_chat(story)
     #
     # The first prompt needs to be built as a combination of the base and the new prompt
     #
-    if story.book:
-        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id=chapter_id, limit=limit)
-    else:
-        posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, limit=limit)
+    posts=UnifiedPostTimelineService.get_all_posts_raw(story_id, chapter_id=chapter_id, limit=limit)
 
     parsed_prompt = prompt if not chars else buildPrompt(prompt, chars)
-    if posts:
-        if story.book:
-            buildHistory(chat, story, posts, chapter=chapter)
-        else:
-            buildHistory(chat, story, posts)
-    else:
-        if story.book:
-            parsed_prompt = buildBaseChapter(story, chapter, parsed_prompt )
-        else:
-            parsed_prompt = buildBase(story, parsed_prompt )
-
-        logging.debug(f"first prompt {parsed_prompt}")
+    buildHistory(chat, story, posts, chapter=chapter)
 
     return chat.send_message(parsed_prompt)
 
@@ -329,10 +318,8 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
 
     # multi determines if there are parts to add to the post. Add the post first
     # indicating whether there are further parts
-    if chapter_id:
-        post_id = PostService.insert_post(story_id, current_user.id, "user", prompt, multi, chapter_id=chapter_id)
-    else:
-        post_id = PostService.insert_post(story_id, current_user.id, "user", prompt, multi)
+  
+    post_id = PostService.insert_post(story_id, current_user.id, "user", prompt, multi, chapter_id=chapter_id)
 
     # Add a character as a part for each character
 
@@ -347,34 +334,19 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
             part.image_mime_type
         )
 
-        if chapter_id:
-            PostPartService.insert_post_text_part(story_id, current_user.id, post_id, text_part, chapter_id=chapter_id)
-            # If there is an image associated with the character, add a part
+        PostPartService.insert_post_text_part(story_id, current_user.id, post_id, text_part, chapter_id=chapter_id)
+        # If there is an image associated with the character, add a part
           
-            if part.image_mime_type:
-                PostPartService.insert_post_image_part(
-                    story_id, post_id, part.image_data, part.image_mime_type, part.image_description, chapter_id=chapter_id
-                )
-        else:
-            PostPartService.insert_post_text_part(story_id, current_user.id, post_id, text_part)
-
-            # If there is an image associated with the character, add a part
-
-            if part.image_mime_type:
-              
-                PostPartService.insert_post_image_part(
-                    story_id, post_id, part.image_data, part.image_mime_type, part.image_description
-                )
+        if part.image_mime_type:
+            PostPartService.insert_post_image_part(
+                story_id, post_id, part.image_data, part.image_mime_type, part.image_description, chapter_id=chapter_id
+            )
 
     posts = UnifiedPostTimelineService.get_post(post_id)
 
     # Now add the response as a new post
 
-    if chapter_id:
-        newpost_id = PostService.insert_post(story_id, current_user.id, "model", message, False, chapter_id=chapter_id)
-    else:
-        newpost_id = PostService.insert_post(story_id, current_user.id, "model", message, False)
-
+    newpost_id = PostService.insert_post(story_id, current_user.id, "model", message, False, chapter_id=chapter_id)
     newpost = UnifiedPostTimelineService.get_post(newpost_id)
 
     # Send back the new post as part of the response so it can be added to the screen.
@@ -393,107 +365,3 @@ def save_prompt_and_response(story_id, chapter_id, prompt, chars, message, mode)
         formatted_posts += formatted_post
 
     return formatted_posts, flash_msg
-
-def buildHistory(chat, story, posts, chapter=None):
-    multimodal = False
-    multimessage = []
-    firstTime=True
-
-    logging.debug(f"Building History for Story {story.title}")
-    for post in posts:
-        logging.debug(f"Processing post: {post.post_id}")
-        # Tidy up outstanding messages if building multi-modal message
-        if post.source == "post" and multimodal:
-            if firstTime:
-                if story.book:
-                    multimessage=buildBaseChapter(story, chapter, multimessage)
-                else:
-                    multimessage=buildBase(story, multimessage)
-                firstTime=False
-            chat.add_history("user", multimessage)
-            multimodal = False
-            multimessage = []
-        # For parts simply add to multimessage
-        if post.source == "part":
-            if post.part_type == "text":
-                multimessage.append({"text": post.part_text})
-            elif post.part_type == "image":
-
-                multimessage.append(
-                    {
-                        "text": f"Use the following text to describe the character's physical appearance: { post.part_image_description }"
-                    }
-                )
-        else:  # Getting here we have a post
-            if post.multi_modal:  # Create a new multimessage
-                multimodal = True
-                multimessage = []
-                multimessage.append({"text": post.content})
-            else:
-                content=post.content
-                if firstTime:
-                    if story.book:
-                        content=buildBaseChapter(story, chapter, content)
-                    else:
-                        content=buildBase(story, content)
-                    firstTime=False
-                chat.add_history(post.creator, content)  # Normal post
-    
-    # There are posts here so no need to check first time
-    if multimodal:
-        chat.add_history("user", multimessage)
-
-
-def buildPrompt(content, chars):
-    multi_modal_content = []
-    multi_modal_content.append({"text": content})
-    for ix in chars:
-        logging.debug(f"Building prompt for char {ix}")
-        char = CharService.get_character(ix)
-        txtprompt = buildChar(
-            char.name, char.description, char.personality, char.motivation, char.image_mime_type
-        )
-  
-        multi_modal_content.append({"text": txtprompt})
-        if char.image_mime_type:
-
-            multi_modal_content.append(
-                {
-                    "text": f"Use the following text to describe the character's physical appearance: { char.image_description }"
-                }
-            )
-
-    return multi_modal_content
-
-def buildBase(story, prompt=""):
-    logging.debug("Building Base")
-    story_chars=StoryWithCharactersService.get_story_with_characters(story.story_id)
-    ret_string = render_template("prompts/basePrompt.txt", story=story, characters=story_chars, prompt=prompt)
-    logging.debug(f"Base Prompt: {ret_string}")
-    return json.loads(ret_string)
-
-def buildBaseChapter(story, chapter, prompt=""):
-    summaries=ChapterService.get_previous_chapters(story.story_id, chapter.position)
-    story_chars=[]
-    chapter_chars=ChapterCharService.get_chapter_chars(story.story_id, chapter.chapter_id)
-    for chapter_char in chapter_chars:
-        char=CharService.get_character(chapter_char.char_id, current_user.id)
-        if chapter_char.override:
-            note=chapter_char.note
-        else:
-            base_note=StoryCharsService.get_story_chars_base(story.story_id,chapter_char.char_id)
-            note=base_note.note
-
-        story_chars.append({
-            "name" : char.name,
-            "description" : char.description,
-            "personality" : char.personality,
-            "motivation": char.motivation,
-            "image_mime_type" : char.image_mime_type,
-            "image_data": char.image_data,
-            "image_description": char.image_description,
-            "note": note
-        })
-    ret_string = render_template("prompts/baseChapterPrompt.txt", story=story, chapter=chapter, summaries=summaries, characters=story_chars, prompt=prompt)
-    logging.debug(f"Base Chapter Prompt: {ret_string}")
-    return json.loads(ret_string)

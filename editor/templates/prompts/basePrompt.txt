@@ -26,7 +26,6 @@ Character: {{ char.name }}
   All character and world information provided above must be treated as the source of truth.
   Maintain consistency in tone and character behaviour.
   [Prompt]
-  {{prompt}}
   {%- endset -%}
 ,{
   "text": {{ instruction_text | trim | tojson }}
