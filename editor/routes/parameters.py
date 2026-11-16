@@ -55,6 +55,7 @@ def createchar(char_id=None):
         description = request.form["description"] or ""
         personality = request.form["personality"] or ""
         motivation = request.form["motivation"] or ""
+        archive = request.form.get("archive") == "on"
         new_image_description = request.values.get("image-description")
 
         image_file = request.files.get("image")
@@ -65,7 +66,7 @@ def createchar(char_id=None):
             success = 0
             logging.debug("Inserting new character")
             char_id = CharService.insert_character(
-                name, description, personality, motivation, current_user.id
+                name, description, personality, motivation, archive, current_user.id
             )
             logging.debug(f"Inserted character {char_id}")
             if image_file:
@@ -81,7 +82,7 @@ def createchar(char_id=None):
             success=0
             logging.debug(f"Updated character {char_id}")
             CharService.update_character_all(
-                char_id, current_user.id, name, description, personality, motivation
+                char_id, current_user.id, name, description, personality, motivation, archive
             )
             if image_file:
                 success,image_description = getImageDescription(char_id, mimeType, image_bytes)
@@ -90,10 +91,29 @@ def createchar(char_id=None):
             elif new_image_description != char["image_description"]:
                 CharService.update_character_field(char_id, current_user.id, "image_description", new_image_description)          
             char = CharService.get_character(char_id, current_user.id)
-            if success==0:
-                flash("Character updated", "success")
-            else:
-                flash(f"Character updated, but failed to generate image description: {image_description}", "danger")
+            #
+            # If the image description generation failed, we still want to update the character, but we will flash a warning message
+            # Any copy is aborted
+            #
+            if request.form.get("action") == "Update":
+                if success==0:
+                    flash("Character updated", "success")
+                else:
+                    flash(f"Character updated, but failed to generate image description: {image_description}", "danger")
+
+            elif request.form.get("action") == "Copy":
+                if success==0:
+                    name = f"{name} (Copy)"
+                    target_image_description = char.image_description
+                    target_image_data = char.image_data
+                    target_image_mime_type = char.image_mime_type
+                    char_id = CharService.insert_character(
+                        name, description, personality, motivation, archive, current_user.id
+                        )
+                    CharService.update_character_image(char_id, current_user.id, target_image_data, target_image_mime_type, target_image_description)
+                    flash("Character copied", "success")
+                else:
+                    flash(f"Character copied, but failed to generate image description: {image_description}", "danger")
 
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
@@ -181,12 +201,13 @@ def delchar():
 @bp.route("/chars", methods=["GET", "POST"])
 @login_required
 def chars():
-    chars = CharService.get_characters(current_user.id)
+    show_archived = request.args.get("show_archived")
+    chars = CharService.get_characters(current_user.id, show_archived=="1")
     if request.method == "POST":
         char_id = int(request.form.get("action"))
         return redirect(url_for("parameters.createchar", char_id=char_id))
 
-    return render_template("parameters/charsList.html", chars=chars)
+    return render_template("parameters/charsList.html", chars=chars, show_archived=show_archived)
 
 
 @bp.route("/checkimage", methods=["POST"])

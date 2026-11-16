@@ -22,13 +22,17 @@ class Char(db.Model):
     image_data = db.Column(db.LargeBinary)
     image_mime_type = db.Column(db.Text)
     image_description = db.Column(db.Text)
+    archive = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.String(255), db.ForeignKey('users.user_id'), nullable=False)
 
 class CharService:
     @staticmethod
-    def get_characters(user_id):
+    def get_characters(user_id, archived=False):
         try:
-            return Char.query.filter_by(user_id=user_id).order_by(Char.name.asc()).all()
+            if archived:
+                return Char.query.filter_by(user_id=user_id).order_by(Char.name.asc()).all()
+            else:
+                return Char.query.filter_by(user_id=user_id, archive=False).order_by(Char.name.asc()).all()
         except Exception as e:
             print_except("get_characters",e)
             return False
@@ -67,6 +71,7 @@ class CharService:
                 "image_data": format_image_data,
                 "image_mime_type": char.image_mime_type,
                 "image_description": char.image_description,
+                "archive": char.archive,
                 "display_description": markdown.markdown(char.image_description) if char.image_description else ""
             }
 
@@ -77,7 +82,7 @@ class CharService:
     def get_characters_outside_story(story_id, user_id):
         assigned_ids = StoryCharsService.get_assigned_char_subquery(story_id)
         try:
-           available_chars = Char.query.filter(Char.user_id == user_id, ~Char.char_id.in_(assigned_ids)).all()
+           available_chars = Char.query.filter(Char.user_id == user_id, Char.archive == False, ~Char.char_id.in_(assigned_ids)).all()
            return available_chars
         
         except Exception as e:
@@ -88,7 +93,7 @@ class CharService:
     def get_characters_outside_chapter(story_id, chapter_id, user_id):
         assigned_ids = ChapterCharService.get_assigned_char_subquery(story_id, chapter_id)
         try:
-           available_chars = Char.query.filter(Char.user_id == user_id, ~Char.char_id.in_(assigned_ids)).all()
+           available_chars = Char.query.filter(Char.user_id == user_id, Char.archive == False, ~Char.char_id.in_(assigned_ids)).all()
            return available_chars
         
         except Exception as e:
@@ -97,13 +102,14 @@ class CharService:
 
 
     @staticmethod
-    def insert_character(name, description, personality, motivation, user_id):
+    def insert_character(name, description, personality, motivation, archive, user_id):
         try:
             char = Char(
                 name=name,
                 description=description,
                 personality=personality,
                 motivation=motivation,
+                archive=archive,
                 user_id=user_id
             )
 
@@ -133,7 +139,7 @@ class CharService:
             print_except("update_character_field",e)
 
     @classmethod
-    def update_character_all(cls, char_id, user_id, name, description, personality, motivation):
+    def update_character_all(cls, char_id, user_id, name, description, personality, motivation, archive):
         try:
             char = cls.get_character(char_id, user_id, allow_not_found=False)
 
@@ -144,6 +150,7 @@ class CharService:
             char.description = description
             char.personality = personality
             char.motivation = motivation
+            char.archive = archive
 
             db.session.commit()
             return True

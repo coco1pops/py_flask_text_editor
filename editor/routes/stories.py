@@ -71,6 +71,7 @@ def create(story_id=None):
         systeminstruction = request.form["systeminstruction"] or ""
         world_rules = request.form["world_rules"] or ""
         paramsUpdated = request.form.get("paramsSaved") == "True"
+        archive = "archive" in request.form
 
         if (paramsUpdated and mode == "Create") or mode=="Edit":
             logging.debug("Getting Studio Details")
@@ -95,14 +96,14 @@ def create(story_id=None):
         if mode == "Create":
             story_id =StoryService.insert_story(current_user.id, title, note, systeminstruction, temperature, 
                 top_p, harassment_threshold, hate_speech_threshold, dangerous_content_threshold, 
-                explicit_content_threshold, model, world_rules, book)
+                explicit_content_threshold, model, world_rules, book, archive)
             story=StoryService.get_user_story(story_id, current_user.id)
             storyChars = []
             flash("Story Added", "success")
         else:
             StoryService.update_story_all(story_id, current_user.id, title, note, systeminstruction, temperature, 
                 top_p, harassment_threshold, hate_speech_threshold, dangerous_content_threshold, 
-                explicit_content_threshold, model, world_rules)
+                explicit_content_threshold, model, world_rules, archive)
             flash("Story Updated", "success")
         
         return redirect(url_for("stories.create", story_id=story_id))
@@ -119,7 +120,8 @@ def create(story_id=None):
             dangerous_content_threshold=params.dangerous_content_threshold,
             explicit_content_threshold=params.explicit_content_threshold,
             model=default_model.model_id,
-            world_rules=params.world_rules
+            world_rules=params.world_rules,
+            archive=False
             )
         storyChars = []
         if story_id:
@@ -140,6 +142,7 @@ def create(story_id=None):
 # Returns a list of stories
 @bp.route("/stories", methods=["GET", "POST"])
 def stories():
+    show_archived = request.args.get("show_archived")
     if request.method == "POST":
         action = request.form.get("action")
         
@@ -154,9 +157,9 @@ def stories():
             story_id = int(action)
             return redirect(url_for("stories.create", story_id=story_id))
 
-    stories = StoryService.get_user_stories(current_user.id)
+    stories = StoryService.get_user_stories(current_user.id, show_archived=show_archived=="1")
 
-    return render_template("stories/storiesList.html", stories=stories)
+    return render_template("stories/storiesList.html", stories=stories, show_archived=show_archived)
 
 #
 # Deletes a story and related posts

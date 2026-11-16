@@ -83,31 +83,29 @@
             <td class="d-none">{{ row[id_field] }}</td>
 
             {% for label, key in columns %}
-            {% if key in ['description','note'] %}
-            <td style="max-width: 400px;">
-                {% else %}
-            <td>
-                {% endif %}
 
-                {% if key in ['created','updated'] %}
+            {% if key == 'description' or key == 'note' %}
+                <td class="text-wrap" style="max-width: 400px;">
+            {% else %}
+                <td>
+            {% endif %}
+
+            {% if key == 'status' %}
+                {{ row[key].replace('_', ' ').title() }}
+            {% elif key in ['created','updated'] %}
                 {{ row[key].strftime("%b %d, %Y") }}
-                {% elif key == 'book' %}
-                    {% if row[key] %}
-                        <i class="bi bi-book"></i>
-                    {% else %}
-                        <i class="bi bi-file-text"></i>
-                    {% endif %} 
-                {% elif key == 'status' %}
-                    {% if row[key] == 'in_progress' %}
-                        In Progress
-                    {% elif row[key] == 'draft' %}
-                        Draft
-                    {% else %}
-                        Complete
-                    {% endif %}
+            {% elif key == 'book' %}
+                {% if row[key] %}
+                    <i class="bi bi-book"></i>
                 {% else %}
-                {{ row[key] }}
-                {% endif %}
+                    <i class="bi bi-file-text"></i>
+                {% endif %} 
+            
+            {% else %}
+                 {{ row[key] }}
+                 {%if key in ['name', 'title'] and row.archive %}  <span class="badge text-bg-secondary">Archived</span> {% endif %}
+            {% endif %}
+
             </td>
             {% endfor %}
 

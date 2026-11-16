@@ -301,7 +301,6 @@ def generate_chat_message(story_id, prompt, chars, chapter_id=None, limit=None):
     else:
         chapter = None
 
-
     chat.reset_chat(story)
     #
     # The first prompt needs to be built as a combination of the base and the new prompt

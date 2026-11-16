@@ -20,6 +20,7 @@ class Story(db.Model):
     model = db.Column(db.String(255), nullable=True)
     world_rules = db.Column(db.Text, nullable=True)
     book = db.Column(db.Boolean, default=False)
+    archive = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.String(255), db.ForeignKey('users.user_id'), nullable=False)
 
     chars = db.relationship(
@@ -79,7 +80,7 @@ class StoryService:
     def insert_story(user_id,title, note, systeminstruction, 
             temperature, top_p,
             harassment_threshold, hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold, 
-            model, world_rules, book):
+            model, world_rules, book, archive):
         try:
             story = Story(
                 title=title,
@@ -94,6 +95,7 @@ class StoryService:
                 model=model,
                 world_rules=world_rules,
                 book=book,
+                archive=archive,
                 user_id=user_id
             )
 
@@ -107,9 +109,12 @@ class StoryService:
             print_except("insert_story", e)
 
     @staticmethod
-    def get_user_stories(user_id):
+    def get_user_stories(user_id, show_archived=False):
         try:
-            return Story.query.filter_by(user_id=user_id).order_by(Story.created.desc()).all()
+            query = Story.query.filter_by(user_id=user_id)
+            if not show_archived:
+                query = query.filter_by(archive=False)
+            return query.order_by(Story.created.desc()).all()
         except Exception as e:
             print_except("get_user_stories", e)  
 
@@ -146,7 +151,7 @@ class StoryService:
     @classmethod
     def update_story_all(cls, story_id, user_id,title, note, systeminstruction, temperature, top_p,
         harassment_threshold, hate_speech_threshold, dangerous_content_threshold, explicit_content_threshold,
-        model, world_rules):
+        model, world_rules, archive):
         try:
             story = cls.get_user_story(story_id, user_id)
 
@@ -165,6 +170,7 @@ class StoryService:
             story.explicit_content_threshold=explicit_content_threshold
             story.model=model
             story.world_rules=world_rules
+            story.archive=archive
 
             cls.touch_story(story_id, user_id)
 
